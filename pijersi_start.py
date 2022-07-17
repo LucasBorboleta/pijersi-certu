@@ -24,7 +24,7 @@ import sys
 
 
 _product_home = os.path.abspath(os.path.dirname(__file__))
-_jersi_gui_executable = os.path.join(_product_home, "pijersi_certu", "pijersi_gui.py")
+_pijersi_gui_executable = os.path.join(_product_home, "pijersi_certu", "pijersi_gui.py")
 _venv_home = os.path.join(_product_home, ".env")
 
 os.chdir(_product_home)
@@ -84,7 +84,7 @@ if _install_dependencies:
 
 print()
 print("jersi_gui ...")
-subprocess.run(args=[_venv_python_executable, _jersi_gui_executable], shell=False, check=True)
+subprocess.run(args=[_venv_python_executable, _pijersi_gui_executable], shell=False, check=True)
 print()
 print("jersi_gui done")
 
