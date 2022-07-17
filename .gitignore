@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+.env
+.spyproject
+tmp
+tmp_*
+tmp-*
+*.spec
