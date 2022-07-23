@@ -171,8 +171,8 @@ class TinyVector:
 class CanvasConfig:
 
     # Canvas x-y dimensions in hexagon units
-    NX = 9 + 0.75
-    NY = 9
+    NX = 7 + 0.75
+    NY = 7
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
@@ -216,21 +216,15 @@ class CubeConfig:
 
     __cube_file_name = {}
 
-    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.KING)] = 'king-black.png'
     __cube_file_name[(rules.Player.BLACK, rules.CubeSort.WISE)] = 'wise-black.png'
-    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.FOOL)] = 'fool-black.png'
     __cube_file_name[(rules.Player.BLACK, rules.CubeSort.ROCK)] = 'rock-black.png'
     __cube_file_name[(rules.Player.BLACK, rules.CubeSort.PAPER)] = 'paper-black.png'
     __cube_file_name[(rules.Player.BLACK, rules.CubeSort.SCISSORS)] = 'scissors-black.png'
-    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.MOUNTAIN)] = 'mountain-black.png'
 
-    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.KING)] = 'king-white.png'
     __cube_file_name[(rules.Player.WHITE, rules.CubeSort.WISE)] = 'wise-white.png'
-    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.FOOL)] = 'fool-white.png'
     __cube_file_name[(rules.Player.WHITE, rules.CubeSort.ROCK)] = 'rock-white.png'
     __cube_file_name[(rules.Player.WHITE, rules.CubeSort.PAPER)] = 'paper-white.png'
     __cube_file_name[(rules.Player.WHITE, rules.CubeSort.SCISSORS)] = 'scissors-white.png'
-    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.MOUNTAIN)] = 'mountain-white.png'
 
     CUBE_FILE_PATH = {}
 
@@ -255,13 +249,11 @@ class HexagonColor(enum.Enum):
     BORDER = rgb_color_as_hexadecimal((191, 89, 52))
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
-    RESERVE = rgb_color_as_hexadecimal((191, 184, 180))
 
 
 @enum.unique
 class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
-    RESERVE = ''
 
 
 class GraphicalHexagon:
@@ -273,31 +265,21 @@ class GraphicalHexagon:
     all = None
 
 
-    def __init__(self, hexagon, color, relative_shift_xy=None):
+    def __init__(self, hexagon, color):
 
         assert hexagon.name not in GraphicalHexagon.__name_to_hexagon
         assert color in HexagonColor
-        assert (relative_shift_xy is not None) == hexagon.reserve
 
         self.name = hexagon.name
         self.position_uv = hexagon.position_uv
-        self.reserve = hexagon.reserve
         self.index = hexagon.index
         self.color = color
-        self.__relative_shift_xy = relative_shift_xy
-
-        if relative_shift_xy is not None:
-            (shift_x, shift_y) = relative_shift_xy
-            self.shift_xy = (shift_x*CanvasConfig.HEXA_WIDTH*CanvasConfig.UNIT_X +
-                             shift_y*CanvasConfig.HEXA_DELTA_Y*CanvasConfig.UNIT_Y)
-        else:
-            self.shift_xy = None
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
 
     def __str__(self):
-        return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.reserve}, {self.index}, {self.color}, {self.__relative_shift_xy})"
+        return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.index}, {self.color})"
 
 
     @staticmethod
@@ -330,55 +312,26 @@ class GraphicalHexagon:
     @staticmethod
     def __create_hexagons():
 
-        borders = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7']
-        borders += ['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7']
-        borders += ['b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
-        borders += ['b8', 'c7', 'd8', 'e9', 'f8', 'g7', 'h8']
+        borders = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
+        borders += ['g1', 'g2', 'g3', 'g4', 'g5', 'g6']
+        borders += ['b1', 'c1', 'd1', 'e1', 'f1']
+        borders += ['b7', 'c6', 'd7', 'e6', 'f7']
 
-        darks = ['c3', 'c4', 'c5']
-        darks += ['g3', 'g4', 'g5']
-        darks += ['d3', 'e3', 'f3']
-        darks += ['d6', 'e7', 'f6']
-        darks += ['e5']
+        darks = ['e3', 'e4']
+        darks += ['d3', 'd5']
+        darks += ['c3', 'c4']
 
         for hexagon in rules.Hexagon.all:
 
-            if hexagon.reserve:
-                color = HexagonColor.RESERVE
-
-                if hexagon.name == 'a':
-                    relative_shift_xy = (0.75, -1.00)
-
-                elif hexagon.name == 'b':
-                    relative_shift_xy = (0.25, 0.00)
-
-                elif hexagon.name == 'c':
-                    relative_shift_xy = (0.75, 1.00)
-
-                elif hexagon.name == 'g':
-                    relative_shift_xy = (-0.75, -1.00)
-
-                elif hexagon.name == 'h':
-                    relative_shift_xy = (-0.25, 0.00)
-
-                elif hexagon.name == 'i':
-                    relative_shift_xy = (-0.75, 1.00)
-
-                else:
-                    assert False
-
-            elif hexagon.name in borders:
+            if hexagon.name in borders:
                 color = HexagonColor.BORDER
-                relative_shift_xy = None
 
             elif hexagon.name in darks:
                 color = HexagonColor.DARK
-                relative_shift_xy = None
             else:
                 color = HexagonColor.LIGHT
-                relative_shift_xy = None
 
-            GraphicalHexagon(hexagon, color, relative_shift_xy)
+            GraphicalHexagon(hexagon, color)
 
 
 class GameGui(ttk.Frame):
@@ -387,12 +340,9 @@ class GameGui(ttk.Frame):
     def __init__(self):
 
         self.__face_drawers = dict()
-        self.__face_drawers[rules.CubeSort.FOOL] = self.__draw_fool_face
-        self.__face_drawers[rules.CubeSort.KING] = self.__draw_king_face
         self.__face_drawers[rules.CubeSort.PAPER] = self.__draw_paper_face
         self.__face_drawers[rules.CubeSort.ROCK] = self.__draw_rock_face
         self.__face_drawers[rules.CubeSort.SCISSORS] = self.__draw_scissors_face
-        self.__face_drawers[rules.CubeSort.MOUNTAIN] = self.__draw_mountain_face
         self.__face_drawers[rules.CubeSort.WISE] = self.__draw_wise_face
 
         self.__cube_photos = None
@@ -403,13 +353,12 @@ class GameGui(ttk.Frame):
         self.__timer_delay = 500
         self.__timer_id = None
 
-        self.__play_reserve = True
         self.__edit_actions = False
         self.__turn_states = list()
 
         self.__game = None
         self.__game_started = False
-        self.__pijersi_state = rules.PijersiState(play_reserve=self.__play_reserve)
+        self.__pijersi_state = rules.PijersiState()
         self.__searcher = [None, None]
 
         self.__action_input = None
@@ -429,7 +378,6 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
         self.__command_update_faces()
-        self.__command_update_reserve()
         self.__command_update_players()
 
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
@@ -481,14 +429,6 @@ class GameGui(ttk.Frame):
                                   command=self.__command_start_stop)
 
 
-        self.__variable_reserve = tk.BooleanVar()
-        self.__variable_reserve.set(self.__play_reserve)
-        self.__button_reserve = ttk.Checkbutton (self.__frame_commands,
-                                       text='Play reserve',
-                                       command=self.__command_update_reserve,
-                                       variable=self.__variable_reserve)
-        self.__button_reserve.config(state="enabled")
-
         self.__variable_faces = tk.StringVar()
         self.__combobox_button_faces = ttk.Combobox(self.__frame_commands,
                                                   width=max(map(len, self.__cube_faces_options)),
@@ -500,7 +440,6 @@ class GameGui(ttk.Frame):
         self.__button_start_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
-        self.__button_reserve.grid(row=1, column=0)
         self.__combobox_button_faces.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -675,11 +614,6 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
 
-    def __command_update_reserve(self):
-        self.__play_reserve = self.__variable_reserve.get()
-        self.__draw_state()
-
-
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
         self.__searcher[rules.Player.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
@@ -752,7 +686,7 @@ class GameGui(ttk.Frame):
            self.__game = rules.Game()
            self.__game.set_white_searcher(self.__searcher[rules.Player.WHITE])
            self.__game.set_black_searcher(self.__searcher[rules.Player.BLACK])
-           self.__game.start(play_reserve=self.__play_reserve)
+           self.__game.start()
 
            self.__pijersi_state = self.__game.get_state()
            self.__draw_state()
@@ -770,7 +704,6 @@ class GameGui(ttk.Frame):
 
            self.__combobox_white_player.config(state="disabled")
            self.__combobox_black_player.config(state="disabled")
-           self.__button_reserve.config(state="disabled")
 
            if self.__edit_actions:
                actions_text = self.__text_actions.get('1.0', tk.END)
@@ -877,7 +810,6 @@ class GameGui(ttk.Frame):
 
                    self.__combobox_white_player.config(state="readonly")
                    self.__combobox_black_player.config(state="readonly")
-                   self.__button_reserve.config(state="enabled")
 
                    self.__entry_action.config(state="disabled")
                    self.__button_action_confirm.config(state="disabled")
@@ -912,7 +844,6 @@ class GameGui(ttk.Frame):
         else:
            self.__combobox_white_player.config(state="readonly")
            self.__combobox_black_player.config(state="readonly")
-           self.__button_reserve.config(state="enabled")
 
            self.__entry_action.config(state="enabled")
            self.__variable_action.set("")
@@ -991,7 +922,6 @@ class GameGui(ttk.Frame):
         else:
            self.__combobox_white_player.config(state="readonly")
            self.__combobox_black_player.config(state="readonly")
-           self.__button_reserve.config(state="enabled")
 
            self.__progressbar['value'] = 0.
 
@@ -1056,24 +986,16 @@ class GameGui(ttk.Frame):
 
             self.__draw_hexagon(position_uv=hexagon.position_uv,
                          fill_color=hexagon.color.value,
-                         label=hexagon.name,
-                         reserve=hexagon.reserve,
-                         shift_xy=hexagon.shift_xy)
+                         label=hexagon.name)
 
 
     ### Drawer primitives
 
-    def __draw_hexagon(self, position_uv, fill_color='', label='', reserve=False, shift_xy=None):
-
-        if reserve and not self.__play_reserve:
-            return
+    def __draw_hexagon(self, position_uv, fill_color='', label=''):
 
         (u, v) = position_uv
 
         hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
-        if shift_xy is not None:
-            hexagon_center = hexagon_center + shift_xy
 
         hexagon_data = list()
 
@@ -1092,10 +1014,7 @@ class GameGui(ttk.Frame):
                                   0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
 
 
-        if reserve:
-            polygon_line_color = HexagonLineColor.RESERVE.value
-        else:
-            polygon_line_color = HexagonLineColor.NORMAL.value
+        polygon_line_color = HexagonLineColor.NORMAL.value
 
         self.__canvas.create_polygon(hexagon_data,
                               fill=fill_color,
@@ -1103,7 +1022,7 @@ class GameGui(ttk.Frame):
                               width=CanvasConfig.HEXA_LINE_WIDTH,
                               joinstyle=tk.MITER)
 
-        if label and not reserve:
+        if label:
             label_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LABEL_SIZE, weight='bold')
 
             self.__canvas.create_text(*label_position, text=label, justify=tk.CENTER, font=label_font)
@@ -1113,15 +1032,9 @@ class GameGui(ttk.Frame):
 
         hexagon = GraphicalHexagon.get(name)
 
-        if hexagon.reserve and not self.__play_reserve:
-            return
-
         (u, v) = hexagon.position_uv
 
         hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
-        if hexagon.shift_xy is not None:
-            hexagon_center = hexagon_center + hexagon.shift_xy
 
         cube_vertices = list()
 
