@@ -1105,107 +1105,6 @@ class GameGui(ttk.Frame):
         else:
             assert False
 
-    def __draw_king_face(self, cube_center, cube_vertices, face_color):
-        pass
-
-
-    def __draw_fool_face(self, cube_center, cube_vertices, face_color):
-
-
-        def rotate_90_degrees(vector):
-            """Rotate 90 degrees counter clock"""
-            projection_x = TinyVector.inner(vector, CanvasConfig.UNIT_X)
-            projection_y = TinyVector.inner(vector, CanvasConfig.UNIT_Y)
-            rotated_unit_x = CanvasConfig.UNIT_Y
-            rotated_unit_y = -CanvasConfig.UNIT_X
-            return projection_x*rotated_unit_x + projection_y*rotated_unit_y
-
-
-        def square_for_circle_by_two_points(point_1, point_2):
-            """Return two points of the square enclosing the circle passing by to given points"""
-            square_center = 0.5*(point_1 + point_2)
-            square_point_1 = point_1 + rotate_90_degrees(point_1 - square_center)
-            square_point_2 = point_2 + rotate_90_degrees(point_2 - square_center)
-            return (square_point_1, square_point_2)
-
-
-        face_vertex_NE = 0.5*cube_center + 0.5*cube_vertices[0]
-        face_vertex_NW = 0.5*cube_center + 0.5*cube_vertices[1]
-        face_vertex_SW = 0.5*cube_center + 0.5*cube_vertices[2]
-        face_vertex_SE = 0.5*cube_center + 0.5*cube_vertices[3]
-
-        face_vertex_N = 0.5*(face_vertex_NW + face_vertex_NE)
-        face_vertex_S = 0.5*(face_vertex_SW + face_vertex_SE)
-
-        face_vertex_NC = 0.5*(face_vertex_N + cube_center)
-        face_vertex_SC = 0.5*(face_vertex_S + cube_center)
-
-        cube_side = TinyVector.norm(face_vertex_NW - face_vertex_NE)
-
-        # little angular overlap to ensure coninuity bewteen arcs
-        angle_epsilon = 0.01*180
-
-        (p1, p2) = square_for_circle_by_two_points(cube_center, face_vertex_SC)
-        self.__canvas.create_arc(*p1, *p2,
-                          start=90,
-                          extent=180,
-                          fill='',
-                          outline=face_color,
-                          style=tk.ARC,
-                          width=CanvasConfig.CUBE_LINE_WIDTH)
-
-        (p1, p2) = square_for_circle_by_two_points(face_vertex_NC, face_vertex_SC)
-        self.__canvas.create_arc(*p1, *p2,
-                          start=-90 - angle_epsilon,
-                          extent=180 + angle_epsilon,
-                          fill='',
-                          outline=face_color,
-                          style=tk.ARC,
-                          width=CanvasConfig.CUBE_LINE_WIDTH)
-
-        (p1, p2) = square_for_circle_by_two_points(face_vertex_NC, face_vertex_S)
-        self.__canvas.create_arc(*p1, *p2,
-                          start=90 - angle_epsilon,
-                          extent=180 + angle_epsilon,
-                          fill='',
-                          outline=face_color,
-                          style=tk.ARC,
-                          width=CanvasConfig.CUBE_LINE_WIDTH)
-
-        (p1, p2) = square_for_circle_by_two_points(face_vertex_N, face_vertex_S)
-        self.__canvas.create_arc(*p1, *p2,
-                          start=-90 - angle_epsilon,
-                          extent=180 + 45 + angle_epsilon,
-                          fill='',
-                          outline=face_color,
-                          style=tk.ARC,
-                          width=CanvasConfig.CUBE_LINE_WIDTH)
-
-        # >> canvas doesn't provide rounded capstype for arc
-        # >> so let add one small circle at each edge of the spiral
-
-        # add small circle at the inner edge of the spiral
-
-        inner_edge_top = cube_center + CanvasConfig.CUBE_LINE_WIDTH*0.5*CanvasConfig.UNIT_Y
-        edge_edge_bottom = cube_center - CanvasConfig.CUBE_LINE_WIDTH*0.5*CanvasConfig.UNIT_Y
-
-        (p1, p2) = square_for_circle_by_two_points(inner_edge_top, edge_edge_bottom)
-        self.__canvas.create_oval(*p1, *p2,
-                           fill=face_color,
-                           outline='')
-
-        # add small circle at the outer edge of the spiral
-
-        outer_edge_middle = cube_center + cube_side/2*(CanvasConfig.UNIT_Y - CanvasConfig.UNIT_X)/math.sqrt(2)
-
-        outer_edge_top = outer_edge_middle + CanvasConfig.CUBE_LINE_WIDTH*0.5*CanvasConfig.UNIT_Y
-        outer_edge_bottom = outer_edge_middle - CanvasConfig.CUBE_LINE_WIDTH*0.5*CanvasConfig.UNIT_Y
-
-        (p1, p2) = square_for_circle_by_two_points(outer_edge_top, outer_edge_bottom)
-        self.__canvas.create_oval(*p1, *p2,
-                           fill=face_color,
-                           outline='')
-
 
     def __draw_paper_face(self, cube_center, cube_vertices, face_color):
 
@@ -1245,36 +1144,6 @@ class GameGui(ttk.Frame):
                            fill=face_color,
                            width=CanvasConfig.CUBE_LINE_WIDTH,
                            capstyle=tk.ROUND)
-
-
-    def __draw_mountain_face(self, cube_center, cube_vertices, face_color):
-
-        face_vertex_NE = 0.5*cube_center + 0.5*cube_vertices[0]
-        face_vertex_NW = 0.5*cube_center + 0.5*cube_vertices[1]
-        face_vertex_SW = 0.5*cube_center + 0.5*cube_vertices[2]
-        face_vertex_SE = 0.5*cube_center + 0.5*cube_vertices[3]
-
-        face_N = 0.5*(face_vertex_NW + face_vertex_NE)
-        face_S = 0.5*(face_vertex_SW + face_vertex_SE)
-
-        face_W = 0.5*(face_vertex_NW + face_vertex_SW)
-        face_E = 0.5*(face_vertex_NE + face_vertex_SE)
-
-        face_data = [*face_N, *face_W, *face_E]
-
-        self.__canvas.create_polygon(face_data,
-                              fill='',
-                              outline=face_color,
-                              width=CanvasConfig.CUBE_LINE_WIDTH,
-                              joinstyle=tk.ROUND)
-
-        face_data = [*face_S, *face_W, *face_E]
-
-        self.__canvas.create_polygon(face_data,
-                              fill='',
-                              outline=face_color,
-                              width=CanvasConfig.CUBE_LINE_WIDTH,
-                              joinstyle=tk.ROUND)
 
 
     def __draw_wise_face(self, cube_center, cube_vertices, face_color):
@@ -1326,7 +1195,6 @@ class GameGui(ttk.Frame):
                               width=CanvasConfig.CUBE_LINE_WIDTH,
                               joinstyle=tk.ROUND,
                               smooth=True)
-
 
 
 GraphicalHexagon.init()

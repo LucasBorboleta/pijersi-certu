@@ -322,6 +322,9 @@ class Hexagon:
     __next_fst_indices = []
     __next_snd_indices = []
     __position_uv_to_hexagon = {}
+    __distance = {}
+    __distance_to_goal = None
+    
 
     all = None # shortcut to Hexagon.get_all()
 
@@ -391,6 +394,16 @@ class Hexagon:
 
 
     @staticmethod
+    def get_distance(hexagon_1_index, hexagon_2_index):
+        return Hexagon.__distance[(hexagon_1_index, hexagon_2_index)]
+
+
+    @staticmethod
+    def get_distance_to_goal(hexagon_index, player):
+        return Hexagon.__distance_to_goal[player][hexagon_index]
+
+
+    @staticmethod
     def init():
         if not  Hexagon.__init_done:
             Hexagon.__create_hexagons()
@@ -399,6 +412,8 @@ class Hexagon:
             Hexagon.__create_goal_hexagons()
             Hexagon.__create_delta_u_and_v()
             Hexagon.__create_next_hexagons()
+            Hexagon.__create_distance()
+            Hexagon.__create_distance_to_goal()
             Hexagon.__init_done = True
 
 
@@ -490,6 +505,26 @@ class Hexagon:
 
 
     @staticmethod
+    def __create_distance():
+        for hexagon_1 in Hexagon.get_all():
+            for hexagon_2 in Hexagon.get_all():
+                distance = hex_distance(hexagon_1.position_uv, hexagon_2.position_uv)
+                Hexagon.__distance[(hexagon_1.index, hexagon_2.index)] = distance
+            
+
+    @staticmethod
+    def __create_distance_to_goal():
+       
+        Hexagon.__distance_to_goal = [ array.array('b',[ 0 for _ in Hexagon.get_all() ]) for _ in Player ]
+        
+        for player in Player:
+            for hexagon_cube in Hexagon.get_all():
+                for hexagon_goal_index in Hexagon.get_goal_indices(player):
+                    distance = Hexagon.get_distance(hexagon_cube.index, hexagon_goal_index)
+                    Hexagon.__distance_to_goal[player][hexagon_cube.index] = int(distance)
+        
+        
+    @staticmethod
     def __create_hexagons():
 
         # Row "a"
@@ -574,16 +609,6 @@ class Notation:
 
 
     @staticmethod
-    def drop_cube(src_cube_label, dst_hexagon_name, previous_action=None):
-        if previous_action is None:
-            notation = ""
-        else:
-            notation = previous_action.notation + "/"
-        notation += src_cube_label + ":" + dst_hexagon_name
-        return notation
-
-
-    @staticmethod
     def move_cube(src_hexagon_name, dst_hexagon_name, capture, previous_action=None):
         if previous_action is None:
             notation = src_hexagon_name + "-" + dst_hexagon_name
@@ -622,24 +647,6 @@ class Notation:
 
 
     @staticmethod
-    def guess_symmetricals(notation):
-        symmetricals = []
-
-        if len(notation) == 9 and notation[1] == ':' and notation[6] == ':':
-            # examples: w:a1/w:a2 | m:a1/m:a2
-            # >>>>>>>>> 012345678
-            cube_1 = notation[0]
-            cube_2 = notation[5]
-            hexagon_1 = notation[2:4]
-            hexagon_2 = notation[7:9]
-
-            if cube_1 == cube_2 and hexagon_1 != hexagon_2:
-                symmetricals.append(cube_2 + ":" + hexagon_1 + "/" + cube_1 + ":" + hexagon_2)
-
-        return symmetricals
-
-
-    @staticmethod
     def simplify_notation(notation):
         return notation.strip().replace(' ', '').replace('!', '')
 
@@ -661,15 +668,7 @@ class Notation:
 
     @staticmethod
     def classify_simple_notation(notation):
-        if re.match(r'^([KFRPSMW]|[kfrpsmw]):[a-i][1-9]$', notation):
-            # drop one cube
-            return SimpleNotationCase.DROP_ONE_CUBE
-
-        elif re.match(r'^([KFRPSMW]|[kfrpsmw]):[a-i][1-9]/([KFRPSMW]|[kfrpsmw]):[a-i][1-9]$', notation):
-            # drop two cubes
-            return SimpleNotationCase.DROP_TWO_CUBES
-
-        elif re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
+        if re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
             # move cube
             return SimpleNotationCase.MOVE_CUBE
 
@@ -799,10 +798,6 @@ class PijersiActionAppender:
     def append(self, action):
         if action.notation in self.__notations:
             return
-
-        for symmetrical in Notation.guess_symmetricals(action.notation):
-            if symmetrical in self.__notations:
-                return
 
         self.__actions.append(action)
         self.__notations.add(action.notation)
@@ -1021,6 +1016,29 @@ class PijersiState:
                     counts[cube.player] += 1
 
         return counts
+
+    
+    def get_distances_to_goal(self):
+        """White and black distances to goal"""
+        
+        distances_to_goal = [[] for _ in Player]
+        
+        for (cube_index, cube_status) in enumerate(self.__cube_status):
+
+            if cube_status == CubeStatus.ACTIVATED:
+                cube = Cube.all[cube_index]
+                
+                if cube_index in self.__hexagon_bottom:
+                    cube_hexagon_index = self.__hexagon_bottom.index(cube_index)
+                    
+                else:
+                    cube_hexagon_index = self.__hexagon_top.index(cube_index)
+                    
+                distance = Hexagon.get_distance_to_goal(cube_hexagon_index, cube.player)
+                    
+                distances_to_goal[cube.player].append(distance)
+
+        return distances_to_goal
 
 
     def get_summary(self):
@@ -1446,16 +1464,20 @@ class PijersiState:
                     action = None
 
             else:
-                state = self.__fork()
-
-                if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                    state.__hexagon_top[src_hexagon_index] = Null.CUBE
+                if src_cube.sort == CubeSort.WISE and dst_bottom.sort != CubeSort.WISE:
+                    action = None
+                    
                 else:
-                    state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                state.__hexagon_top[dst_hexagon_index] = src_cube_index
-
-                notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=Capture.NONE, previous_action=previous_action)
-                action = PijersiAction(notation, state, previous_action=previous_action)
+                    state = self.__fork()
+    
+                    if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
+                        state.__hexagon_top[src_hexagon_index] = Null.CUBE
+                    else:
+                        state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
+                    state.__hexagon_top[dst_hexagon_index] = src_cube_index
+    
+                    notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=Capture.NONE, previous_action=previous_action)
+                    action = PijersiAction(notation, state, previous_action=previous_action)
 
         else:
             # destination hexagon has two cubes
@@ -1742,24 +1764,7 @@ def pijersiSelectAction(action_names):
 
 
     assert len(action_names) != 0
-    (drop_names, move_names) = partition(lambda x: re.match(r"^.*[-=].*$", str(x)), action_names)
-
-    drop_names = list(drop_names)
-    move_names = list(move_names)
-    assert len(drop_names) + len(move_names) != 0
-
-    drop_probability = 0.05
-
-    if len(drop_names) != 0 and random.random() <= drop_probability:
-        action_name = random.choice(drop_names)
-
-    elif len(move_names) != 0:
-        move_weights = list(map(score_move_name, move_names))
-        assert len(move_weights) != 0
-        action_name = random.choices(move_names, weights=move_weights, k=1)[0]
-    
-    else:
-        action_name = random.choice(drop_names)
+    action_name = random.choice(action_names)
 
     return action_name
 
@@ -1879,29 +1884,31 @@ class MinimaxSearcher():
 
     __slots__ = ('__name', '__max_depth', '__max_children',
                  '__distance_weight', '__capture_weight', 
-                 '__fighter_weight',
+                 '__fighter_weight', '__dmin_weight', '__dave_weight',
                  '__center_weight', '__credit_weight',
                  '__debug')
 
 
     default_weights_by_depth = dict()
 
-    default_weights_by_depth[1] = {'distance_weight':32,
-                                   'capture_weight':16,
-                                   'fighter_weight':8,
-                                   'center_weight':4,
+    default_weights_by_depth[1] = {'dmin_weight':32,
+                                   'dave_weight':16,
+                                   'fighter_weight':16,
+                                   'capture_weight':8,
+                                   'center_weight':0,
                                    'credit_weight':1}
 
-    default_weights_by_depth[2] = {'distance_weight':32,
-                                   'capture_weight':16,
-                                   'fighter_weight':8,
-                                   'center_weight':4,
+    default_weights_by_depth[2] = {'dmin_weight':32,
+                                   'dave_weight':16,
+                                   'fighter_weight':16,
+                                   'capture_weight':8,
+                                   'center_weight':0,
                                    'credit_weight':1}
 
 
     def __init__(self, name, max_depth=1, max_children=None,
                   distance_weight=None, capture_weight=None,
-                  fighter_weight=None,
+                  fighter_weight=None, dmin_weight=None, dave_weight=None,
                   center_weight=None, credit_weight=None):
 
         self.__debug = False
@@ -1919,10 +1926,16 @@ class MinimaxSearcher():
         self.__max_children = max_children
 
 
-        if distance_weight is not None:
-            self.__distance_weight = distance_weight
+        if dmin_weight is not None:
+            self.__dmin_weight = dmin_weight
         else:
-            self.__distance_weight = default_weights['distance_weight']
+            self.__dmin_weight = default_weights['dmin_weight']
+
+
+        if dave_weight is not None:
+            self.__dave_weight = dave_weight
+        else:
+            self.__dave_weight = default_weights['dave_weight']
 
 
         if capture_weight is not None:
@@ -2041,6 +2054,8 @@ class MinimaxSearcher():
 
     def evaluate_state_value(self, state, depth):
         # evaluate favorability for pijersi_maximizer_player
+        
+        from statistics import mean
 
         assert depth >= 0
         
@@ -2072,6 +2087,19 @@ class MinimaxSearcher():
                 value = minimax_maximizer_sign*(-OMEGA_2)*(depth + 1)
 
         else:
+            
+            # white and black distances to goal
+            distances = pijersi_state.get_distances_to_goal()
+
+            white_min_distance = min(distances[Player.WHITE])
+            black_min_distance = min(distances[Player.BLACK])
+
+            white_ave_distance = mean(distances[Player.WHITE])
+            black_ave_distance = mean(distances[Player.BLACK])
+                        
+            dmin_difference = minimax_maximizer_sign*(black_min_distance - white_min_distance)
+            dave_difference = minimax_maximizer_sign*(black_ave_distance - white_ave_distance)
+
 
             # white and black with captured status
             capture_counts = pijersi_state.get_capture_counts()
@@ -2111,11 +2139,19 @@ class MinimaxSearcher():
 
             # normalize each feature in the intervall [-1, +1]
 
-            capture_norm = 16
-            fighter_norm = 14
+            dmin_norm = 6
+            dave_norm = 6
+            capture_norm = 14
+            fighter_norm = 12
             center_norm = 14
             credit_norm = PijersiState.get_max_credit()
-            
+                        
+            assert dmin_difference <= dmin_norm
+            assert -dmin_difference <= dmin_norm
+                        
+            assert dave_difference <= dave_norm
+            assert -dave_difference <= dave_norm
+                        
             assert capture_difference <= capture_norm
             assert -capture_difference <= capture_norm
             
@@ -2128,6 +2164,8 @@ class MinimaxSearcher():
             assert credit <= credit_norm
             assert -credit <= credit_norm
 
+            dmin_difference = dmin_difference/dmin_norm
+            dave_difference = dave_difference/dave_norm
             capture_difference = capture_difference/capture_norm
             fighter_difference = fighter_difference/fighter_norm
             center_difference = center_difference/center_norm
@@ -2135,6 +2173,8 @@ class MinimaxSearcher():
             
             # synthesis
 
+            value += self.__dmin_weight*dmin_difference
+            value += self.__dave_weight*dave_difference
             value += self.__capture_weight*capture_difference
             value += self.__fighter_weight*fighter_difference
             value += self.__center_weight*center_difference
@@ -2968,7 +3008,7 @@ def main():
     if False:
         test_game_between_random_and_human_players()
 
-    if False:
+    if True:
         test_game_between_minimax_players()
 
     if True:
