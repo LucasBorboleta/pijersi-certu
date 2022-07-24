@@ -809,7 +809,7 @@ class PijersiActionAppender:
 
 class PijersiState:
 
-    __max_credit = 40
+    __max_credit = 20
     __center_hexagon_indices = None
 
     __slots__ = ('__cube_status', '__hexagon_bottom', '__hexagon_top',
@@ -1861,22 +1861,7 @@ class RandomSearcher():
 
     def search(self, state):
         actions = state.get_actions()
-
-        (drop_actions, move_actions) = partition(lambda x: re.match(r"^.*[-=].*$", str(x)), actions)
-        drop_actions = list(drop_actions)
-        move_actions = list(move_actions)
-
-        if len(move_actions) == 0:
-            action = random.choice(drop_actions)
-
-        else:
-            drop_probability = 0.05
-
-            if len(drop_actions) != 0 and random.random() <= drop_probability:
-                action = random.choice(drop_actions)
-            else:
-                action = random.choice(move_actions)
-
+        action = random.choice(actions)
         return action
 
 
@@ -2191,9 +2176,7 @@ class MinimaxSearcher():
             if self.__debug:
                 print("--- reduce actions")           
 
-            (drop_actions, move_actions) = partition(lambda x: re.match(r"^.*[-=].*$", str(x)), actions)
-            drop_actions = list(drop_actions)
-            move_actions = list(move_actions)
+            move_actions = copy.copy(actions)
 
             if len(move_actions) > self.__max_children:
                 # sample the move actions according to their destination cells
@@ -2206,18 +2189,7 @@ class MinimaxSearcher():
 
                 move_actions = selected_move_actions
 
-            if len(drop_actions) != 0:
-                drop_count = self.__max_children - len(move_actions)
-
-                # >> let us admit some tolerance regarding the __max_children criterion
-                # >> by adding a small fraction of drop actions
-                drop_probability = 0.05
-                drop_count = max(drop_count, int(math.ceil(drop_probability*len(move_actions))))
-
-                drop_actions = random.sample(drop_actions, k=drop_count)
-                actions = move_actions + drop_actions
-            else:
-                actions = move_actions
+            actions = move_actions
 
         assert len(actions) != 0
         return actions
@@ -2644,14 +2616,7 @@ class MctsSearcher():
         # >> when search is done, ignore the automatically selected action
         _ = self.__searcher.search(initialState=MctsState(state, state.get_current_player()))
 
-        # heuristic: amonst best actions forget drop-actions i.e. selection a move action when possible
-
         best_actions = self.__searcher.getBestActions()
-        best_move_actions = list(filter(lambda x: re.match(r"^.*[-=].*$", str(x)), best_actions))
-        if len(best_move_actions) != 0:
-            print("forget %d best drop actions !" % (len(best_actions) - len(best_move_actions)))
-            best_actions = best_move_actions
-
         action = random.choice(best_actions)
 
         statistics = extractStatistics(self.__searcher, action)
@@ -2698,15 +2663,12 @@ SEARCHER_CATALOG.add( HumanSearcher("human") )
 SEARCHER_CATALOG.add( RandomSearcher("random") )
 
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax1-400", max_depth=1, max_children=400) )
-
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-400", max_depth=2, max_children=400) )
-
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-400", max_depth=3, max_children=400) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
 
 SEARCHER_CATALOG.add( MctsSearcher("mcts-90s-jrp", time_limit=90_000, rolloutPolicy=pijersiRandomPolicy) )
+SEARCHER_CATALOG.add( MctsSearcher("mcts-300i-rnd", iteration_limit=300, rolloutPolicy=mcts.randomPolicy) )
 
 
 class Game:
@@ -2923,7 +2885,7 @@ def test_game_between_minimax_players():
     searcher_dict = dict()
     searcher_dict["random"] = RandomSearcher("random")
 
-    max_depth_list = [1, 2]
+    max_depth_list = [1, 2, 3]
 
     for max_depth in max_depth_list:
         searcher_name = "minimax%d" % max_depth
@@ -3002,7 +2964,7 @@ def main():
     if True:
         test_game_between_random_players()
 
-    if False:
+    if True:
         test_game_between_mcts_players()
 
     if False:
