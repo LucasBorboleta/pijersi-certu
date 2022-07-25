@@ -2711,7 +2711,6 @@ class Game:
 
 
     def get_turn(self):
-        assert self.__turn is not None
         return self.__turn
 
 
@@ -2964,13 +2963,13 @@ def main():
     if True:
         test_game_between_random_players()
 
-    if True:
+    if False:
         test_game_between_mcts_players()
 
     if False:
         test_game_between_random_and_human_players()
 
-    if True:
+    if False:
         test_game_between_minimax_players()
 
     if True:
