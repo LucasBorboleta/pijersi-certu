@@ -200,6 +200,9 @@ class CanvasConfig:
     FONT_FAMILY = 'Calibri'
     FONT_LABEL_SIZE = int(0.30*HEXA_SIDE) # size for 'e5', 'f5' ...
     FONT_FACE_SIZE = int(0.50*HEXA_SIDE)  # size for 'K', 'F' ...
+    FONT_LEGEND_SIZE = int(0.60*HEXA_SIDE) # size for 'a1-a2!=a3!' ...
+    FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((191, 89, 52))
+
 
     # Geometrical line widths
     CUBE_LINE_WIDTH = 1
@@ -356,6 +359,8 @@ class GameGui(ttk.Frame):
         self.__cube_faces_options = ("faces=letters", "faces=drawings", "faces=pictures")
         self.__cube_faces = self.__cube_faces_options[2]
 
+        self.__legend = ""
+
         self.__game_timer_delay = 500
         self.__game_timer_id = None
         
@@ -368,6 +373,7 @@ class GameGui(ttk.Frame):
 
         self.__edit_actions = False
         self.__turn_states = list()
+        self.__turn_actions = list()
 
         self.__game = None
         self.__game_started = False
@@ -378,6 +384,7 @@ class GameGui(ttk.Frame):
         self.__action_validated = False
         
         self.__turn_states.append(self.__pijersi_state)
+        self.__turn_actions.append("")
 
         self.__root = tk.Tk()
 
@@ -649,6 +656,7 @@ class GameGui(ttk.Frame):
             
             if 0 <= turn_index < len(self.__turn_states):
                 self.__pijersi_state = self.__turn_states[turn_index]
+                self.__legend = self.__turn_actions[turn_index]
                 self.__draw_state()
                 self.__variable_turn.set(turn_index)
             
@@ -718,10 +726,13 @@ class GameGui(ttk.Frame):
            self.__game.start()
 
            self.__pijersi_state = self.__game.get_state()
+           self.__legend = ""
            self.__draw_state()
            
            self.__turn_states = list()
            self.__turn_states.append(self.__game.get_state())
+           self.__turn_actions = list()
+           self.__turn_actions.append("")
            self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
            self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -801,6 +812,7 @@ class GameGui(ttk.Frame):
                         self.__game.next_turn()
                         
                         self.__turn_states.append(self.__game.get_state())
+                        self.__turn_actions.append(self.__game.get_last_action())
 
                         self.__variable_summary.set(self.__game.get_summary())
                         self.__variable_log.set(self.__game.get_log())
@@ -820,6 +832,7 @@ class GameGui(ttk.Frame):
                     self.__game.set_black_searcher(self.__searcher[rules.Player.BLACK])
 
                     self.__pijersi_state = self.__game.get_state()
+                    self.__legend = self.__game.get_last_action()
                     self.__draw_state()
 
                     self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
@@ -928,6 +941,7 @@ class GameGui(ttk.Frame):
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
+                self.__legend = self.__game.get_last_action()
                 self.__draw_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
@@ -939,12 +953,13 @@ class GameGui(ttk.Frame):
                 notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
-
+                    
                 self.__text_actions.insert(tk.END, notation)
                 self.__text_actions.see(tk.END)
                 self.__text_actions.config(state="disabled")
                 
                 self.__turn_states.append(self.__game.get_state())
+                self.__turn_actions.append(self.__game.get_last_action())
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -1042,6 +1057,28 @@ class GameGui(ttk.Frame):
         self.__canvas.delete('all')
         self.__draw_all_hexagons()
         self.__draw_all_cubes()
+        self.__draw_legend()
+
+
+    def __draw_legend(self):
+        
+        (u, v) = (2, -4)
+        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+
+        vertex_index = 1
+        vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
+
+        hexagon_vertex = hexagon_center
+        hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
+        hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+
+        legend_position = hexagon_vertex - 1.0*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+
+
+        legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
+
+        self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER, 
+                                  font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
 
 
     def __draw_all_cubes(self):
