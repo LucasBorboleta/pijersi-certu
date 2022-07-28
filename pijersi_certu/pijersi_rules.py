@@ -1028,15 +1028,17 @@ class PijersiState:
             if cube_status == CubeStatus.ACTIVATED:
                 cube = Cube.all[cube_index]
                 
-                if cube_index in self.__hexagon_bottom:
-                    cube_hexagon_index = self.__hexagon_bottom.index(cube_index)
-                    
-                else:
-                    cube_hexagon_index = self.__hexagon_top.index(cube_index)
-                    
-                distance = Hexagon.get_distance_to_goal(cube_hexagon_index, cube.player)
-                    
-                distances_to_goal[cube.player].append(distance)
+                if cube.sort != CubeSort.WISE:
+                
+                    if cube_index in self.__hexagon_bottom:
+                        cube_hexagon_index = self.__hexagon_bottom.index(cube_index)
+                        
+                    else:
+                        cube_hexagon_index = self.__hexagon_top.index(cube_index)
+                        
+                    distance = Hexagon.get_distance_to_goal(cube_hexagon_index, cube.player)
+                        
+                    distances_to_goal[cube.player].append(distance)
 
         return distances_to_goal
 
@@ -1876,19 +1878,19 @@ class MinimaxSearcher():
 
     default_weights_by_depth = dict()
 
-    default_weights_by_depth[1] = {'dmin_weight':32,
-                                   'dave_weight':16,
-                                   'fighter_weight':16,
-                                   'capture_weight':8,
-                                   'center_weight':0,
-                                   'credit_weight':1}
+    default_weights_by_depth[1] = {'dmin_weight':16,
+                                   'fighter_weight':8,
+                                   'capture_weight':4,
+                                   'dave_weight':2,
+                                   'credit_weight':1,
+                                   'center_weight':0}
 
-    default_weights_by_depth[2] = {'dmin_weight':32,
-                                   'dave_weight':16,
-                                   'fighter_weight':16,
-                                   'capture_weight':8,
-                                   'center_weight':0,
-                                   'credit_weight':1}
+    default_weights_by_depth[2] = {'dmin_weight':16,
+                                   'fighter_weight':8,
+                                   'capture_weight':4,
+                                   'dave_weight':2,
+                                   'credit_weight':1,
+                                   'center_weight':0}
 
 
     def __init__(self, name, max_depth=1, max_children=None,
