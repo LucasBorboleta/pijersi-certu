@@ -2074,9 +2074,22 @@ class MinimaxSearcher():
                 value = minimax_maximizer_sign*(-OMEGA_2)*(depth + 1)
 
         else:
+
+            dmin_norm = 6
+            dave_norm = dmin_norm
+            capture_norm = 14
+            fighter_norm = 12
+            center_norm = 14
+            credit_norm = PijersiState.get_max_credit()
             
             # white and black distances to goal
             distances = pijersi_state.get_distances_to_goal()
+            
+            if len(distances[Player.WHITE]) == 0:
+                distances.append(dmin_norm)
+            
+            if len(distances[Player.BLACK]) == 0:
+                distances.append(dmin_norm)
 
             white_min_distance = min(distances[Player.WHITE])
             black_min_distance = min(distances[Player.BLACK])
@@ -2125,13 +2138,6 @@ class MinimaxSearcher():
 
 
             # normalize each feature in the intervall [-1, +1]
-
-            dmin_norm = 6
-            dave_norm = 6
-            capture_norm = 14
-            fighter_norm = 12
-            center_norm = 14
-            credit_norm = PijersiState.get_max_credit()
                         
             assert dmin_difference <= dmin_norm
             assert -dmin_difference <= dmin_norm
@@ -2965,13 +2971,13 @@ def main():
     if True:
         test_game_between_random_players()
 
-    if False:
+    if True:
         test_game_between_mcts_players()
 
     if False:
         test_game_between_random_and_human_players()
 
-    if False:
+    if True:
         test_game_between_minimax_players()
 
     if True:
