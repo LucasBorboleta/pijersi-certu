@@ -2086,10 +2086,10 @@ class MinimaxSearcher():
             distances = pijersi_state.get_distances_to_goal()
             
             if len(distances[Player.WHITE]) == 0:
-                distances.append(dmin_norm)
+                distances[Player.WHITE] = [dmin_norm]
             
             if len(distances[Player.BLACK]) == 0:
-                distances.append(dmin_norm)
+                distances[Player.BLACK] = [dmin_norm]
 
             white_min_distance = min(distances[Player.WHITE])
             black_min_distance = min(distances[Player.BLACK])
