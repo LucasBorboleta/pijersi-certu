@@ -2206,8 +2206,8 @@ class MinimaxSearcher():
     def sort_actions(self, actions):
 
         def score_action(action):
-            captures = re.sub(r"[^!]", "", str(action))
-            return len(captures)
+            captures_and_stacks = re.sub(r"[^!=]", "", str(action))           
+            return len(captures_and_stacks)
         
         if self.__debug:
             print("--- sort actions")           
