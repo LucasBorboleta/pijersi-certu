@@ -177,13 +177,17 @@ class TinyVector:
 class CanvasConfig:
 
     # Canvas x-y dimensions in hexagon units
-    NX = 7 + 0.75
-    NY = 7
+    NY = 8 
+    NX = 8 
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
     HEIGHT = 640
     WIDTH = HEIGHT*RATIO
+    
+    # Canvas background
+    USE_BACKGROUND_PHOTO = True
+    BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
 
     # Hexagon geometrical data
     HEXA_VERTEX_COUNT = 6
@@ -201,7 +205,7 @@ class CanvasConfig:
     FONT_LABEL_SIZE = int(0.30*HEXA_SIDE) # size for 'e5', 'f5' ...
     FONT_FACE_SIZE = int(0.50*HEXA_SIDE)  # size for 'K', 'F' ...
     FONT_LEGEND_SIZE = int(0.60*HEXA_SIDE) # size for 'a1-a2!=a3!' ...
-    FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((191, 89, 52))
+    FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((166, 109, 60))
 
 
     # Geometrical line widths
@@ -321,21 +325,21 @@ class GraphicalHexagon:
     @staticmethod
     def __create_hexagons():
 
-        borders = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
-        borders += ['g1', 'g2', 'g3', 'g4', 'g5', 'g6']
-        borders += ['b1', 'c1', 'd1', 'e1', 'f1']
-        borders += ['b7', 'c6', 'd7', 'e6', 'f7']
+        outer_ring = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
+        outer_ring += ['g1', 'g2', 'g3', 'g4', 'g5', 'g6']
+        outer_ring += ['b1', 'c1', 'd1', 'e1', 'f1']
+        outer_ring += ['b7', 'c6', 'd7', 'e6', 'f7']
 
-        darks = ['e3', 'e4']
-        darks += ['d3', 'd5']
-        darks += ['c3', 'c4']
+        inner_ring = ['e3', 'e4']
+        inner_ring += ['d3', 'd5']
+        inner_ring += ['c3', 'c4']
 
         for hexagon in rules.Hexagon.all:
 
-            if hexagon.name in borders:
-                color = HexagonColor.BORDER
+            if hexagon.name in outer_ring:
+                color = HexagonColor.DARK
 
-            elif hexagon.name in darks:
+            elif hexagon.name in inner_ring:
                 color = HexagonColor.DARK
             else:
                 color = HexagonColor.LIGHT
@@ -358,6 +362,9 @@ class GameGui(ttk.Frame):
 
         self.__cube_faces_options = ("faces=letters", "faces=drawings", "faces=pictures")
         self.__cube_faces = self.__cube_faces_options[2]
+ 
+        self.__background_tk_photo = None
+        self.__use_background_photo = CanvasConfig.USE_BACKGROUND_PHOTO
 
         self.__legend = ""
 
@@ -1021,6 +1028,14 @@ class GameGui(ttk.Frame):
                 right = x + w
                 upper = y
                 lower = y + h
+                
+                if self.__use_background_photo:
+                    upper += self.__background_tk_photo_delta_y
+                    lower -= self.__background_tk_photo_delta_y
+                    upper += int(0.01*h)
+                    lower -= int(0.01*h)
+                    left += int(0.01*w)
+                    right -= int(0.01*w)
                                 
                 picture_bbox = (left, upper, right, lower)
                 
@@ -1055,9 +1070,34 @@ class GameGui(ttk.Frame):
     def __draw_state(self):
 
         self.__canvas.delete('all')
+    
+        if self.__use_background_photo:
+            self.__draw_canvas_background()
+            
         self.__draw_all_hexagons()
         self.__draw_all_cubes()
         self.__draw_legend()
+
+
+    def __draw_canvas_background(self):
+        if self.__background_tk_photo is None:
+        
+            # Create the background image 
+            bg_photo = Image.open(CanvasConfig.BACKGROUND_PHOTO_PATH)
+            (bg_width, bg_height) = bg_photo.size
+            
+            bg_new_width = int(CanvasConfig.WIDTH)
+            bg_new_height = int(CanvasConfig.WIDTH*bg_height/bg_width)
+            
+            bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
+            self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
+            
+            self.__background_tk_photo_delta_y = int((CanvasConfig.HEIGHT - bg_new_height)/2)
+
+        # Add the background image 
+        self.__canvas.create_image(0, self.__background_tk_photo_delta_y, 
+                                   image=self.__background_tk_photo, 
+                                   anchor=tk.NW)       
 
 
     def __draw_legend(self):
@@ -1123,15 +1163,15 @@ class GameGui(ttk.Frame):
     def __draw_all_hexagons(self):
 
         for hexagon in GraphicalHexagon.all:
-
+            
             self.__draw_hexagon(position_uv=hexagon.position_uv,
-                         fill_color=hexagon.color.value,
+                         hexagon_color=hexagon.color.value,
                          label=hexagon.name)
 
 
     ### Drawer primitives
 
-    def __draw_hexagon(self, position_uv, fill_color='', label=''):
+    def __draw_hexagon(self, position_uv, hexagon_color='', label=''):
 
         (u, v) = position_uv
 
@@ -1154,7 +1194,12 @@ class GameGui(ttk.Frame):
                                   0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
 
 
-        polygon_line_color = HexagonLineColor.NORMAL.value
+        if self.__use_background_photo:
+            polygon_line_color = ''
+            fill_color = ''
+        else:
+            polygon_line_color = HexagonLineColor.NORMAL.value
+            fill_color = hexagon_color
 
         self.__canvas.create_polygon(hexagon_data,
                               fill=fill_color,
