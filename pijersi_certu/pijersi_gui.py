@@ -177,14 +177,14 @@ class TinyVector:
 class CanvasConfig:
 
     # Canvas x-y dimensions in hexagon units
-    NY = 8 
-    NX = 8 
+    NY = 8
+    NX = 8
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
     HEIGHT = 640
     WIDTH = HEIGHT*RATIO
-    
+
     # Canvas background
     USE_BACKGROUND_PHOTO = True
     BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
@@ -362,7 +362,7 @@ class GameGui(ttk.Frame):
 
         self.__cube_faces_options = ("faces=letters", "faces=drawings", "faces=pictures")
         self.__cube_faces = self.__cube_faces_options[2]
- 
+
         self.__background_tk_photo = None
         self.__use_background_photo = CanvasConfig.USE_BACKGROUND_PHOTO
 
@@ -370,9 +370,9 @@ class GameGui(ttk.Frame):
 
         self.__game_timer_delay = 500
         self.__game_timer_id = None
-        
+
         self.__do_take_picture = False
-        self.__picture_timer_id = None   
+        self.__picture_timer_id = None
         self.__picture_timer_delay = 100
         self.__picture_gif_duration = 2_000
         assert self.__picture_timer_delay < self.__game_timer_delay
@@ -389,7 +389,7 @@ class GameGui(ttk.Frame):
 
         self.__action_input = None
         self.__action_validated = False
-        
+
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
 
@@ -567,10 +567,10 @@ class GameGui(ttk.Frame):
         self.__button_edit_actions.config(state="enabled")
 
         self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn :')
-        
+
         self.__variable_turn = tk.StringVar()
         self.__variable_turn.set(len(self.__turn_states) - 1)
-        self.__spinbox_turn = ttk.Spinbox(self.__frame_human_actions, 
+        self.__spinbox_turn = ttk.Spinbox(self.__frame_human_actions,
                                           values=list(range(len(self.__turn_states))),
                                           wrap=True,
                                           command=self.__command_update_turn,
@@ -604,8 +604,8 @@ class GameGui(ttk.Frame):
         self.__label_summary.pack(side=tk.TOP, pady=10)
 
         self.__frame_human_actions.pack(side=tk.TOP)
-        
-        
+
+
         self.__label_action.grid(row=0, column=0)
         self.__entry_action.grid(row=0, column=1)
         self.__button_action_confirm.grid(row=0, column=2)
@@ -622,7 +622,7 @@ class GameGui(ttk.Frame):
         self.__frame_human_actions.columnconfigure(4, pad=5)
         self.__frame_human_actions.columnconfigure(5, pad=5)
         self.__frame_human_actions.columnconfigure(6, pad=10)
-        
+
 
         self.__frame_text_actions.pack(side=tk.TOP)
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
@@ -660,19 +660,19 @@ class GameGui(ttk.Frame):
     def __command_update_turn(self, *_):
         try:
             turn_index = int(self.__variable_turn.get())
-            
+
             if 0 <= turn_index < len(self.__turn_states):
                 self.__pijersi_state = self.__turn_states[turn_index]
                 self.__legend = self.__turn_actions[turn_index]
                 self.__draw_state()
                 self.__variable_turn.set(turn_index)
-            
+
             else:
                 return
-            
+
         except ValueError:
             return
-        
+
         except:
             assert False
 
@@ -735,7 +735,7 @@ class GameGui(ttk.Frame):
            self.__pijersi_state = self.__game.get_state()
            self.__legend = ""
            self.__draw_state()
-           
+
            self.__turn_states = list()
            self.__turn_states.append(self.__game.get_state())
            self.__turn_actions = list()
@@ -792,7 +792,7 @@ class GameGui(ttk.Frame):
 
                     self.__game.set_white_searcher(white_replayer)
                     self.__game.set_black_searcher(black_replayer)
-                                        
+
                     for (action_index, action) in enumerate(edited_actions):
 
                         if not self.__game.has_next_turn():
@@ -817,7 +817,7 @@ class GameGui(ttk.Frame):
                             black_replayer.set_action_simple_name(action)
 
                         self.__game.next_turn()
-                        
+
                         self.__turn_states.append(self.__game.get_state())
                         self.__turn_actions.append(self.__game.get_last_action())
 
@@ -960,11 +960,11 @@ class GameGui(ttk.Frame):
                 notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
-                    
+
                 self.__text_actions.insert(tk.END, notation)
                 self.__text_actions.see(tk.END)
                 self.__text_actions.config(state="disabled")
-                
+
                 self.__turn_states.append(self.__game.get_state())
                 self.__turn_actions.append(self.__game.get_last_action())
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
@@ -985,50 +985,50 @@ class GameGui(ttk.Frame):
            self.__button_edit_actions.config(state="enabled")
            self.__edit_actions = False
            self.__variable_edit_actions.set(self.__edit_actions)
-           
+
            self.__make_animated_pictures()
 
 
     def __take_picture(self):
-            
+
         if self.__picture_timer_id is not None:
             self.__canvas.after_cancel(self.__picture_timer_id)
             self.__picture_timer_id = None
-        
+
         if self.__do_take_picture:
 
             assert self.__game is not None
             turn = self.__game.get_turn()
-            
+
             if turn is None:
                 if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
                     shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
                 os.mkdir(AppConfig.TMP_PICTURE_DIR)
-                
+
                 picture_index = 0
-            
+
             else:
-                picture_index = turn                              
-                                
-            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % picture_index)    
+                picture_index = turn
+
+            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % picture_index)
 
             picture_png_file = picture_export_path + '.png'
-            
-            
+
+
             grab_canvas_only = True
-            
+
             if grab_canvas_only:
-            
+
                 x = self.__canvas.winfo_rootx()
                 y = self.__canvas.winfo_rooty()
                 w = self.__canvas.winfo_width()
                 h = self.__canvas.winfo_height()
-                
+
                 left = x
                 right = x + w
                 upper = y
                 lower = y + h
-                
+
                 if self.__use_background_photo:
                     upper += self.__background_tk_photo_delta_y
                     lower -= self.__background_tk_photo_delta_y
@@ -1036,30 +1036,30 @@ class GameGui(ttk.Frame):
                     lower -= int(0.01*h)
                     left += int(0.01*w)
                     right -= int(0.01*w)
-                                
+
                 picture_bbox = (left, upper, right, lower)
-                
+
             else:
                 picture_bbox = None
-     
+
             image = ImageGrab.grab(bbox=picture_bbox)
             image.save(picture_png_file)
- 
-    
+
+
     def __make_animated_pictures(self):
          if self.__do_take_picture:
              if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
- 
+
                 frames = []
                 picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
-                
+
                 if len(picture_list) != 0:
                     for picture in picture_list:
                         new_frame = Image.open(picture)
                         frames.append(new_frame)
-                     
+
                     # Save into a GIF file that loops forever
-                    frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"), 
+                    frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
                                    format='GIF',
                                    append_images=frames[1:],
                                    save_all=True,
@@ -1070,10 +1070,10 @@ class GameGui(ttk.Frame):
     def __draw_state(self):
 
         self.__canvas.delete('all')
-    
+
         if self.__use_background_photo:
             self.__draw_canvas_background()
-            
+
         self.__draw_all_hexagons()
         self.__draw_all_cubes()
         self.__draw_legend()
@@ -1081,27 +1081,27 @@ class GameGui(ttk.Frame):
 
     def __draw_canvas_background(self):
         if self.__background_tk_photo is None:
-        
-            # Create the background image 
+
+            # Create the background image
             bg_photo = Image.open(CanvasConfig.BACKGROUND_PHOTO_PATH)
             (bg_width, bg_height) = bg_photo.size
-            
+
             bg_new_width = int(CanvasConfig.WIDTH)
             bg_new_height = int(CanvasConfig.WIDTH*bg_height/bg_width)
-            
+
             bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
             self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
-            
+
             self.__background_tk_photo_delta_y = int((CanvasConfig.HEIGHT - bg_new_height)/2)
 
-        # Add the background image 
-        self.__canvas.create_image(0, self.__background_tk_photo_delta_y, 
-                                   image=self.__background_tk_photo, 
-                                   anchor=tk.NW)       
+        # Add the background image
+        self.__canvas.create_image(0, self.__background_tk_photo_delta_y,
+                                   image=self.__background_tk_photo,
+                                   anchor=tk.NW)
 
 
     def __draw_legend(self):
-        
+
         (u, v) = (2, -4)
         hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
 
@@ -1117,7 +1117,7 @@ class GameGui(ttk.Frame):
 
         legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
 
-        self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER, 
+        self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER,
                                   font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
 
 
@@ -1163,7 +1163,7 @@ class GameGui(ttk.Frame):
     def __draw_all_hexagons(self):
 
         for hexagon in GraphicalHexagon.all:
-            
+
             self.__draw_hexagon(position_uv=hexagon.position_uv,
                          hexagon_color=hexagon.color.value,
                          label=hexagon.name)
