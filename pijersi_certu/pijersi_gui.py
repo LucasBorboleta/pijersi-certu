@@ -396,7 +396,7 @@ class GameGui(ttk.Frame):
         self.__root = tk.Tk()
 
         try:
-            self.__root.title("pijersi-certu : for playing the pijersi 1 boardgame and testing AI agents")
+            self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents")
             self.__root.iconbitmap(AppConfig.ICON_FILE)
         except:
             pass
@@ -1064,6 +1064,10 @@ class GameGui(ttk.Frame):
                                    append_images=frames[1:],
                                    save_all=True,
                                    duration=self.__picture_gif_duration, loop=0)
+                    
+                    print()
+                    print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
+
 
     ### Drawer iterators
 

@@ -3,7 +3,7 @@
 
 """pijersi_rules.py implements the rules engine for the PIJERSI boardgame."""
 
-__version__ = "1.3.3"
+__version__ = "1.0.0"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
