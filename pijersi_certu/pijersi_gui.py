@@ -425,6 +425,7 @@ class GameGui(ttk.Frame):
         self.__game = None
         self.__game_started = False
         self.__pijersi_state = rules.PijersiState()
+        self.__pijersi_state_gui_input = None
         self.__searcher = [None, None]
 
         self.__action_input = None
@@ -435,7 +436,7 @@ class GameGui(ttk.Frame):
 
         # Mouse control management
 
-        self.__available_hexagons = []
+        self.__legal_hexagons = []
         self.__gui_input_step = GuiInputStep.NONE
         self.__selected_hexagon = None
 
@@ -575,7 +576,7 @@ class GameGui(ttk.Frame):
                                 width=CanvasConfig.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
-        self.__canvas.bind('<Motion>', self.__highlight_hexagons)
+        self.__canvas.bind('<Motion>', self.__mouse_over)
         self.__canvas.bind('<Button-1>', self.__click)
 
        # In __frame_actions
@@ -727,12 +728,16 @@ class GameGui(ttk.Frame):
         except:
             assert False
    
-    def __set_available_hexagons(self):
+    def __set_legal_hexagons(self):
+        """
+        Build the list of hexagons user can interact with
+        """
         
-        self.__available_hexagons.clear()
+        self.__legal_hexagons.clear()
 
-        if self.__gui_input_step is GuiInputStep.NONE:
-            self.__available_hexagons.clear()
+        # If GUI input is deactivated, no hexagon is added to legal hexagons list
+
+        # If no selection has been made, all starting hexagons are legal
         if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
             # Extract hexagon names from available moves (first position)
             hexagon_names = set()
@@ -741,9 +746,11 @@ class GameGui(ttk.Frame):
             # Add them to available hexagon
             for name in hexagon_names:
                 graphical_hexagon = GraphicalHexagon.get(name)
-                self.__available_hexagons.append(graphical_hexagon)
+                self.__legal_hexagons.append(graphical_hexagon)
+
+        # If starting hexagon is selected, first arrival hexagons are legal
         if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
-            # Extract hexagon names from available moves (first position)
+            # Extract hexagon names from available moves (second position)
             hexagon_names = set()
             for h in self.__pijersi_state.get_action_simple_names():
                 if h[0:2] == self.__selected_hexagon.name:
@@ -751,15 +758,20 @@ class GameGui(ttk.Frame):
             # Add them to available hexagon
             for name in hexagon_names:
                 graphical_hexagon = GraphicalHexagon.get(name)
-                self.__available_hexagons.append(graphical_hexagon)
+                self.__legal_hexagons.append(graphical_hexagon)
+        
         
 
-    def __highlight_hexagons(self, event):
+    def __mouse_over(self, event):
+        """
+        If mouse pointer is over drawing canvas, highlight hexagons user can click.
+        """
+
         if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION, GuiInputStep.SELECTED_STEP_1]:
             # Update only if change occurs to avoid multiple draw_state calls
             redraw = False
             hexagon_mouse_over = self.__position_to_hexagon(event)
-            for hexagon in self.__available_hexagons:
+            for hexagon in self.__legal_hexagons:
                 if hexagon is hexagon_mouse_over:
                     if not hexagon.highlighted_mouse_over:
                         hexagon.highlighted_mouse_over = True
@@ -770,29 +782,67 @@ class GameGui(ttk.Frame):
                     hexagon.highlighted_mouse_over = False
             if redraw:
                 self.__draw_state()
-#        print(self.__pijersi_state.get_action_simple_names())
+                
+
 
     def __click(self, event):
-        if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION, GuiInputStep.SELECTED_STEP_1]:
+        """
+        Manage click event. If user clicks on a legal hexagon, next GUI step is invoked.
+        Otherwise, current process is cancelled.
+        """
+
+        # First step, no hexagon selected
+        if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION]:
             hexagon_mouse_click = self.__position_to_hexagon(event)
-            if hexagon_mouse_click in self.__available_hexagons:
+            if hexagon_mouse_click in self.__legal_hexagons:
                 self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
                 self.__selected_hexagon = hexagon_mouse_click
-                self.__set_available_hexagons()
-                for hexagon in self.__available_hexagons:
+                self.__set_legal_hexagons()
+                for hexagon in self.__legal_hexagons:
                     hexagon.highlighted_available_move = True
+                self.__variable_action.set(hexagon_mouse_click.name)
             else:
-                self.__selected_hexagon.highlighted_mouse_over = False
-                self.__selected_hexagon = None
-                for hexagon in self.__available_hexagons:
-                    hexagon.highlighted_available_move = False
-                self.__gui_input_step = GuiInputStep.WAIT_SELECTION
-                self.__set_available_hexagons()
+                self.__cancel_gui_process()
+
             self.__draw_state()
+        elif self.__gui_input_step in [GuiInputStep.SELECTED_STEP_1]:
+            hexagon_mouse_click = self.__position_to_hexagon(event)
+            if hexagon_mouse_click in self.__legal_hexagons:
+                player = self.__pijersi_state.get_current_player()
+                searcher = self.__searcher[player]
+                action_name = self.__selected_hexagon.name
+                action_name = action_name + '-' + hexagon_mouse_click.name
+                self.__variable_action.set(action_name)
+                action = self.__pijersi_state.get_action_by_name(action_name)
+                self.__pijersi_state_gui_input = action.state
+                self.__set_legal_hexagons()
+                for hexagon in self.__legal_hexagons:
+                    hexagon.highlighted_available_move = True
+
+            else:
+                self.__cancel_gui_process()
+                
+            self.__draw_state()
+
+    def __cancel_gui_process(self):
+        self.__selected_hexagon.highlighted_mouse_over = False
+        self.__selected_hexagon = None
+        for hexagon in self.__legal_hexagons:
+            hexagon.highlighted_available_move = False
+        self.__gui_input_step = GuiInputStep.WAIT_SELECTION
+        self.__set_legal_hexagons()
+        self.__variable_action.set("")
+        self.__mouse_over(event)
+        self.__pijersi_state_gui_input = None
+
+
 
 
     def __position_to_hexagon(self, position):
-        for hexagon in self.__available_hexagons:
+        """
+        Return the hexagon given a drawing position
+        """
+        for hexagon in self.__legal_hexagons:
             if hexagon.contains_point((position.x, position.y)):
                 return hexagon
         return None
@@ -805,7 +855,7 @@ class GameGui(ttk.Frame):
 
         (self.__action_validated,
          message) = rules.Notation.validate_simple_notation(self.__action_input,
-                                                                  self.__pijersi_state.get_action_simple_names())
+                                                            self.__pijersi_state.get_action_simple_names())
 
         if self.__action_validated:
             self.__variable_log.set(message)
@@ -1039,7 +1089,7 @@ class GameGui(ttk.Frame):
         if self.__game_started and self.__game.has_next_turn():
 
             self.__pijersi_state = self.__game.get_state()
-            player = self.__pijersi_state.get_current_player()
+            player = self.__game.get_state().get_current_player()
             searcher = self.__searcher[player]
 
             self.__progressbar['value'] = 50.
@@ -1053,7 +1103,7 @@ class GameGui(ttk.Frame):
 
                 if self.__gui_input_step == GuiInputStep.NONE:
                     self.__gui_input_step = GuiInputStep.WAIT_SELECTION
-                    self.__set_available_hexagons()
+                    self.__set_legal_hexagons()
                 
 
                 if self.__action_validated and self.__action_input is not None:
@@ -1069,7 +1119,7 @@ class GameGui(ttk.Frame):
             else:
                 ready_for_next_turn = True
                 self.__gui_input_step = GuiInputStep.NONE
-                self.__set_available_hexagons()
+                self.__set_legal_hexagons()
 
             if ready_for_next_turn:
                 self.__progressbar['value'] = 50.
@@ -1254,8 +1304,13 @@ class GameGui(ttk.Frame):
 
     def __draw_all_cubes(self):
 
-        hexagon_top =  self.__pijersi_state.get_hexagon_top()
-        hexagon_bottom =  self.__pijersi_state.get_hexagon_bottom()
+        pijersi_state = self.__pijersi_state
+
+        if self.__pijersi_state_gui_input is not None:
+            pijersi_state = self.__pijersi_state_gui_input
+
+        hexagon_top =  pijersi_state.get_hexagon_top()
+        hexagon_bottom =  pijersi_state.get_hexagon_bottom()
 
         for hexagon in rules.Hexagon.all:
 

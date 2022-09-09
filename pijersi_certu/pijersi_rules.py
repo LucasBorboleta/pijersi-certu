@@ -1131,7 +1131,7 @@ class PijersiState:
     def take_action_by_simple_name(self, action_name):
        assert action_name in self.get_action_simple_names()
        action = self.__actions_by_simple_names[action_name]
-       self.take_action(action)
+       return self.take_action(action)
 
 
     def take_action_by_name(self, action_name):
@@ -2738,6 +2738,9 @@ class Game:
 
     def get_state(self):
         return self.__pijersi_state
+
+    def set_state(self, state):
+        self.__pijersi_state = state
 
 
     def get_rewards(self):
