@@ -32,6 +32,8 @@ import tkinter as tk
 from tkinter import font
 from tkinter import ttk
 
+import matplotlib.path as mpltPath
+
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 import pijersi_rules as rules
@@ -263,10 +265,20 @@ class HexagonColor(enum.Enum):
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
 
+    HIGHLIGHT_AVAILABLE_MOVE = rgb_color_as_hexadecimal((255, 255, 150))
+    HIGHLIGHT_MOUSE_OVER = rgb_color_as_hexadecimal((255, 255, 200))
+    HIGHLIGHT_MOUSE_SELECTED = rgb_color_as_hexadecimal((255, 255, 100))
+
 
 @enum.unique
 class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
+    HIGHLIGHT = 'white'
+
+class GuiInputStep(enum.Enum):
+    NONE = enum.auto()
+    WAIT_SELECTION = enum.auto()
+    SELECTED_STEP_1 = enum.auto()
 
 
 class GraphicalHexagon:
@@ -288,8 +300,36 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
+        self.highlighted_mouse_over = 0
+        self.highlighted_available_move = 0
+
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
+        (u, v) = self.position_uv
+
+        self.center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+
+        self.vertex_data = list()
+
+        data_to_path = []
+
+        for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
+            vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
+
+            hexagon_vertex = self.center
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+
+            data_to_path.append([hexagon_vertex[0],hexagon_vertex[1]])
+
+            self.vertex_data.append(hexagon_vertex[0])
+            self.vertex_data.append(hexagon_vertex[1])
+
+        self.path = mpltPath.Path(data_to_path)
+
+
+    def contains_point(self, point):
+        return self.path.contains_point(point)
 
     def __str__(self):
         return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.index}, {self.color})"
@@ -392,6 +432,12 @@ class GameGui(ttk.Frame):
 
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
+
+        # Mouse control management
+
+        self.__available_hexagons = []
+        self.__gui_input_step = GuiInputStep.NONE
+        self.__selected_hexagon = None
 
         self.__root = tk.Tk()
 
@@ -529,6 +575,9 @@ class GameGui(ttk.Frame):
                                 width=CanvasConfig.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
+        self.__canvas.bind('<Motion>', self.__highlight_hexagons)
+        self.__canvas.bind('<Button-1>', self.__click)
+
        # In __frame_actions
 
         self.__variable_log = tk.StringVar()
@@ -633,6 +682,8 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(state="disabled")
 
 
+
+
     def __create_cube_photos(self):
         if self.__cube_photos is None:
 
@@ -675,7 +726,76 @@ class GameGui(ttk.Frame):
 
         except:
             assert False
+   
+    def __set_available_hexagons(self):
+        
+        self.__available_hexagons.clear()
 
+        if self.__gui_input_step is GuiInputStep.NONE:
+            self.__available_hexagons.clear()
+        if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
+            # Extract hexagon names from available moves (first position)
+            hexagon_names = set()
+            for h in self.__pijersi_state.get_action_simple_names():
+                hexagon_names.add(h[0:2])
+            # Add them to available hexagon
+            for name in hexagon_names:
+                graphical_hexagon = GraphicalHexagon.get(name)
+                self.__available_hexagons.append(graphical_hexagon)
+        if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
+            # Extract hexagon names from available moves (first position)
+            hexagon_names = set()
+            for h in self.__pijersi_state.get_action_simple_names():
+                if h[0:2] == self.__selected_hexagon.name:
+                    hexagon_names.add(h[3:5])
+            # Add them to available hexagon
+            for name in hexagon_names:
+                graphical_hexagon = GraphicalHexagon.get(name)
+                self.__available_hexagons.append(graphical_hexagon)
+        
+
+    def __highlight_hexagons(self, event):
+        if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION, GuiInputStep.SELECTED_STEP_1]:
+            # Update only if change occurs to avoid multiple draw_state calls
+            redraw = False
+            hexagon_mouse_over = self.__position_to_hexagon(event)
+            for hexagon in self.__available_hexagons:
+                if hexagon is hexagon_mouse_over:
+                    if not hexagon.highlighted_mouse_over:
+                        hexagon.highlighted_mouse_over = True
+                        redraw = True
+                else:
+                    if hexagon.highlighted_mouse_over:
+                        redraw = True
+                    hexagon.highlighted_mouse_over = False
+            if redraw:
+                self.__draw_state()
+#        print(self.__pijersi_state.get_action_simple_names())
+
+    def __click(self, event):
+        if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION, GuiInputStep.SELECTED_STEP_1]:
+            hexagon_mouse_click = self.__position_to_hexagon(event)
+            if hexagon_mouse_click in self.__available_hexagons:
+                self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
+                self.__selected_hexagon = hexagon_mouse_click
+                self.__set_available_hexagons()
+                for hexagon in self.__available_hexagons:
+                    hexagon.highlighted_available_move = True
+            else:
+                self.__selected_hexagon.highlighted_mouse_over = False
+                self.__selected_hexagon = None
+                for hexagon in self.__available_hexagons:
+                    hexagon.highlighted_available_move = False
+                self.__gui_input_step = GuiInputStep.WAIT_SELECTION
+                self.__set_available_hexagons()
+            self.__draw_state()
+
+
+    def __position_to_hexagon(self, position):
+        for hexagon in self.__available_hexagons:
+            if hexagon.contains_point((position.x, position.y)):
+                return hexagon
+        return None
 
     def __command_action_confirm(self):
 
@@ -931,6 +1051,11 @@ class GameGui(ttk.Frame):
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
 
+                if self.__gui_input_step == GuiInputStep.NONE:
+                    self.__gui_input_step = GuiInputStep.WAIT_SELECTION
+                    self.__set_available_hexagons()
+                
+
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
 
@@ -943,6 +1068,8 @@ class GameGui(ttk.Frame):
 
             else:
                 ready_for_next_turn = True
+                self.__gui_input_step = GuiInputStep.NONE
+                self.__set_available_hexagons()
 
             if ready_for_next_turn:
                 self.__progressbar['value'] = 50.
@@ -1167,54 +1294,40 @@ class GameGui(ttk.Frame):
     def __draw_all_hexagons(self):
 
         for hexagon in GraphicalHexagon.all:
-
-            self.__draw_hexagon(position_uv=hexagon.position_uv,
-                         hexagon_color=hexagon.color.value,
-                         label=hexagon.name)
+            self.__draw_hexagon(hexagon)
 
 
     ### Drawer primitives
 
-    def __draw_hexagon(self, position_uv, hexagon_color='', label=''):
+    def __draw_hexagon(self, hexagon):
 
-        (u, v) = position_uv
-
-        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
-        hexagon_data = list()
-
-        for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
-            vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
-
-            hexagon_vertex = hexagon_center
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
-
-            hexagon_data.append(hexagon_vertex[0])
-            hexagon_data.append(hexagon_vertex[1])
-
-            if vertex_index == 3:
-                label_position = (hexagon_vertex +
-                                  0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
-
+        label_position = ( TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
+                          0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
 
         if self.__use_background_photo:
             polygon_line_color = ''
             fill_color = ''
         else:
             polygon_line_color = HexagonLineColor.NORMAL.value
-            fill_color = hexagon_color
+            fill_color = hexagon.color.value
+        
+        if hexagon.highlighted_available_move:
+            fill_color = HexagonColor.HIGHLIGHT_AVAILABLE_MOVE.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_mouse_over:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_OVER.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        self.__canvas.create_polygon(hexagon_data,
+        self.__canvas.create_polygon(hexagon.vertex_data,
                               fill=fill_color,
                               outline=polygon_line_color,
                               width=CanvasConfig.HEXA_LINE_WIDTH,
                               joinstyle=tk.MITER)
 
-        if label:
+        if hexagon.name:
             label_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LABEL_SIZE, weight='bold')
 
-            self.__canvas.create_text(*label_position, text=label, justify=tk.CENTER, font=label_font)
+            self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
 
 
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
@@ -1223,21 +1336,19 @@ class GameGui(ttk.Frame):
 
         (u, v) = hexagon.position_uv
 
-        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
         cube_vertices = list()
 
         for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
 
             if config == CubeLocation.MIDDLE:
-                cube_center = hexagon_center
+                cube_center = hexagon.center
 
             elif config == CubeLocation.BOTTOM:
-                cube_center = hexagon_center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
             elif config == CubeLocation.TOP:
-                cube_center = hexagon_center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
             cube_vertex = cube_center
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
