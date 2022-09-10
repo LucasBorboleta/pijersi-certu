@@ -1,10 +1,27 @@
-## Install
+# Install
+
+Below, two ways are explained for installing *pijersi_certu* on your computer:
+
+- As a single file executable, but for Windows platform only ; this is the easiest way.
+- As a Python project from source files, for either Windows or Linux platforms.
+
+## Installing as single executable for Windows platform
+
+- Download the executable file [pijersi_certu_v1.0.0.exe](../releases/pijersi_certu_v1.0.0.exe) on your computer where you want.
+- Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
+  - `Get-FileHash pijersi_certu_v1.0.0.exe -Algorithm SHA256` should reply:
+    `Hash : 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36`
+  - `Get-FileHash pijersi_certu_v1.0.0.exe -Algorithm MD5` should reply:
+    `Hash  : 541C8F2A3C70184F04FEA72E8A2222A8`
+- Remove immediately the downloaded executable if you are doubting about its integrity.
+- Double-click on the icon of the executable to start `pijersi-certu`.
+- To uninstall  `pijersi-certu` just remove the executable.
+
+## Installing from Python sources for Linux and Windows platforms
 
 *pijersi_certu* has been developed using Python 3.8.5. So it is better to have installed such version or some higher version. 
 
 The following instructions might also work on other platforms, but only Windows and Linux have been tested.
-
-### Instructions for Linux and Windows platforms
 
 1. Make an installation directory by either cloning this *git* repository or downloading it as a zip archive and unzipping it.
 
