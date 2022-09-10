@@ -266,9 +266,10 @@ class HexagonColor(enum.Enum):
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
 
-    HIGHLIGHT_AVAILABLE_MOVE = rgb_color_as_hexadecimal((255, 255, 150))
+    HIGHLIGHT_AVAILABLE_MOVE = rgb_color_as_hexadecimal((255, 255, 100))
     HIGHLIGHT_MOUSE_OVER = rgb_color_as_hexadecimal((255, 255, 200))
-    HIGHLIGHT_MOUSE_SELECTED = rgb_color_as_hexadecimal((255, 255, 100))
+    HIGHLIGHT_MOUSE_SELECTED = rgb_color_as_hexadecimal((255, 150, 150))
+    HIGHLIGHT_MOUSE_DOUBLE_SELECTED = rgb_color_as_hexadecimal((255, 100, 100))
 
 
 @enum.unique
@@ -307,8 +308,11 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
-        self.highlighted_mouse_over = 0
-        self.highlighted_available_move = 0
+        self.highlighted_mouse_over = False
+        self.highlighted_available_move = False
+        self.highlighted_selected = False
+        self.highlighted_double_selected = False
+
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
@@ -751,15 +755,18 @@ class GameGui(ttk.Frame):
         # keep actions containing selected hexagon name at first position
         if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
             self.__legal_gui_moves.clear()
+            sign = "-"
+            if self.__move_stack:
+                sign = "="
             for action_name in self.__pijersi_state.get_action_simple_names():
-                if action_name[0:2] == self.__selected_hexagon.name:
+                if action_name[0:3] == self.__selected_hexagon.name + sign:
                     self.__legal_gui_moves.append(action_name)
         # keep 2-step actions containing selected hexagon name at second position
         if self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
             legal_moves = copy.copy(self.__legal_gui_moves)
             self.__legal_gui_moves.clear()
             for action_name in legal_moves:
-                if action_name[3:5] == self.__selected_hexagon.name:
+                if action_name[0:5] == self.__variable_action.get():
                     # keep actions with a second move
                     if len(action_name) > 5:
                         self.__legal_gui_moves.append(action_name)            
@@ -824,6 +831,11 @@ class GameGui(ttk.Frame):
             if redraw:
                 self.__draw_state()
                 
+    def __hexagon_has_stack(self, name):
+        for action in self.__legal_gui_moves:
+            if action[0:3] == name + "=":
+                return True
+        return False
 
 
     def __click(self, event):
@@ -838,14 +850,14 @@ class GameGui(ttk.Frame):
             if hexagon_mouse_click in self.__legal_hexagons:
                 self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
                 self.__selected_hexagon = hexagon_mouse_click
-                self.__hightlight_legal_hexagons()
+                self.__selected_hexagon.highlighted_selected = True
                 # Detect if stack is selected and give priority to it
-                has_egal = False
-                for name in self.__legal_gui_moves:
-                    if name[2] == '=':
-                        has_egal = True
+                has_egal = self.__hexagon_has_stack(self.__selected_hexagon.name)
+                self.__selected_hexagon.highlighted_double_selected = has_egal
                 self.__gui_stack_selected = has_egal
                 self.__move_stack = has_egal
+                print(self.__move_stack)
+                self.__hightlight_legal_hexagons()
                 self.__variable_action.set(hexagon_mouse_click.name)
             else:
                 self.__cancel_gui_process(event)
@@ -856,6 +868,8 @@ class GameGui(ttk.Frame):
             # Manage double click on selected hexagone, meaning unstack instead of moving the entire stack
             if self.__gui_stack_selected and hexagon_mouse_click is self.__selected_hexagon:
                 self.__move_stack = not self.__move_stack
+                self.__selected_hexagon.highlighted_double_selected = self.__move_stack
+                self.__hightlight_legal_hexagons()
             elif hexagon_mouse_click in self.__legal_hexagons:
                 self.__gui_input_step = GuiInputStep.SELECTED_STEP_2
                 self.__selected_hexagon.highlighted_mouse_over = False
@@ -909,6 +923,9 @@ class GameGui(ttk.Frame):
         self.__selected_hexagon = None
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_available_move = False
+            hexagon.highlighted_mouse_over = False
+            hexagon.highlighted_selected = False
+            hexagon.highlighted_double_selected = False
         self.__gui_input_step = GuiInputStep.WAIT_SELECTION
         self.__set_legal_hexagons()
         self.__variable_action.set("")
@@ -1453,11 +1470,18 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
         
+        # Respect priority order in lighting : selected > available move > legit target
         if hexagon.highlighted_available_move:
             fill_color = HexagonColor.HIGHLIGHT_AVAILABLE_MOVE.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
         if hexagon.highlighted_mouse_over:
             fill_color = HexagonColor.HIGHLIGHT_MOUSE_OVER.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_selected:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_SELECTED.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_double_selected:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_DOUBLE_SELECTED.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         self.__canvas.create_polygon(hexagon.vertex_data,
