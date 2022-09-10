@@ -856,11 +856,10 @@ class GameGui(ttk.Frame):
                 self.__selected_hexagon.highlighted_double_selected = has_egal
                 self.__gui_stack_selected = has_egal
                 self.__move_stack = has_egal
-                print(self.__move_stack)
                 self.__hightlight_legal_hexagons()
                 self.__variable_action.set(hexagon_mouse_click.name)
             else:
-                self.__cancel_gui_process(event)
+                self.__reset_gui_process(event)
 
             self.__draw_state()
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
@@ -892,7 +891,7 @@ class GameGui(ttk.Frame):
                     self.__action_validated = True
                     self.__action_input = self.__variable_action.get()        
             else:
-                self.__cancel_gui_process(event)
+                self.__reset_gui_process(event)
                 
             self.__draw_state()
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
@@ -912,7 +911,7 @@ class GameGui(ttk.Frame):
                 self.__action_validated = True
                 self.__action_input = self.__variable_action.get()
             else:
-                self.__cancel_gui_process(event)
+                self.__reset_gui_process(event)
             self.__draw_state()
 
 
@@ -924,9 +923,7 @@ class GameGui(ttk.Frame):
             else:
                 hexagon.highlighted_available_move = False
 
-    def __cancel_gui_process(self, event = None):
-        if self.__selected_hexagon is not None:
-            self.__selected_hexagon.highlighted_mouse_over = False
+    def __reset_gui_process(self, event = None):
         self.__selected_hexagon = None
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_available_move = False
@@ -972,7 +969,7 @@ class GameGui(ttk.Frame):
         else:
             self.__variable_log.set(message)
 
-        self.__cancel_gui_process()
+        self.__reset_gui_process()
 
 
     def __command_update_edit_actions(self):
@@ -1014,7 +1011,7 @@ class GameGui(ttk.Frame):
 
            self.__pijersi_state = self.__game.get_state()
            self.__legend = ""
-           self.__draw_state()
+           self.__reset_gui_process()
 
            self.__turn_states = list()
            self.__turn_states.append(self.__game.get_state())
@@ -1199,7 +1196,7 @@ class GameGui(ttk.Frame):
         if self.__game_started and self.__game.has_next_turn():
 
             self.__pijersi_state = self.__game.get_state()
-            player = self.__game.get_state().get_current_player()
+            player = self.__pijersi_state.get_current_player()
             searcher = self.__searcher[player]
 
             self.__progressbar['value'] = 50.
@@ -1210,10 +1207,8 @@ class GameGui(ttk.Frame):
                 self.__entry_action.config(state="enabled")
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
-
                 if self.__gui_input_step == GuiInputStep.NONE:
-                    self.__gui_input_step = GuiInputStep.WAIT_SELECTION
-                    self.__set_legal_hexagons()
+                    self.__reset_gui_process()
                 
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
@@ -1224,13 +1219,11 @@ class GameGui(ttk.Frame):
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
                     self.__button_action_confirm.config(state="disabled")
+                    self.__reset_gui_process()
+                    self.__gui_input_step = GuiInputStep.NONE
 
             else:
                 ready_for_next_turn = True
-                
-                self.__cancel_gui_process()
-                self.__gui_input_step = GuiInputStep.NONE
-
             if ready_for_next_turn:
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
