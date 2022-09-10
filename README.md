@@ -1,5 +1,7 @@
 # Pijersi certu
 
+![](./docs/pijersi-screenshot.png)
+
 The Python package *pijersi_certu* provides a GUI and a rules engine for playing the *Pijersi* board-game, which is a wise oriented variant of [*Jersi*](https://github.com/LucasBorboleta/jersi) board-game. 
 
 The rules of Pijersi are here: (https://github.com/LucasBorboleta/pijersi).
