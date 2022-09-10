@@ -2,8 +2,8 @@
 
 Below, two ways are explained for installing *pijersi_certu* on your computer:
 
-- As a single file executable, but for Windows platform only ; this is the easiest way.
-- As a Python project from source files, for either Windows or Linux platforms.
+- As a single file executable, but for Windows platform only ; this is the simplest way.
+- As a Python project from source files, for either Windows or Linux platforms ; this is easy thanks to the `pijersi_start.py` script.
 
 ## Installing as single executable for Windows platform
 
