@@ -908,6 +908,9 @@ class GameGui(ttk.Frame):
                 self.__pijersi_state_gui_input = action.state
                 self.__action_validated = True
                 self.__action_input = self.__variable_action.get()
+            elif hexagon_mouse_click is self.__selected_hexagon:
+                self.__action_validated = True
+                self.__action_input = self.__variable_action.get()
             else:
                 self.__cancel_gui_process(event)
             self.__draw_state()
