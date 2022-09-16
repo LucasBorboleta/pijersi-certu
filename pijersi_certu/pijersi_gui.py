@@ -185,7 +185,7 @@ class CanvasConfig:
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
-    HEIGHT = 640
+    HEIGHT = 800
     WIDTH = HEIGHT*RATIO
 
     # Canvas background
@@ -990,8 +990,11 @@ class GameGui(ttk.Frame):
 
         for hexagon in GraphicalHexagon.all:
             if hexagon in self.__legal_hexagons:
-                # If not in easy mode, do not highlight hexagons
-                hexagon.highlighted_available_move = self.__easy_mode.get()
+                if self.__gui_input_step in [GuiInputStep.SELECTED_STEP_1, GuiInputStep.SELECTED_STEP_2]:
+                    # If not in easy mode, do not highlight hexagons
+                    hexagon.highlighted_available_move = self.__easy_mode.get()
+                else:
+                    hexagon.highlighted_available_move = False
             else:
                 hexagon.highlighted_available_move = False
 
