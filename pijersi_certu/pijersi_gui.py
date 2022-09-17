@@ -266,10 +266,23 @@ class HexagonColor(enum.Enum):
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
 
-    HIGHLIGHT_AVAILABLE_MOVE = rgb_color_as_hexadecimal((255, 255, 100))
-    HIGHLIGHT_MOUSE_OVER = rgb_color_as_hexadecimal((255, 255, 200))
-    HIGHLIGHT_MOUSE_SELECTED = rgb_color_as_hexadecimal((255, 150, 150))
-    HIGHLIGHT_MOUSE_DOUBLE_SELECTED = rgb_color_as_hexadecimal((255, 100, 100))
+    # Marc-theme-1
+    # HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((255, 255, 200))
+    # HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((255, 255, 100))
+    # HIGHLIGHT_CUBE_SELECTION = rgb_color_as_hexadecimal((255, 150, 150))
+    # HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((255, 100, 100))
+
+    # Lucas-theme-1
+    # HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((217, 204, 180))
+    # HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((138, 191, 161))
+    # HIGHLIGHT_CUBE_SELECTION = rgb_color_as_hexadecimal((191, 141, 122))
+    # HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((166, 52, 41))
+
+    # Lucas-theme-2
+    HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((217, 199, 193))
+    HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((140, 102, 94))
+    HIGHLIGHT_CUBE_SELECTION = rgb_color_as_hexadecimal((6, 159, 191))
+    HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((0, 95, 115))
 
 
 @enum.unique
@@ -1555,16 +1568,16 @@ class GameGui(ttk.Frame):
         
         # Respect priority order in lighting : available move >  selected >  legit target
         if hexagon.highlighted_available_move:
-            fill_color = HexagonColor.HIGHLIGHT_AVAILABLE_MOVE.value
+            fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
         if hexagon.highlighted_selected:
-            fill_color = HexagonColor.HIGHLIGHT_MOUSE_SELECTED.value
+            fill_color = HexagonColor.HIGHLIGHT_CUBE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
         if hexagon.highlighted_double_selected:
-            fill_color = HexagonColor.HIGHLIGHT_MOUSE_DOUBLE_SELECTED.value
+            fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
         if hexagon.highlighted_mouse_over:
-            fill_color = HexagonColor.HIGHLIGHT_MOUSE_OVER.value
+            fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         self.__canvas.create_polygon(hexagon.vertex_data,
