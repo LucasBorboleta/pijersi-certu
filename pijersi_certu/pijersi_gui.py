@@ -23,6 +23,7 @@ import math
 import os
 import shutil
 import sys
+import copy
 
 from PIL import Image
 from PIL import ImageTk
@@ -31,6 +32,8 @@ from PIL import ImageGrab
 import tkinter as tk
 from tkinter import font
 from tkinter import ttk
+
+import matplotlib.path as mpltPath
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
@@ -182,7 +185,7 @@ class CanvasConfig:
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
-    HEIGHT = 640
+    HEIGHT = 800
     WIDTH = HEIGHT*RATIO
 
     # Canvas background
@@ -263,10 +266,27 @@ class HexagonColor(enum.Enum):
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
 
+    HIGHLIGHT_AVAILABLE_MOVE = rgb_color_as_hexadecimal((255, 255, 100))
+    HIGHLIGHT_MOUSE_OVER = rgb_color_as_hexadecimal((255, 255, 200))
+    HIGHLIGHT_MOUSE_SELECTED = rgb_color_as_hexadecimal((255, 150, 150))
+    HIGHLIGHT_MOUSE_DOUBLE_SELECTED = rgb_color_as_hexadecimal((255, 100, 100))
+
 
 @enum.unique
 class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
+    HIGHLIGHT = 'white'
+
+class GuiInputStep(enum.Enum):
+    NONE = enum.auto()
+    # No hexagon selected
+    WAIT_SELECTION = enum.auto()
+    # Starting hexagon selected
+    SELECTED_STEP_1 = enum.auto()
+    # First move done
+    SELECTED_STEP_2 = enum.auto()
+    # Second move done
+    FINISHED = enum.auto()
 
 
 class GraphicalHexagon:
@@ -288,8 +308,39 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
+        self.highlighted_mouse_over = False
+        self.highlighted_available_move = False
+        self.highlighted_selected = False
+        self.highlighted_double_selected = False
+
+
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
+        (u, v) = self.position_uv
+
+        self.center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+
+        self.vertex_data = list()
+
+        data_to_path = []
+
+        for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
+            vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
+
+            hexagon_vertex = self.center
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+
+            data_to_path.append([hexagon_vertex[0],hexagon_vertex[1]])
+
+            self.vertex_data.append(hexagon_vertex[0])
+            self.vertex_data.append(hexagon_vertex[1])
+
+        self.path = mpltPath.Path(data_to_path)
+
+
+    def contains_point(self, point):
+        return self.path.contains_point(point)
 
     def __str__(self):
         return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.index}, {self.color})"
@@ -385,6 +436,7 @@ class GameGui(ttk.Frame):
         self.__game = None
         self.__game_started = False
         self.__pijersi_state = rules.PijersiState()
+        self.__pijersi_state_gui_input = None
         self.__searcher = [None, None]
 
         self.__action_input = None
@@ -392,6 +444,17 @@ class GameGui(ttk.Frame):
 
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
+
+        # Mouse control management
+
+        self.__legal_hexagons = []
+        self.__gui_input_step = GuiInputStep.NONE
+        self.__selected_hexagon = None
+
+        self.__legal_gui_actions = []
+
+        self.__gui_stack_selected = False
+        self.__move_stack = False
 
         self.__root = tk.Tk()
 
@@ -464,9 +527,17 @@ class GameGui(ttk.Frame):
         self.__combobox_button_faces.set(self.__cube_faces_options[2])
         self.__variable_faces.trace_add('write', self.__command_update_faces)
 
+        self.__easy_mode = tk.BooleanVar()
+        self.__easy_mode.set(True)
+        self.__easy_gui_mode = ttk.Checkbutton (self.__frame_commands,
+                                                text='Easy mode',
+                                                variable=self.__easy_mode,
+                                                command=self.__switch_easy_mode)
+
         self.__button_start_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
+        self.__easy_gui_mode.grid(row=1, column=0)
         self.__combobox_button_faces.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -529,6 +600,9 @@ class GameGui(ttk.Frame):
                                 width=CanvasConfig.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
+        self.__canvas.bind('<Motion>', self.__mouse_over)
+        self.__canvas.bind('<Button-1>', self.__click)
+
        # In __frame_actions
 
         self.__variable_log = tk.StringVar()
@@ -553,6 +627,7 @@ class GameGui(ttk.Frame):
 
         self.__variable_action = tk.StringVar()
         self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
+        self.__entry_action.bind("<KeyPress>", self.__reset_gui_process)
 
         self.__button_action_confirm = ttk.Button(self.__frame_human_actions,
                                   text='OK',
@@ -633,6 +708,8 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(state="disabled")
 
 
+
+
     def __create_cube_photos(self):
         if self.__cube_photos is None:
 
@@ -675,7 +752,289 @@ class GameGui(ttk.Frame):
 
         except:
             assert False
+   
+    def __entry_action_gui_protection(self, a, b, c):
+        """
+        If user interacts with action input, gui input process is interrupted
+        """
+        if self.__gui_input_step is not GuiInputStep.NONE:
+            self.__reset_gui_process(back_to_gui_step=GuiInputStep.NONE)
 
+    def __set_legal_gui_actions(self):
+        """
+        Filter __legal_gui_actions according to gui input step
+        """
+
+        # All legal actions from rules are selected
+        if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
+            self.__legal_gui_moves = self.__pijersi_state.get_action_simple_names()
+        # keep actions containing selected hexagon name at first position
+        if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
+            self.__legal_gui_moves.clear()
+            # If stack is selected, keep only stack moves
+            sign = "-"
+            if self.__move_stack:
+                sign = "="
+            for action_name in self.__pijersi_state.get_action_simple_names():
+                if action_name[0:3] == self.__selected_hexagon.name + sign:
+                    self.__legal_gui_moves.append(action_name)
+        # keep 2-step actions containing selected hexagon name at second position
+        if self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
+            legal_moves = copy.copy(self.__legal_gui_moves)
+            self.__legal_gui_moves.clear()
+            for action_name in legal_moves:
+                if action_name[0:5] == self.__variable_action.get():
+                    # keep actions with a second move
+                    if len(action_name) > 5:
+                        self.__legal_gui_moves.append(action_name)            
+
+
+    def __set_legal_hexagons(self):
+        """
+        Build the list of hexagons user can interact with
+        """
+        
+        self.__legal_hexagons.clear()
+        self.__set_legal_gui_actions()
+
+        # If GUI input is deactivated, no hexagon is added to legal hexagons list
+
+        # If no selection has been made, all starting hexagons are legal
+        # Selection is done on first hexagon name in action names
+        if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
+            self.__set_legal_hexagon_from_action_moves(0,2)
+
+        # If starting hexagon is selected, first arrival hexagons are legal
+        # Selection is done on second hexagon name in action names
+        if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
+            self.__set_legal_hexagon_from_action_moves(3,5)
+        
+        # If target hexagon is selected, second arrival hexagons are legal
+        # Selection is done on third hexagon name in action names
+        if self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
+            self.__set_legal_hexagon_from_action_moves(6,8)
+            # Add selected hexagon to interrupt move
+            self.__legal_hexagons.append(self.__selected_hexagon)
+
+    def __set_legal_hexagon_from_action_moves(self, pos1, pos2):
+        """
+        Build the list of hexagons user can interact with from action names position
+        """
+
+        hexagon_names = set()
+        for action_name in self.__legal_gui_moves:
+            hexagon_names.add(action_name[pos1:pos2])
+        # Add them to available hexagon
+        for name in hexagon_names:
+            graphical_hexagon = GraphicalHexagon.get(name)
+            self.__legal_hexagons.append(graphical_hexagon)
+
+    def __mouse_over(self, event):
+        """
+        If mouse pointer is over drawing canvas, mark hexagons to highlight.
+        """
+
+        # If not in easy mode, do not highlight hexagons
+        if not self.__easy_mode.get():
+            return
+
+        if self.__gui_input_step in [GuiInputStep.WAIT_SELECTION, GuiInputStep.SELECTED_STEP_1, GuiInputStep.SELECTED_STEP_2]:
+            # Update only if change occurs to avoid multiple draw_state calls
+            redraw = False
+            hexagon_mouse_over = self.__position_to_hexagon(event)
+            for hexagon in self.__legal_hexagons:
+                if hexagon is hexagon_mouse_over:
+                    if not hexagon.highlighted_mouse_over:
+                        hexagon.highlighted_mouse_over = True
+                        redraw = True
+                else:
+                    if hexagon.highlighted_mouse_over:
+                        redraw = True
+                    hexagon.highlighted_mouse_over = False
+            if redraw:
+                self.__draw_state()
+                
+    def __hexagon_has_stack(self, name):
+        for action in self.__legal_gui_moves:
+            if action[0:3] == name + "=":
+                return True
+        return False
+
+
+    def __click(self, event):
+        """
+        Manage click event. Call legit function according to gui input current step
+        """
+
+        if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
+            self.__click_wait_selection_step(event)
+        elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
+            self.__click_step_1(event)
+        elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
+            self.__click_step_2(event)
+
+    def __click_wait_selection_step(self, event):
+        """
+        Manage click event when gui input process is at step 0, meaning waiting that user
+        selects a starting hexagon.
+        If user clicks on a legal hexagon, next GUI step is invoked.
+        Otherwise, current process is cancelled.
+        """
+
+        hexagon_mouse_click = self.__position_to_hexagon(event)
+        if hexagon_mouse_click in self.__legal_hexagons:
+            self.__selected_hexagon = hexagon_mouse_click
+            # Give proper color (priority to stack)
+            self.__selected_hexagon.highlighted_selected = True
+            self.__selected_hexagon.highlighted_mouse_over = False
+            has_egal = self.__hexagon_has_stack(self.__selected_hexagon.name)
+            self.__selected_hexagon.highlighted_double_selected = has_egal
+            self.__gui_stack_selected = has_egal
+            self.__move_stack = has_egal
+            # Parameter input gui process to next step
+            self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
+            self.__hightlight_legal_hexagons()
+            self.__variable_action.set(hexagon_mouse_click.name)
+        else:
+            self.__reset_gui_process(event)
+        self.__draw_state()
+
+    def __click_step_1(self, event):
+        """
+        Manage click event when gui input process is at step 1, meaning that a
+        starting hexagon is selected, waiting for a target selection.
+        If user clicks on a legal hexagon, next GUI step is invoked.
+        Otherwise, current process is cancelled.
+        """
+
+        hexagon_mouse_click = self.__position_to_hexagon(event)
+        # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
+        if self.__gui_stack_selected and hexagon_mouse_click is self.__selected_hexagon:
+            self.__move_stack = not self.__move_stack
+            self.__selected_hexagon.highlighted_double_selected = self.__move_stack
+            self.__hightlight_legal_hexagons()
+        elif hexagon_mouse_click in self.__legal_hexagons:
+            # Uncolor first selected hexagon
+            self.__selected_hexagon.highlighted_mouse_over = False
+            self.__selected_hexagon.highlighted_double_selected = False
+            self.__selected_hexagon.highlighted_selected = False
+            # Change selected hexagon and filter corresponding actions
+            self.__selected_hexagon = hexagon_mouse_click
+            actions = [a[0:5] for a in self.__legal_gui_moves if a[3:5] == hexagon_mouse_click.name]
+            actions.sort()
+            # If stack is selected, determine if stack moves or unstack
+            if len(actions) > 1:
+                if self.__move_stack:
+                    action_name = actions[-1]
+                else:
+                    action_name = actions[0]
+            else:
+                action_name = actions[0]
+            # Give correct color to selected hexagon
+            self.__selected_hexagon.highlighted_mouse_over = False
+            self.__selected_hexagon.highlighted_selected = True
+            self.__selected_hexagon.highlighted_double_selected = (not self.__move_stack) and len(actions) > 1
+            # Store action in text field of action entry
+            self.__variable_action.set(action_name)
+            # Show move result in an alternative pijersi state
+            action = self.__pijersi_state.get_action_by_simple_name(action_name)
+            self.__pijersi_state_gui_input = action.state
+             # Parameter input gui process to next step
+            self.__gui_input_step = GuiInputStep.SELECTED_STEP_2
+            self.__hightlight_legal_hexagons()
+            # If no more action available, this action is terminal
+            if len(self.__legal_gui_moves) == 0:
+                self.__terminate_gui_action()
+        else:
+            self.__reset_gui_process(event)
+        self.__draw_state()
+
+    def __click_step_2(self, event):
+        """
+        Manage click event when gui input process is at step 2, meaning that first target
+        is selected, waiting for a finish move.
+        If user clicks on a legal hexagon, next GUI step is invoked.
+        Otherwise, current process is cancelled.
+        """
+            
+        hexagon_mouse_click = self.__position_to_hexagon(event)
+        # Manage half move. If user clicks the first target hexagon, terminate the action
+        if hexagon_mouse_click is self.__selected_hexagon:
+            self.__terminate_gui_action()
+        elif hexagon_mouse_click in self.__legal_hexagons:
+            actions = [a[0:8] for a in self.__legal_gui_moves if a[6:8] == hexagon_mouse_click.name]
+            action_name = actions[0]
+            self.__variable_action.set(action_name)
+            action = self.__pijersi_state.get_action_by_simple_name(action_name)
+            self.__pijersi_state_gui_input = action.state
+            # The action is terminal by definition
+            self.__terminate_gui_action()
+        else:
+            self.__reset_gui_process(event)
+        self.__draw_state()
+
+    def __terminate_gui_action(self):
+        """
+        When gui input process is finished, transmits action to the kernel
+        """
+        self.__action_validated = True
+        self.__action_input = self.__variable_action.get()
+        self.__gui_input_step = GuiInputStep.FINISHED
+
+    def __hightlight_legal_hexagons(self):
+        """
+        Mark hexagons user can click
+        """
+
+        self.__set_legal_hexagons()
+
+        for hexagon in GraphicalHexagon.all:
+            if hexagon in self.__legal_hexagons:
+                if self.__gui_input_step in [GuiInputStep.SELECTED_STEP_1, GuiInputStep.SELECTED_STEP_2]:
+                    # If not in easy mode, do not highlight hexagons
+                    hexagon.highlighted_available_move = self.__easy_mode.get()
+                else:
+                    hexagon.highlighted_available_move = False
+            else:
+                hexagon.highlighted_available_move = False
+
+    def __reset_gui_process(self, event = None, back_to_gui_step = GuiInputStep.WAIT_SELECTION):
+        """
+        Reset gui input process and clean the drawing
+        """
+        self.__selected_hexagon = None
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_available_move = False
+            hexagon.highlighted_mouse_over = False
+            hexagon.highlighted_selected = False
+            hexagon.highlighted_double_selected = False
+        self.__gui_input_step = back_to_gui_step
+        self.__set_legal_hexagons()
+        if event is not None:
+            self.__mouse_over(event)
+        self.__pijersi_state_gui_input = None
+        self.__draw_state()
+
+    def __switch_easy_mode(self):
+        """
+        If user changes easy mode checkbox during a game, redo the right drawing
+        """
+
+        self.__hightlight_legal_hexagons()
+        self.__draw_state()
+
+
+    def __position_to_hexagon(self, position):
+        """
+        Return the hexagon given a drawing position
+        """
+        for hexagon in self.__legal_hexagons:
+            if hexagon.contains_point((position.x, position.y)):
+                return hexagon
+        if self.__selected_hexagon is not None:
+            if self.__selected_hexagon.contains_point((position.x, position.y)):
+                return self.__selected_hexagon
+        return None
 
     def __command_action_confirm(self):
 
@@ -685,7 +1044,7 @@ class GameGui(ttk.Frame):
 
         (self.__action_validated,
          message) = rules.Notation.validate_simple_notation(self.__action_input,
-                                                                  self.__pijersi_state.get_action_simple_names())
+                                                            self.__pijersi_state.get_action_simple_names())
 
         if self.__action_validated:
             self.__variable_log.set(message)
@@ -693,6 +1052,8 @@ class GameGui(ttk.Frame):
 
         else:
             self.__variable_log.set(message)
+
+        self.__reset_gui_process(back_to_gui_step=GuiInputStep.NONE)
 
 
     def __command_update_edit_actions(self):
@@ -725,6 +1086,8 @@ class GameGui(ttk.Frame):
 
         self.__game_started = not self.__game_started
 
+        self.__reset_gui_process(back_to_gui_step=GuiInputStep.NONE)
+
         if self.__game_started:
 
            self.__game = rules.Game()
@@ -734,8 +1097,7 @@ class GameGui(ttk.Frame):
 
            self.__pijersi_state = self.__game.get_state()
            self.__legend = ""
-           self.__draw_state()
-
+           
            self.__turn_states = list()
            self.__turn_states.append(self.__game.get_state())
            self.__turn_actions = list()
@@ -930,7 +1292,9 @@ class GameGui(ttk.Frame):
                 self.__entry_action.config(state="enabled")
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
-
+                if self.__gui_input_step == GuiInputStep.NONE:
+                    self.__reset_gui_process()
+                
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
 
@@ -940,10 +1304,10 @@ class GameGui(ttk.Frame):
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
                     self.__button_action_confirm.config(state="disabled")
+                    self.__reset_gui_process(back_to_gui_step=GuiInputStep.NONE)
 
             else:
                 ready_for_next_turn = True
-
             if ready_for_next_turn:
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
@@ -1127,8 +1491,13 @@ class GameGui(ttk.Frame):
 
     def __draw_all_cubes(self):
 
-        hexagon_top =  self.__pijersi_state.get_hexagon_top()
-        hexagon_bottom =  self.__pijersi_state.get_hexagon_bottom()
+        pijersi_state = self.__pijersi_state
+
+        if self.__pijersi_state_gui_input is not None:
+            pijersi_state = self.__pijersi_state_gui_input
+
+        hexagon_top =  pijersi_state.get_hexagon_top()
+        hexagon_bottom =  pijersi_state.get_hexagon_bottom()
 
         for hexagon in rules.Hexagon.all:
 
@@ -1167,54 +1536,47 @@ class GameGui(ttk.Frame):
     def __draw_all_hexagons(self):
 
         for hexagon in GraphicalHexagon.all:
-
-            self.__draw_hexagon(position_uv=hexagon.position_uv,
-                         hexagon_color=hexagon.color.value,
-                         label=hexagon.name)
+            self.__draw_hexagon(hexagon)
 
 
     ### Drawer primitives
 
-    def __draw_hexagon(self, position_uv, hexagon_color='', label=''):
+    def __draw_hexagon(self, hexagon):
 
-        (u, v) = position_uv
-
-        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
-        hexagon_data = list()
-
-        for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
-            vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
-
-            hexagon_vertex = hexagon_center
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
-
-            hexagon_data.append(hexagon_vertex[0])
-            hexagon_data.append(hexagon_vertex[1])
-
-            if vertex_index == 3:
-                label_position = (hexagon_vertex +
-                                  0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
-
+        label_position = ( TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
+                          0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
 
         if self.__use_background_photo:
             polygon_line_color = ''
             fill_color = ''
         else:
             polygon_line_color = HexagonLineColor.NORMAL.value
-            fill_color = hexagon_color
+            fill_color = hexagon.color.value
+        
+        # Respect priority order in lighting : available move >  selected >  legit target
+        if hexagon.highlighted_available_move:
+            fill_color = HexagonColor.HIGHLIGHT_AVAILABLE_MOVE.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_selected:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_SELECTED.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_double_selected:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_DOUBLE_SELECTED.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if hexagon.highlighted_mouse_over:
+            fill_color = HexagonColor.HIGHLIGHT_MOUSE_OVER.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        self.__canvas.create_polygon(hexagon_data,
+        self.__canvas.create_polygon(hexagon.vertex_data,
                               fill=fill_color,
                               outline=polygon_line_color,
                               width=CanvasConfig.HEXA_LINE_WIDTH,
                               joinstyle=tk.MITER)
 
-        if label:
+        if hexagon.name:
             label_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LABEL_SIZE, weight='bold')
 
-            self.__canvas.create_text(*label_position, text=label, justify=tk.CENTER, font=label_font)
+            self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
 
 
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
@@ -1223,21 +1585,19 @@ class GameGui(ttk.Frame):
 
         (u, v) = hexagon.position_uv
 
-        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
-
         cube_vertices = list()
 
         for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
 
             if config == CubeLocation.MIDDLE:
-                cube_center = hexagon_center
+                cube_center = hexagon.center
 
             elif config == CubeLocation.BOTTOM:
-                cube_center = hexagon_center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
             elif config == CubeLocation.TOP:
-                cube_center = hexagon_center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
             cube_vertex = cube_center
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
