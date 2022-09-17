@@ -185,7 +185,7 @@ class CanvasConfig:
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
-    HEIGHT = 800
+    HEIGHT = 640
     WIDTH = HEIGHT*RATIO
 
     # Canvas background
