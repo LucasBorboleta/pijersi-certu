@@ -327,10 +327,10 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
-        self.highlighted_mouse_over = False
-        self.highlighted_available_move = False
-        self.highlighted_selected = False
-        self.highlighted_double_selected = False
+        self.highlighted_for_source_selection = False
+        self.highlighted_for_destination_selection = False
+        self.highlighted_for_cube_selection = False
+        self.highlighted_for_stack_selection = False
 
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
@@ -861,13 +861,13 @@ class GameGui(ttk.Frame):
             hexagon_mouse_over = self.__position_to_hexagon(event)
             for hexagon in self.__legal_hexagons:
                 if hexagon is hexagon_mouse_over:
-                    if not hexagon.highlighted_mouse_over:
-                        hexagon.highlighted_mouse_over = True
+                    if not hexagon.highlighted_for_source_selection:
+                        hexagon.highlighted_for_source_selection = True
                         redraw = True
                 else:
-                    if hexagon.highlighted_mouse_over:
+                    if hexagon.highlighted_for_source_selection:
                         redraw = True
-                    hexagon.highlighted_mouse_over = False
+                    hexagon.highlighted_for_source_selection = False
             if redraw:
                 self.__draw_state()
                 
@@ -906,10 +906,10 @@ class GameGui(ttk.Frame):
         if hexagon_mouse_click in self.__legal_hexagons:
             self.__selected_hexagon = hexagon_mouse_click
             # Give proper color (priority to stack)
-            self.__selected_hexagon.highlighted_selected = True
-            self.__selected_hexagon.highlighted_mouse_over = False
+            self.__selected_hexagon.highlighted_for_cube_selection = True
+            self.__selected_hexagon.highlighted_for_source_selection = False
             has_egal = self.__hexagon_has_stack(self.__selected_hexagon.name)
-            self.__selected_hexagon.highlighted_double_selected = has_egal
+            self.__selected_hexagon.highlighted_for_stack_selection = has_egal
             self.__gui_stack_selected = has_egal
             self.__move_stack = has_egal
             # Parameter input gui process to next step
@@ -935,13 +935,13 @@ class GameGui(ttk.Frame):
         # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
         if self.__gui_stack_selected and hexagon_mouse_click is self.__selected_hexagon:
             self.__move_stack = not self.__move_stack
-            self.__selected_hexagon.highlighted_double_selected = self.__move_stack
+            self.__selected_hexagon.highlighted_for_stack_selection = self.__move_stack
             self.__hightlight_legal_hexagons()
         elif hexagon_mouse_click in self.__legal_hexagons:
             # Uncolor first selected hexagon
-            self.__selected_hexagon.highlighted_mouse_over = False
-            self.__selected_hexagon.highlighted_double_selected = False
-            self.__selected_hexagon.highlighted_selected = False
+            self.__selected_hexagon.highlighted_for_source_selection = False
+            self.__selected_hexagon.highlighted_for_stack_selection = False
+            self.__selected_hexagon.highlighted_for_cube_selection = False
             # Change selected hexagon and filter corresponding actions
             self.__selected_hexagon = hexagon_mouse_click
             actions = [a[0:5] for a in self.__legal_gui_moves if a[3:5] == hexagon_mouse_click.name]
@@ -955,9 +955,9 @@ class GameGui(ttk.Frame):
             else:
                 action_name = actions[0]
             # Give correct color to selected hexagon
-            self.__selected_hexagon.highlighted_mouse_over = False
-            self.__selected_hexagon.highlighted_selected = True
-            self.__selected_hexagon.highlighted_double_selected = (not self.__move_stack) and len(actions) > 1
+            self.__selected_hexagon.highlighted_for_source_selection = False
+            self.__selected_hexagon.highlighted_for_cube_selection = True
+            self.__selected_hexagon.highlighted_for_stack_selection = (not self.__move_stack) and len(actions) > 1
             # Store action in text field of action entry
             self.__variable_action.set(action_name)
             # Show move result in an alternative pijersi state
@@ -1022,11 +1022,11 @@ class GameGui(ttk.Frame):
             if hexagon in self.__legal_hexagons:
                 if self.__gui_input_step in [GuiInputStep.SELECTED_STEP_1, GuiInputStep.SELECTED_STEP_2]:
                     # If not in easy mode, do not highlight hexagons
-                    hexagon.highlighted_available_move = self.__easy_mode.get()
+                    hexagon.highlighted_for_destination_selection = self.__easy_mode.get()
                 else:
-                    hexagon.highlighted_available_move = False
+                    hexagon.highlighted_for_destination_selection = False
             else:
-                hexagon.highlighted_available_move = False
+                hexagon.highlighted_for_destination_selection = False
 
 
     def __reset_gui_process(self, event=None, back_to_gui_step=GuiInputStep.WAIT_SELECTION):
@@ -1036,10 +1036,10 @@ class GameGui(ttk.Frame):
         self.__selected_hexagon = None
         
         for hexagon in GraphicalHexagon.all:
-            hexagon.highlighted_available_move = False
-            hexagon.highlighted_mouse_over = False
-            hexagon.highlighted_selected = False
-            hexagon.highlighted_double_selected = False
+            hexagon.highlighted_for_destination_selection = False
+            hexagon.highlighted_for_source_selection = False
+            hexagon.highlighted_for_cube_selection = False
+            hexagon.highlighted_for_stack_selection = False
         
         self.__gui_input_step = back_to_gui_step
         
@@ -1598,20 +1598,20 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
         
-        # Respect priority order in lighting : available move >  selected >  legit target
-        if hexagon.highlighted_available_move:
+        # Respect priority order in lighting 
+        if hexagon.highlighted_for_destination_selection:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
             
-        if hexagon.highlighted_selected:
+        if hexagon.highlighted_for_cube_selection:
             fill_color = HexagonColor.HIGHLIGHT_CUBE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
             
-        if hexagon.highlighted_double_selected:
+        if hexagon.highlighted_for_stack_selection:
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
             
-        if hexagon.highlighted_mouse_over:
+        if hexagon.highlighted_for_source_selection:
             fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
@@ -1630,6 +1630,20 @@ class GameGui(ttk.Frame):
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
 
         hexagon = GraphicalHexagon.get(name)
+        
+        shift_value = 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+
+        top_shift = 0
+        middle_shift = 0
+        bottom_shift = 0
+                
+        if hexagon.highlighted_for_stack_selection:
+            top_shift = 0.5*shift_value
+            bottom_shift = 0.75*shift_value
+                
+        if hexagon.highlighted_for_cube_selection:
+            top_shift = 0.5*shift_value
+
 
         (u, v) = hexagon.position_uv
 
@@ -1639,13 +1653,13 @@ class GameGui(ttk.Frame):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
 
             if config == CubeLocation.MIDDLE:
-                cube_center = hexagon.center
+                cube_center = hexagon.center + middle_shift
 
             elif config == CubeLocation.BOTTOM:
-                cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
 
             elif config == CubeLocation.TOP:
-                cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+                cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + top_shift
 
             cube_vertex = cube_center
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
