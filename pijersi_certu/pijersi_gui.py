@@ -179,15 +179,16 @@ class TinyVector:
 
 class CanvasConfig:
 
-    # Canvas x-y dimensions in hexagon units
-    NY = 8
+    # Canvas x-y dimensions in hexagon width units
+    # >> This complex formula is related to the construction of the background picture for the board
     NX = 8
+    NY = (4 + 5/2)*2/math.sqrt(3)
 
     # Canvas x-y dimensions in pixels
     RATIO = NX/NY
     HEIGHT = 640
     WIDTH = HEIGHT*RATIO
-
+    
     # Canvas background
     USE_BACKGROUND_PHOTO = True
     BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
@@ -195,7 +196,7 @@ class CanvasConfig:
     # Hexagon geometrical data
     HEXA_VERTEX_COUNT = 6
     HEXA_SIDE_ANGLE = 2*math.pi/HEXA_VERTEX_COUNT
-    HEXA_WIDTH = min(HEIGHT, WIDTH) / max(NX, NY)
+    HEXA_WIDTH = WIDTH/NX
     HEXA_SIDE = HEXA_WIDTH*math.tan(HEXA_SIDE_ANGLE/2)
     HEXA_DELTA_Y = math.sqrt(HEXA_SIDE**2 -(HEXA_WIDTH/2)**2)
 
@@ -290,14 +291,19 @@ class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
     HIGHLIGHT = 'white'
 
+
 class GuiInputStep(enum.Enum):
     NONE = enum.auto()
+    
     # No hexagon selected
     WAIT_SELECTION = enum.auto()
+    
     # Starting hexagon selected
     SELECTED_STEP_1 = enum.auto()
+    
     # First move done
     SELECTED_STEP_2 = enum.auto()
+    
     # Second move done
     FINISHED = enum.auto()
 
@@ -721,8 +727,6 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(state="disabled")
 
 
-
-
     def __create_cube_photos(self):
         if self.__cube_photos is None:
 
@@ -881,10 +885,13 @@ class GameGui(ttk.Frame):
 
         if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
             self.__click_wait_selection_step(event)
+            
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
             self.__click_step_1(event)
+            
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
             self.__click_step_2(event)
+
 
     def __click_wait_selection_step(self, event):
         """
@@ -895,6 +902,7 @@ class GameGui(ttk.Frame):
         """
 
         hexagon_mouse_click = self.__position_to_hexagon(event)
+        
         if hexagon_mouse_click in self.__legal_hexagons:
             self.__selected_hexagon = hexagon_mouse_click
             # Give proper color (priority to stack)
@@ -908,9 +916,12 @@ class GameGui(ttk.Frame):
             self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
             self.__hightlight_legal_hexagons()
             self.__variable_action.set(hexagon_mouse_click.name)
+            
         else:
             self.__reset_gui_process(event)
+            
         self.__draw_state()
+
 
     def __click_step_1(self, event):
         """
@@ -962,6 +973,7 @@ class GameGui(ttk.Frame):
             self.__reset_gui_process(event)
         self.__draw_state()
 
+
     def __click_step_2(self, event):
         """
         Manage click event when gui input process is at step 2, meaning that first target
@@ -974,6 +986,7 @@ class GameGui(ttk.Frame):
         # Manage half move. If user clicks the first target hexagon, terminate the action
         if hexagon_mouse_click is self.__selected_hexagon:
             self.__terminate_gui_action()
+            
         elif hexagon_mouse_click in self.__legal_hexagons:
             actions = [a[0:8] for a in self.__legal_gui_moves if a[6:8] == hexagon_mouse_click.name]
             action_name = actions[0]
@@ -982,9 +995,12 @@ class GameGui(ttk.Frame):
             self.__pijersi_state_gui_input = action.state
             # The action is terminal by definition
             self.__terminate_gui_action()
+            
         else:
             self.__reset_gui_process(event)
+            
         self.__draw_state()
+
 
     def __terminate_gui_action(self):
         """
@@ -993,6 +1009,7 @@ class GameGui(ttk.Frame):
         self.__action_validated = True
         self.__action_input = self.__variable_action.get()
         self.__gui_input_step = GuiInputStep.FINISHED
+
 
     def __hightlight_legal_hexagons(self):
         """
@@ -1011,6 +1028,7 @@ class GameGui(ttk.Frame):
             else:
                 hexagon.highlighted_available_move = False
 
+
     def __reset_gui_process(self, event = None, back_to_gui_step = GuiInputStep.WAIT_SELECTION):
         """
         Reset gui input process and clean the drawing
@@ -1027,6 +1045,7 @@ class GameGui(ttk.Frame):
             self.__mouse_over(event)
         self.__pijersi_state_gui_input = None
         self.__draw_state()
+
 
     def __switch_easy_mode(self):
         """
@@ -1048,6 +1067,7 @@ class GameGui(ttk.Frame):
             if self.__selected_hexagon.contains_point((position.x, position.y)):
                 return self.__selected_hexagon
         return None
+
 
     def __command_action_confirm(self):
 
@@ -1409,8 +1429,13 @@ class GameGui(ttk.Frame):
                 if self.__use_background_photo:
                     upper += self.__background_tk_photo_delta_y
                     lower -= self.__background_tk_photo_delta_y
+
+                    left += self.__background_tk_photo_delta_x
+                    right -= self.__background_tk_photo_delta_x
+                    
                     upper += int(0.01*h)
                     lower -= int(0.01*h)
+                    
                     left += int(0.01*w)
                     right -= int(0.01*w)
 
@@ -1467,16 +1492,17 @@ class GameGui(ttk.Frame):
             bg_photo = Image.open(CanvasConfig.BACKGROUND_PHOTO_PATH)
             (bg_width, bg_height) = bg_photo.size
 
-            bg_new_width = int(CanvasConfig.WIDTH)
-            bg_new_height = int(CanvasConfig.WIDTH*bg_height/bg_width)
+            bg_new_width = int(math.ceil(CanvasConfig.WIDTH))
+            bg_new_height = int(math.ceil(CanvasConfig.WIDTH*bg_height/bg_width))
 
             bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
             self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
 
-            self.__background_tk_photo_delta_y = int((CanvasConfig.HEIGHT - bg_new_height)/2)
+            self.__background_tk_photo_delta_x = (bg_new_width - CanvasConfig.WIDTH)
+            self.__background_tk_photo_delta_y = (bg_new_height - CanvasConfig.HEIGHT)
 
         # Add the background image
-        self.__canvas.create_image(0, self.__background_tk_photo_delta_y,
+        self.__canvas.create_image(self.__background_tk_photo_delta_x, self.__background_tk_photo_delta_y,
                                    image=self.__background_tk_photo,
                                    anchor=tk.NW)
 
@@ -1562,6 +1588,7 @@ class GameGui(ttk.Frame):
         if self.__use_background_photo:
             polygon_line_color = ''
             fill_color = ''
+            
         else:
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
@@ -1570,12 +1597,15 @@ class GameGui(ttk.Frame):
         if hexagon.highlighted_available_move:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+            
         if hexagon.highlighted_selected:
             fill_color = HexagonColor.HIGHLIGHT_CUBE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+            
         if hexagon.highlighted_double_selected:
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+            
         if hexagon.highlighted_mouse_over:
             fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
