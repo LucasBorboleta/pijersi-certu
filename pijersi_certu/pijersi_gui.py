@@ -1029,20 +1029,25 @@ class GameGui(ttk.Frame):
                 hexagon.highlighted_available_move = False
 
 
-    def __reset_gui_process(self, event = None, back_to_gui_step = GuiInputStep.WAIT_SELECTION):
+    def __reset_gui_process(self, event=None, back_to_gui_step=GuiInputStep.WAIT_SELECTION):
         """
         Reset gui input process and clean the drawing
         """
         self.__selected_hexagon = None
+        
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_available_move = False
             hexagon.highlighted_mouse_over = False
             hexagon.highlighted_selected = False
             hexagon.highlighted_double_selected = False
+        
         self.__gui_input_step = back_to_gui_step
+        
         self.__set_legal_hexagons()
+        
         if event is not None:
             self.__mouse_over(event)
+        
         self.__pijersi_state_gui_input = None
         self.__draw_state()
 
@@ -1498,8 +1503,8 @@ class GameGui(ttk.Frame):
             bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
             self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
 
-            self.__background_tk_photo_delta_x = (bg_new_width - CanvasConfig.WIDTH)
-            self.__background_tk_photo_delta_y = (bg_new_height - CanvasConfig.HEIGHT)
+            self.__background_tk_photo_delta_x = (bg_new_width - CanvasConfig.WIDTH)/2
+            self.__background_tk_photo_delta_y = (bg_new_height - CanvasConfig.HEIGHT)/2
 
         # Add the background image
         self.__canvas.create_image(self.__background_tk_photo_delta_x, self.__background_tk_photo_delta_y,
