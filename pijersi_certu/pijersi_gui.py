@@ -1638,7 +1638,7 @@ class GameGui(ttk.Frame):
                 
         if hexagon.highlighted_for_stack_selection:
             top_shift = shift_value
-            bottom_shift = shift_value
+            bottom_shift = 1.25*shift_value
                 
         if hexagon.highlighted_for_cube_selection:
             top_shift = shift_value

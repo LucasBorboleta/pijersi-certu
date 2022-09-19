@@ -13,12 +13,14 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
   - The returned hash value must comply with the following table, otherwise, remove immediately the downloaded executable from your computer.
 
-  | Version    | Hash   | Expected hash value                                              |
-  | ---------- | ------ | ---------------------------------------------------------------- |
+  | Version    | Hash   | Expected hash value                                          |
+  | ---------- | ------ | ------------------------------------------------------------ |
+  | v1.1.0-rc2 | SHA256 | 7020FF967F3781BBF4C36F7FB45C77C1721212816F6879F63EB80A82D81EAACD |
+  | v1.1.0-rc2 | MD5    | E083FC94DB4E8381E10213C6E2E520FE                             |
   | v1.1.0-rc1 | SHA256 | 0EA219C70E075C253A1B974797D9CCB92531778A7F9FFF4205BEB21F8FA45E28 |
-  | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
+  | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                             |
   | v1.0.0     | SHA256 | 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36 |
-  | v1.0.0     | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                                 |
+  | v1.0.0     | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                             |
 
 
 
