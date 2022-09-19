@@ -53,4 +53,3 @@ For information, *pijersi_certu* relies on the following packages:
 
 - *Pillow* : for converting and resizing images used in the GUI;
 - *MCTS*  : for implementing experimental AI agents;
-- *matplotlib* : for implementing the predicate `is this point inside this hexagon ?`.

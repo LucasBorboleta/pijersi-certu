@@ -33,7 +33,6 @@ import tkinter as tk
 from tkinter import font
 from tkinter import ttk
 
-import matplotlib.path as mpltPath
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
@@ -199,6 +198,8 @@ class CanvasConfig:
     HEXA_WIDTH = WIDTH/NX
     HEXA_SIDE = HEXA_WIDTH*math.tan(HEXA_SIDE_ANGLE/2)
     HEXA_DELTA_Y = math.sqrt(HEXA_SIDE**2 -(HEXA_WIDTH/2)**2)
+    HEXA_COS_SIDE_ANGLE = math.cos(HEXA_SIDE_ANGLE)
+    HEXA_SIN_SIDE_ANGLE = math.sin(HEXA_SIDE_ANGLE)
 
     # Cube (square) geometrical data
     CUBE_VERTEX_COUNT = 4
@@ -225,7 +226,7 @@ class CanvasConfig:
 
     # Unit vectors of the oblic u-v frame
     UNIT_U = UNIT_X
-    UNIT_V = math.cos(HEXA_SIDE_ANGLE)*UNIT_X + math.sin(HEXA_SIDE_ANGLE)*UNIT_Y
+    UNIT_V = HEXA_COS_SIDE_ANGLE*UNIT_X + HEXA_SIN_SIDE_ANGLE*UNIT_Y
 
 
 class CubeConfig:
@@ -355,11 +356,45 @@ class GraphicalHexagon:
             self.vertex_data.append(hexagon_vertex[0])
             self.vertex_data.append(hexagon_vertex[1])
 
-        self.path = mpltPath.Path(data_to_path)
-
 
     def contains_point(self, point):
-        return self.path.contains_point(point)
+        """ Is the point inside the current hexagon ?"""
+        
+        #>> This implementation relies of the following properties:
+        #>> - All hexagons of the Pijersi board are regular hexagons: all the 6 sides are of equal lengths.
+        #>> - All hexagons have the same sizes.
+        #>> - All hexagons can be translated to the central hexagon and does match it.
+        #>> - The x-axis is orthogonal to an hexagon side.
+
+        is_inside = True
+        
+        (hexagon_x, hexagon_y) = (self.center[0], self.center[1])
+        (point_x, point_y) = point
+        
+        # Compute the standardized point : translated and scaled regarding the actual hexagon
+        x = (point_x - hexagon_x)/(CanvasConfig.HEXA_WIDTH/2)
+        y = (point_y - hexagon_y)/(CanvasConfig.HEXA_WIDTH/2)
+        
+        if is_inside:
+            is_inside = math.fabs(x) < 1
+            
+        if is_inside:
+            # first rotation by CanvasConfig.HEXA_SIDE_ANGLE
+            (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
+                      CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
+
+            is_inside = math.fabs(x) < 1
+            
+        if is_inside:
+            # second rotation by CanvasConfig.HEXA_SIDE_ANGLE
+            (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
+                      CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
+
+            is_inside = math.fabs(x) < 1        
+        
+        return is_inside
+
+
 
     def __str__(self):
         return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.index}, {self.color})"
