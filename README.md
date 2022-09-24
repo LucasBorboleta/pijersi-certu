@@ -1,10 +1,10 @@
 # Pijersi certu
 
-![](./docs/pijersi-screenshot-easy-mode.png)
+![](./docs/pijersi-screenshot-easy-mode-bis.png)
 
 The Python package *pijersi_certu* provides a GUI and a rules engine for playing the *Pijersi* board-game, which is a *wise men oriented* variant of [*Jersi*](https://github.com/LucasBorboleta/jersi) board-game. 
 
-The rules of Pijersi are explained here [https://github.com/LucasBorboleta/pijersi](https://github.com/LucasBorboleta/pijersi) in a rulebook (Markdown and PDF formats) and also here in a [video](https://youtu.be/w41zrhBB5t8) in French with subtitles.
+The rules of Pijersi are explained here [https://github.com/LucasBorboleta/pijersi](https://github.com/LucasBorboleta/pijersi) in a rulebook (Markdown and PDF formats) and also here in videos in  [English](https://youtu.be/w2c6-h2DAus) or in  [French](https://youtu.be/w41zrhBB5t8) (both with subtitles).
 
 *pijersi_certu* is being developed on Windows and should be portable on Linux. For running it on your computer read the [**INSTALL**](./docs/INSTALL.md) instructions.
 
