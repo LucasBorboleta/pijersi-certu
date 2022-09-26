@@ -342,16 +342,12 @@ class GraphicalHexagon:
 
         self.vertex_data = list()
 
-        data_to_path = []
-
         for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
 
             hexagon_vertex = self.center
             hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
             hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
-
-            data_to_path.append([hexagon_vertex[0],hexagon_vertex[1]])
 
             self.vertex_data.append(hexagon_vertex[0])
             self.vertex_data.append(hexagon_vertex[1])
@@ -366,6 +362,8 @@ class GraphicalHexagon:
         #>> - All hexagons can be translated to the central hexagon and does match it.
         #>> - The x-axis is orthogonal to an hexagon side.
 
+        SAFE_RELATIVE_INSIDE_WIDTH = 0.99
+
         is_inside = True
         
         (hexagon_x, hexagon_y) = (self.center[0], self.center[1])
@@ -376,21 +374,24 @@ class GraphicalHexagon:
         y = (point_y - hexagon_y)/(CanvasConfig.HEXA_WIDTH/2)
         
         if is_inside:
-            is_inside = math.fabs(x) < 1
+            is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
+
             
         if is_inside:
             # first rotation by CanvasConfig.HEXA_SIDE_ANGLE
             (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
                       CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
 
-            is_inside = math.fabs(x) < 1
+            is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
+
             
         if is_inside:
             # second rotation by CanvasConfig.HEXA_SIDE_ANGLE
             (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
                       CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
 
-            is_inside = math.fabs(x) < 1        
+            is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
+    
         
         return is_inside
 
@@ -509,6 +510,8 @@ class GameGui(ttk.Frame):
 
         self.__gui_stack_selected = False
         self.__move_stack = False
+        
+        # Create widgets
 
         self.__root = tk.Tk()
 
@@ -519,6 +522,9 @@ class GameGui(ttk.Frame):
             pass
 
         self.__create_widgets()
+
+        # Update widgets
+
         self.__draw_state()
 
         self.__command_update_faces()
@@ -527,6 +533,7 @@ class GameGui(ttk.Frame):
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
         self.__variable_summary.set("(c) 2022 Lucas Borboleta ; pijersi software license : GNU GPL ; pijersi rules license : CC-BY-NC-SA")
 
+        # Wait events
         self.__root.mainloop()
 
 
