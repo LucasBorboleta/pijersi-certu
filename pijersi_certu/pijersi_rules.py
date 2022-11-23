@@ -54,6 +54,39 @@ def partition(predicate, iterable):
     return (itertools.filterfalse(predicate, t1), filter(predicate, t2))
 
 
+
+def make_pair_iterator(data_iterator, sentinel=None):
+
+    data = next(data_iterator, sentinel)
+    next_data = next(data_iterator, sentinel)
+
+    while data is not sentinel:
+        yield (data, next_data)
+        (data, next_data) = (next_data, next(data_iterator, sentinel))
+
+
+def make_chunk_sort_iterator(data_iterator, chunk_size, key=None, reverse=False):
+    assert chunk_size >= 0
+
+    if chunk_size == 0:
+        for data in data_iterator:
+            yield data
+
+    else:
+        chunk = list()
+        for data in data_iterator:
+            chunk.append(data)
+            if len(chunk) == chunk_size:
+                chunk.sort(key=key, reverse=reverse)
+                for data in chunk:
+                    yield data
+                chunk = list()
+
+        chunk.sort(key=key, reverse=reverse)
+        for data in chunk:
+            yield data
+
+
 def hex_distance(position_uv_1, position_uv_2):
     """reference: https://www.redblobgames.com/grids/hexagons/#distances"""
     (u1, v1) = position_uv_1
@@ -784,29 +817,6 @@ class PijersiAction:
         return self.notation
 
 
-
-class PijersiActionAppender:
-
-    __slots__ = ('__actions', '__notations')
-
-
-    def __init__(self):
-        self.__actions = []
-        self.__notations = set()
-
-
-    def append(self, action):
-        if action.notation in self.__notations:
-            return
-
-        self.__actions.append(action)
-        self.__notations.add(action.notation)
-
-
-    def get_actions(self):
-        return self.__actions
-
-
 class PijersiState:
 
     __max_credit = 20
@@ -1215,18 +1225,26 @@ class PijersiState:
         return self.__terminated
 
 
-    def get_actions(self, shuffle=True):
+    def get_actions(self):
         if self.__actions is None:
-            self.__actions = self.__find_moves()
-            # Better to shuffle actions here than by MCTS searcher for example
-            if shuffle:
-                random.shuffle(self.__actions)
+            self.__actions = list(self.__find_moves())
+
         return self.__actions
+
+
+    def iterate_actions(self):
+        if self.__actions is None:
+            for action in self.__find_moves():
+                yield action
+
+        else:
+            for action in self.__actions:
+                yield action
 
 
     def has_action(self):
 
-        moves = self.__find_cube_first_moves(find_one=True)
+        moves = list(self.__find_cube_first_moves(find_one=True))
         return len(moves) != 0
 
 
@@ -1268,25 +1286,45 @@ class PijersiState:
     ### Action finders
 
     def __find_moves(self):
-        actions = self.__find_stack_first_moves() + self.__find_cube_first_moves()
-        return actions
+
+        use_random = True
+
+        if not use_random or random.choice((True, False)):
+
+            for action in self.__find_stack_first_moves():
+                yield action
+
+            for action in self.__find_cube_first_moves():
+                yield action
+
+        else:
+            for action in self.__find_cube_first_moves():
+                yield action
+
+            for action in self.__find_stack_first_moves():
+                yield action
 
 
     def __find_cube_first_moves(self, find_one=False):
-        actions = []
         found_one = False
 
-        for source_1 in self.__find_hexagons_with_movable_cube():
+        sources_1 = self.__find_hexagons_with_movable_cube()
+        random.shuffle(sources_1)
+
+        for source_1 in sources_1:
 
             if find_one and found_one:
                 break
 
-            for direction_1 in HexagonDirection:
+            directions_1 = [direction_1 for direction_1 in HexagonDirection]
+            random.shuffle(directions_1)
+
+            for direction_1 in directions_1:
                 destination_1 = Hexagon.get_next_fst_indices(source_1, direction_1)
                 if destination_1 != Null.HEXAGON:
                     action_1 = self.__try_move_cube(source_1, destination_1)
                     if action_1 is not None:
-                        actions.append(action_1)
+                        yield action_1
                         if find_one:
                             found_one = True
                             break
@@ -1294,12 +1332,15 @@ class PijersiState:
                         state_1 = action_1.state.__fork()
                         if state_1.__is_hexagon_with_movable_stack(destination_1):
 
-                            for direction_2 in HexagonDirection:
+                            directions_2 = [direction_2 for direction_2 in HexagonDirection]
+                            random.shuffle(directions_2)
+
+                            for direction_2 in directions_2:
                                 destination_21 = Hexagon.get_next_fst_indices(destination_1, direction_2)
                                 if destination_21 != Null.HEXAGON:
                                     action_21 = state_1.__try_move_stack(destination_1, destination_21, previous_action=action_1)
                                     if action_21 is not None:
-                                        actions.append(action_21)
+                                        yield action_21
 
                                     if state_1.__hexagon_bottom[destination_21] == Null.CUBE:
                                         # stack can cross destination_21 with zero cube
@@ -1307,38 +1348,45 @@ class PijersiState:
                                         if destination_22 != Null.HEXAGON:
                                             action_22 = state_1.__try_move_stack(destination_1, destination_22, previous_action=action_1)
                                             if action_22 is not None:
-                                                actions.append(action_22)
-        return actions
+                                                yield action_22
 
 
     def __find_stack_first_moves(self, find_one=False):
 
-        actions = []
         found_one = False
 
-        for source_1 in self.__find_hexagons_with_movable_stack():
+        sources_1 = self.__find_hexagons_with_movable_stack()
+        random.shuffle(sources_1)
+
+        for source_1 in sources_1:
 
             if find_one and found_one:
                 break
 
-            for direction_1 in HexagonDirection:
+            directions_1 = [direction_1 for direction_1 in HexagonDirection]
+            random.shuffle(directions_1)
+
+            for direction_1 in directions_1:
                 destination_11 = Hexagon.get_next_fst_indices(source_1, direction_1)
                 if destination_11 != Null.HEXAGON:
                     action_11 = self.__try_move_stack(source_1, destination_11)
                     if action_11 is not None:
-                        actions.append(action_11)
+                        yield action_11
                         if find_one:
                             found_one = True
                             break
 
                         state_11 = action_11.state.__fork()
 
-                        for direction_21 in HexagonDirection:
+                        directions_21 = [direction_21 for direction_21 in HexagonDirection]
+                        random.shuffle(directions_21)
+
+                        for direction_21 in directions_21:
                             destination_21 = Hexagon.get_next_fst_indices(destination_11, direction_21)
                             if destination_21 != Null.HEXAGON:
                                 action_21 = state_11.__try_move_cube(destination_11, destination_21, previous_action=action_11)
                                 if action_21 is not None:
-                                    actions.append(action_21)
+                                    yield action_21
 
                     if self.__hexagon_bottom[destination_11] == Null.CUBE:
                         # stack can cross destination_11 with zero cube
@@ -1346,17 +1394,19 @@ class PijersiState:
                         if destination_12 != Null.HEXAGON:
                             action_12 = self.__try_move_stack(source_1, destination_12)
                             if action_12 is not None:
-                                actions.append(action_12)
+                                yield action_12
 
                                 state_12 = action_12.state.__fork()
 
-                                for direction_22 in HexagonDirection:
+                                directions_22 = [direction_22 for direction_22 in HexagonDirection]
+                                random.shuffle(directions_22)
+
+                                for direction_22 in directions_22:
                                     destination_22 = Hexagon.get_next_fst_indices(destination_12, direction_22)
                                     if destination_22 != Null.HEXAGON:
                                         action_22 = state_12.__try_move_cube(destination_12, destination_22, previous_action=action_12)
                                         if action_22 is not None:
-                                            actions.append(action_22)
-        return actions
+                                            yield action_22
 
     ### Cubes and hexagons finders
 
@@ -1722,8 +1772,12 @@ class MinimaxState:
         return minimax_reward
 
 
-    def get_actions(self, shuffle):
-        return self.__pijersi_state.get_actions(shuffle)
+    def get_actions(self):
+        return self.__pijersi_state.get_actions()
+
+
+    def iterate_actions(self):
+        return self.__pijersi_state.iterate_actions()
 
 
     def take_action(self, action):
@@ -2176,49 +2230,6 @@ class MinimaxSearcher():
         return value
 
 
-    def reduce_actions(self, actions):
-
-        assert len(actions) != 0
-
-        if (self.__max_children is not None and len(actions) > self.__max_children):
-            if self.__debug:
-                print("--- reduce actions")
-
-            move_actions = copy.copy(actions)
-
-            if len(move_actions) > self.__max_children:
-                # sample the move actions according to their destination cells
-                move_actions.sort(key=lambda x: re.sub(r"/[kK]:..$", "", str(x)).replace("!","")[-2:])
-
-                selected_move_actions = list()
-                for action_chunk in chunks(move_actions, self.__max_children):
-                    if len(action_chunk) != 0:
-                        selected_move_actions.append(random.choice(action_chunk))
-
-                move_actions = selected_move_actions
-
-            actions = move_actions
-
-        assert len(actions) != 0
-        return actions
-
-
-    def sort_actions(self, actions):
-
-        def score_action(action):
-            action_str = str(action)
-            captures = re.sub(r"[^!]", "", action_str)
-            stacks = re.sub(r"[^=]", "", action_str)
-            score = 4*len(captures) + 2*len(stacks)
-            return score
-
-
-        if self.__debug:
-            print("--- sort actions")
-
-        actions.sort(key=score_action, reverse=True)
-
-
     def minimax(self, state, player, depth=None, return_action_values=False):
 
         if depth is None:
@@ -2247,7 +2258,7 @@ class MinimaxSearcher():
         if return_action_values:
             action_values = dict()
 
-        actions = state.get_actions(shuffle=True)
+        actions = state.get_actions()
 
         if player == 1:
 
@@ -2286,7 +2297,14 @@ class MinimaxSearcher():
 
     def alphabeta(self, state, player, depth=None, alpha=None, beta=None, return_action_values=False):
 
-        use_sort = True
+
+        def score_action(action):
+            action_str = str(action)
+            captures = re.sub(r"[^!]", "", action_str)
+            stacks = re.sub(r"[^=]", "", action_str)
+            score = 4*len(captures) + 2*len(stacks)
+            return score
+
 
         if alpha is None:
             alpha = -math.inf
@@ -2325,12 +2343,7 @@ class MinimaxSearcher():
         if return_action_values:
             action_values = dict()
 
-        # >> alphabeta will return only the first high valued action,
-        # >> so shuffling may vary the alphabeta return
-        actions = state.get_actions(shuffle=True)
-        actions = self.reduce_actions(actions)
-        if use_sort:
-            self.sort_actions(actions)
+        actions = make_chunk_sort_iterator(state.iterate_actions(), chunk_size=32, key=score_action, reverse=True)
 
         if player == 1:
 
@@ -2339,8 +2352,7 @@ class MinimaxSearcher():
             for action in actions:
                 child_state = state.take_action(action)
 
-                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=beta)
+                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
                 if return_action_values:
                     assert action not in action_values
@@ -2359,11 +2371,10 @@ class MinimaxSearcher():
 
             state_value = math.inf
 
-            for (action_index, action) in enumerate(actions):
+            for (action, next_action) in make_pair_iterator(actions):
                 child_state = state.take_action(action)
 
-                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=beta)
+                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
                 state_value = min(state_value, child_value)
 
@@ -2372,7 +2383,7 @@ class MinimaxSearcher():
                         print("--- alpha cut-off")
 
                     if depth == (self.__max_depth - 1):
-                        if state_value == alpha and action_index != (len(actions) - 1):
+                        if state_value == alpha and (next_action is not None):
                             # >> prevent final return of actions with falsely equal values due to cut-off
                             # >> rationale: without cut-off it could be that state_value < alpha
                             state_value -= 1/OMEGA
@@ -2387,200 +2398,6 @@ class MinimaxSearcher():
         if self.__debug:
             print()
             print("alphabeta at depth %d evaluates state %d with value %f" % (depth, id(state), state_value))
-
-        if return_action_values:
-            return (state_value, action_values)
-        else:
-            return state_value
-
-
-    def pvs(self, state, player, depth=None, alpha=None, beta=None, return_action_values=False):
-
-        assert False
-        # >> Method "pvs" to be used only when the null windows principle will be understood
-        # >> checked against minimax, and proven faster than alphabeta !
-
-        use_sort = True
-
-        if alpha is None:
-            alpha = -math.inf
-
-        if beta is None:
-            beta = math.inf
-
-        if depth is None:
-            depth = self.__max_depth
-
-        assert alpha <= beta
-
-        if depth == 0 or state.is_terminal():
-            state_value = self.evaluate_state_value(state, depth)
-
-            if self.__debug:
-                print()
-                print("pvs at depth %d evaluates leaf state %d with value %f" %
-                      (depth, id(state),  state_value))
-
-            return state_value
-
-        if return_action_values:
-            action_values = dict()
-
-        if self.__debug:
-            print()
-            print("pvs at depth %d evaluates state %d ..." % (depth, id(state)))
-
-        assert player == -1 or player == 1
-
-        if player == -1:
-            assert not return_action_values
-
-        if return_action_values:
-            action_values = dict()
-
-        # >> pvs will return only the first high valued action,
-        # >> so shuffling may vary the pvs return
-        actions = state.get_actions(shuffle=True)
-        actions = self.reduce_actions(actions)
-        if use_sort:
-            self.sort_actions(actions)
-
-        pvs_window = 0.01
-
-        if player == 1:
-
-            state_value = -math.inf
-
-            for (action_index, action) in enumerate(actions):
-                child_state = state.take_action(action)
-
-                if action_index == 0:
-                    child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=beta)
-
-                else:
-
-                    if self.__debug:
-                        print("--- maximizer: null window ...")
-                    child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=alpha + pvs_window)
-
-                    if not (alpha < child_value < beta):
-                        if self.__debug:
-                            print("--- maximizer: null window succeeded")
-                    else:
-                        if self.__debug:
-                            print("--- maximizer: null window failed; full re-search")
-                        child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=child_value - 1/OMEGA, beta=beta)
-
-                if return_action_values:
-                    action_values[action] = child_value
-
-                state_value = max(state_value, child_value)
-
-                if state_value >= beta:
-                    if self.__debug:
-                        print("--- maximizer: beta cut-off")
-                    break
-
-                alpha = max(alpha, state_value)
-
-        elif player == -1:
-
-            state_value = math.inf
-
-            for (action_index, action) in enumerate(actions):
-                child_state = state.take_action(action)
-
-                if action_index == 0:
-                    child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=beta)
-
-                else:
-                    if self.__debug:
-                        print("--- minimizer: null window ...")
-                    child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=beta - pvs_window, beta=beta)
-
-                    if not (alpha < child_value < beta):
-                        if self.__debug:
-                            print("--- minimizer: null window succeeded")
-                    else:
-                        if self.__debug:
-                            print("--- minimizer: null window failed; full re-search")
-                        child_value = self.pvs(state=child_state, player=-player, depth=depth - 1,
-                                              alpha=alpha, beta=child_value + 1/OMEGA)
-
-
-                state_value = min(state_value, child_value)
-
-                if state_value <= alpha:
-                    if self.__debug:
-                        print("--- minimizer: alpha cut-off")
-
-                    if depth == (self.__max_depth - 1):
-                        if state_value == alpha and action_index != (len(actions) - 1):
-                            # >> prevent final return of actions with falsely equal values due to cut-off
-                            # >> rationale: without cut-off it could be that state_value < alpha
-                            state_value -= 1/OMEGA
-                            assert state_value < alpha
-                            if self.__debug:
-                                print("--- minimizer: force state_value < alpha")
-
-                    break
-
-                beta = min(beta, state_value)
-
-        if self.__debug:
-            print()
-            print("pvs at depth %d evaluates state %d with value %f" % (depth, id(state), state_value))
-
-        if return_action_values:
-            return (state_value, action_values)
-        else:
-            return state_value
-
-
-    def negamax(self, state, player, depth=None, return_action_values=False):
-
-        if depth is None:
-            depth =self.__max_depth
-
-        if depth == 0 or state.is_terminal():
-            state_value = player*self.evaluate_state_value(state, depth)
-
-            if self.__debug:
-                print()
-                print("negamax at depth %d evaluates leaf state %d with value %f" %
-                      (depth, id(state),  state_value))
-
-            return state_value
-
-        if return_action_values:
-            action_values = dict()
-
-        actions = state.get_actions(shuffle=True)
-
-        if self.__debug:
-            print()
-            print("negamax at depth %d evaluates state %d ..." % (depth, id(state)))
-
-        state_value = -math.inf
-
-        for action in actions:
-            child_state = state.take_action(action)
-
-            child_value = -self.negamax(state=child_state, player=-player, depth=depth - 1)
-
-            if return_action_values:
-                action_values[action] = child_value
-
-            state_value = max(state_value, child_value)
-
-        if self.__debug:
-            print()
-            print("negamax at depth %d evaluates state %d with value %f" % (depth, id(state), state_value))
 
         if return_action_values:
             return (state_value, action_values)

@@ -83,10 +83,10 @@ if _install_dependencies:
 
 
 print()
-print("jersi_gui ...")
+print("pijersi_gui ...")
 subprocess.run(args=[_venv_python_executable, _pijersi_gui_executable], shell=False, check=True)
 print()
-print("jersi_gui done")
+print("pijersi_gui done")
 
 
 
