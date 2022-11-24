@@ -54,7 +54,6 @@ def partition(predicate, iterable):
     return (itertools.filterfalse(predicate, t1), filter(predicate, t2))
 
 
-
 def make_pair_iterator(data_iterator, sentinel=None):
     """Make a pair iterator with a sentinel that identifies the stop data"""
 
