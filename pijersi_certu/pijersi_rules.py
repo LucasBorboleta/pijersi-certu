@@ -56,6 +56,7 @@ def partition(predicate, iterable):
 
 
 def make_pair_iterator(data_iterator, sentinel=None):
+    """Make a pair iterator with a sentinel that identifies the stop data"""
 
     data = next(data_iterator, sentinel)
     next_data = next(data_iterator, sentinel)
@@ -66,6 +67,8 @@ def make_pair_iterator(data_iterator, sentinel=None):
 
 
 def make_chunk_sort_iterator(data_iterator, chunk_size=None, key=None, reverse=False):
+    """Make an iterator that sorts data by chunks"""
+
     assert chunk_size is None or chunk_size >= 0
 
     if chunk_size == 0:
