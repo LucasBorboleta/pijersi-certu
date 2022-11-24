@@ -65,8 +65,8 @@ def make_pair_iterator(data_iterator, sentinel=None):
         (data, next_data) = (next_data, next(data_iterator, sentinel))
 
 
-def make_chunk_sort_iterator(data_iterator, chunk_size, key=None, reverse=False):
-    assert chunk_size >= 0
+def make_chunk_sort_iterator(data_iterator, chunk_size=None, key=None, reverse=False):
+    assert chunk_size is None or chunk_size >= 0
 
     if chunk_size == 0:
         for data in data_iterator:
@@ -76,7 +76,7 @@ def make_chunk_sort_iterator(data_iterator, chunk_size, key=None, reverse=False)
         chunk = list()
         for data in data_iterator:
             chunk.append(data)
-            if len(chunk) == chunk_size:
+            if chunk_size is not None and len(chunk) == chunk_size:
                 chunk.sort(key=key, reverse=reverse)
                 for data in chunk:
                     yield data
@@ -1927,8 +1927,7 @@ class MinimaxSearcher():
                  '__distance_weight', '__capture_weight',
                  '__fighter_weight', '__dmin_weight', '__dave_weight',
                  '__center_weight', '__credit_weight',
-                 '__debug')
-
+                 '__debug', '__alpha_cut_count', '__beta_cut_count')
 
     default_weights_by_depth = dict()
 
@@ -2015,10 +2014,33 @@ class MinimaxSearcher():
         do_check = False
 
         initial_state = MinimaxState(state, state.get_current_player())
+        
+        self.__alpha_cut_count = list()
+        self.__beta_cut_count = list()
 
         (best_value, action_values) = self.alphabeta(state=initial_state,
                                                     player=1,
                                                     return_action_values=True)
+        
+        if False:
+            if len(self.__alpha_cut_count) > 0:
+                alpha_cut_mean = sum(self.__alpha_cut_count)/len(self.__alpha_cut_count)
+                self.__alpha_cut_count.sort()
+                alpha_cut_q95 = self.__alpha_cut_count[int(0.95*len(self.__alpha_cut_count))]
+            else:
+                alpha_cut_mean = 0
+                alpha_cut_q95 = 0
+            
+            if len(self.__beta_cut_count) > 0:
+                beta_cut_mean = sum(self.__beta_cut_count)/len(self.__beta_cut_count)
+                self.__beta_cut_count.sort()
+                beta_cut_q95 = self.__beta_cut_count[int(0.95*len(self.__beta_cut_count))]
+            else:
+                beta_cut_mean = 0
+                beta_cut_q95 = 0
+                
+            print( f"alpha_cut #{len(self.__alpha_cut_count)} actions mean={alpha_cut_mean:.1f} q95={alpha_cut_q95:.1f}" + " / " +
+                   f"beta_cut #{len(self.__beta_cut_count)} actions mean={beta_cut_mean:.1f} q95={beta_cut_q95:.1f}")
 
         if do_check:
             self.check(initial_state, best_value, action_values)
@@ -2343,13 +2365,17 @@ class MinimaxSearcher():
         if return_action_values:
             action_values = dict()
 
-        actions = make_chunk_sort_iterator(state.iterate_actions(), chunk_size=32, key=score_action, reverse=True)
+        actions = make_chunk_sort_iterator(state.iterate_actions(), chunk_size=None, key=score_action, reverse=True)
 
         if player == 1:
 
             state_value = -math.inf
+            
+            action_count = 0
 
             for action in actions:
+                action_count += 1
+                
                 child_state = state.take_action(action)
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
@@ -2361,6 +2387,8 @@ class MinimaxSearcher():
                 state_value = max(state_value, child_value)
 
                 if state_value >= beta:
+                    self.__beta_cut_count.append(action_count)
+                    
                     if self.__debug:
                         print("--- beta cut-off")
                     break
@@ -2370,8 +2398,12 @@ class MinimaxSearcher():
         elif player == -1:
 
             state_value = math.inf
+            
+            action_count = 0
 
             for (action, next_action) in make_pair_iterator(actions):
+                action_count += 1
+
                 child_state = state.take_action(action)
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
@@ -2379,6 +2411,8 @@ class MinimaxSearcher():
                 state_value = min(state_value, child_value)
 
                 if state_value <= alpha:
+                    self.__alpha_cut_count.append(action_count)
+
                     if self.__debug:
                         print("--- alpha cut-off")
 
