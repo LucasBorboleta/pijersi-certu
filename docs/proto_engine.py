@@ -6,10 +6,16 @@ Prototyping a new design for the rules and AI engine intented to be fast
 import copy
 import enum
 from dataclasses import dataclass
+import os
 import random
 import sys
 from typing import List
 from typing import Optional
+from typing import Callable
+
+_package_home = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "pijersi_certu")
+sys.path.append(_package_home)
+import pijersi_rules as rules
 
 
 @enum.unique
@@ -28,18 +34,7 @@ class Player(enum.IntEnum):
 
 
 @enum.unique
-class Translation1(enum.IntEnum):
-    PHI_090 = 0
-    PHI_150 = 1
-    PHI_210 = 2
-    PHI_270 = 3
-    PHI_330 = 4
-    PHI_030 = 5
-    assert PHI_090 < PHI_150 < PHI_210 < PHI_270 < PHI_330 < PHI_030
-
-
-@enum.unique
-class Translation2(enum.Enum):
+class Direction(enum.IntEnum):
     PHI_090 = 0
     PHI_150 = 1
     PHI_210 = 2
@@ -310,15 +305,28 @@ def find_stack_sources(board_state: BoardState, current_player: Player) -> Sourc
     return sources
 
 
-def make_path1(source: HexIndex, translation1: Translation1) -> Path:
-    path = list()
-    path.append(source)
+def make_path1(source: HexIndex, direction: Direction) -> Optional[Path]:
+    path = None
+    
+    next_fst_hex = rules.Hexagon.get_next_fst_active_indices(source, direction)
+    
+    if next_fst_hex != rules.Null.HEXAGON:
+        path = [source, next_fst_hex]
+        
     return path
 
 
-def make_path2(source: HexIndex, translation2: Translation2) -> Path:
-    path = list()
-    path.append(source)
+def make_path2(source: HexIndex, direction: Direction) -> Optional[Path]:
+    path = None
+    
+    next_fst_hex = rules.Hexagon.get_next_fst_active_indices(source, direction)
+    
+    if next_fst_hex != rules.Null.HEXAGON:
+        next_snd_hex = rules.Hexagon.get_next_snd_active_indices(source, direction)
+
+        if next_snd_hex != rules.Null.HEXAGON:
+            path = [source, next_fst_hex, next_snd_hex]
+        
     return path
 
 
@@ -327,13 +335,13 @@ def make_path_state(board_state: BoardState, path: Path) -> PathState:
     return path_state
        
 
-def try_cube_path1(path_state: PathState) -> (PathState, bool):
+def try_cube_path1(path_state: PathState) -> (Optional[PathState], bool):
     next_path_state = None
     has_capture = False
     return (next_path_state, has_capture)
 
 
-def try_stack_path1(path_state: PathState) -> (PathState, bool):
+def try_stack_path1(path_state: PathState) -> (Optional[PathState], bool):
     next_path_state = None
     has_capture = False
     return (next_path_state, has_capture)
@@ -357,6 +365,33 @@ def find_actions(game_state: GameState) -> Actions:
     actions += find_cube_first_actions(game_state)
     actions += find_stack_first_actions(game_state)
     return actions
+    
+
+def try_action_cube_path1(board_state: BoardState, source: HexIndex, direction: Direction) -> Optional[Action]:
+    return try_action_path(board_state, source, direction, make_path1, try_cube_path1)                    
+    
+
+def try_action_stack_path1(board_state: BoardState, source: HexIndex, direction: Direction) -> Optional[Action]:
+    return try_action_path(board_state, source, direction, make_path1, try_stack_path1)                    
+    
+
+def try_action_stack_path2(board_state: BoardState, source: HexIndex, direction: Direction) -> Optional[Action]:
+    return try_action_path(board_state, source, direction, make_path2, try_stack_path2)                    
+
+
+def try_action_path(board_state: BoardState, source: HexIndex, direction: Direction,
+                    make_path: Callable, try_path: Callable) -> Optional[Action]:
+    action = None
+    path = make_path(source, direction)
+    if path is not None:
+        path_state = make_path_state(board_state, path)
+        (next_path_state, has_capture) = try_path(path_state)
+        if next_path_state is not None:
+            action = Action()
+            action.next_board_state = apply_path_state(board_state, path, next_path_state)
+            action.path_summary = [source, path[-1]]
+            action.has_capture = has_capture  
+    return action                    
 
 
 def find_cube_first_actions(game_state: GameState) -> Actions:
@@ -366,50 +401,28 @@ def find_cube_first_actions(game_state: GameState) -> Actions:
         current_player = game_state.current_player
         
         for cube_source in find_cube_sources(board_state, current_player):
-            for cube_translation1 in Translation1:
-                cube_path = make_path1(cube_source, cube_translation1)
-                if len(cube_path) != 0:
-                    path_state = make_path_state(board_state, cube_path)
-                    (next_path_state, has_capture) = try_cube_path1(path_state)
-                    if len(next_path_state) != 0:
-                        board_state1 = apply_path_state(board_state, cube_path, next_path_state)
-                        cube_destination = cube_path[-1]
-                        action1 = Action()
-                        action1.next_board_state = board_state1
-                        action1.path_summary = [cube_source, cube_destination]
-                        action1.has_capture = has_capture                       
-                        actions.append(action1)   
-                        
-                        for stack_source in find_stack_sources(board_state1, current_player):
-                            for (stack_translation1, stack_translation2) in zip(Translation1, Translation2):
-                                stack_path = make_path1(stack_source, stack_translation1)
-                                if len(stack_path) != 0:
-                                    path_state = make_path_state(board_state1, stack_path)
-                                    (next_path_state, has_capture) = try_stack_path1(path_state)
-                                    if len(next_path_state) != 0:
-                                        board_state21 = apply_path_state(board_state1, stack_path, next_path_state)
-                                        stack_destination = stack_path[-1]
-                                        action21 = Action()
-                                        action21.next_board_state = board_state21
-                                        action21.path_summary = action1.path_summary + [stack_destination]
-                                        action21.has_capture = action1.has_capture or has_capture                      
-                                        actions.append(action21)  
-                                        
-                                        stack_path = make_path2(stack_source, stack_translation1)
-                                        if len(stack_path) != 0:
-                                            path_state = make_path_state(board_state1, stack_path)
-                                            (next_path_state, has_capture) = try_stack_path2(path_state)
-                                            if len(next_path_state) != 0:
-                                                board_state22 = apply_path_state(board_state1, stack_path, next_path_state)
-                                                stack_destination = stack_path[-1]
-                                                action22 = Action()
-                                                action22.next_board_state = board_state22
-                                                action22.path_summary = action1.path_summary + [stack_destination]
-                                                action22.has_capture = action1.has_capture or has_capture                      
-                                                actions.append(action22)   
+            for cube_direction in Direction:
+                action1 = try_action_cube_path1(board_state, cube_source, cube_direction)
+                if action1 is not None:
+                    actions.append(action1)   
+                    
+                    board_state1 = action1.next_board_state    
+                    for stack_source in find_stack_sources(board_state1, current_player):
+                        for stack_direction in Direction:
+                            action21 = try_action_stack_path1(board_state1, stack_source, stack_source)
+                            if action21 is not None:
+                                action21.path_summary = action1.path_summary + [action21.path_summary[-1]]
+                                action21.has_capture = action1.has_capture or action21.has_capture                      
+                                actions.append(action21)  
+
+                                action22 = try_action_stack_path2(board_state1, stack_source, stack_source)
+                                if action22 is not None:
+                                    action22.path_summary = action1.path_summary + [action22.path_summary[-1]]
+                                    action22.has_capture = action1.has_capture or action22.has_capture                      
+                                    actions.append(action22)  
                         
     return actions
-    
+
 
 def find_stack_first_actions(game_state: GameState) -> Actions:
     actions = list()
@@ -418,62 +431,33 @@ def find_stack_first_actions(game_state: GameState) -> Actions:
         current_player = game_state.current_player
         
         for stack_source in find_stack_sources(board_state, current_player):
-            for (stack_translation1, stack_translation2) in zip(Translation1, Translation2):
-                stack_path = make_path1(stack_source, stack_translation1)
-                if len(stack_path) != 0:
-                    path_state = make_path_state(board_state, stack_path)
-                    (next_path_state, has_capture) = try_stack_path1(path_state)
-                    if len(next_path_state) != 0:
-                        board_state11 = apply_path_state(board_state, stack_path, next_path_state)
-                        stack_destination = stack_path[-1]
-                        action11 = Action()
-                        action11.next_board_state = board_state11
-                        action11.path_summary = [stack_source, stack_destination]
-                        action11.has_capture = has_capture                      
-                        actions.append(action11)  
-
-                        for cube_source in find_cube_sources(board_state11, current_player):
-                            for cube_translation1 in Translation1:
-                                cube_path = make_path1(cube_source, cube_translation1)
-                                if len(cube_path) != 0:
-                                    path_state = make_path_state(board_state11, cube_path)
-                                    (next_path_state, has_capture) = try_cube_path1(path_state)
-                                    if len(next_path_state) != 0:
-                                        board_state12 = apply_path_state(board_state11, cube_path, next_path_state)
-                                        cube_destination = cube_path[-1]
-                                        action12 = Action()
-                                        action12.next_board_state = board_state12
-                                        action12.path_summary = action11.path_summary + [cube_destination]
-                                        action12.has_capture = action11.has_capture or has_capture                      
-                                        actions.append(action12)   
-
-                        stack_path = make_path1(stack_source, stack_translation2)
-                        if len(stack_path) != 0:
-                            path_state = make_path_state(board_state, stack_path)
-                            (next_path_state, has_capture) = try_stack_path2(path_state)
-                            if len(next_path_state) != 0:
-                                board_state21 = apply_path_state(board_state, stack_path, next_path_state)
-                                stack_destination = stack_path[-1]
-                                action21 = Action()
-                                action21.next_board_state = board_state21
-                                action21.path_summary = [stack_source, stack_destination]
-                                action21.has_capture = has_capture                      
-                                actions.append(action21)  
-        
-                                for cube_source in find_cube_sources(board_state21, current_player):
-                                    for cube_translation1 in Translation1:
-                                        cube_path = make_path1(cube_source, cube_translation1)
-                                        if len(cube_path) != 0:
-                                            path_state = make_path_state(board_state21, cube_path)
-                                            (next_path_state, has_capture) = try_cube_path1(path_state)
-                                            if len(next_path_state) != 0:
-                                                board_state22 = apply_path_state(board_state21, cube_path, next_path_state)
-                                                cube_destination = cube_path[-1]
-                                                action22 = Action()
-                                                action22.next_board_state = board_state22
-                                                action22.path_summary = action21.path_summary + [cube_destination]
-                                                action22.has_capture = action21.has_capture or has_capture                      
-                                                actions.append(action22)   
+            for stack_direction in Direction:
+                
+                action11 = try_action_stack_path1(board_state, stack_source, stack_direction)
+                if action11 is not None:
+                    actions.append(action11)   
+                    
+                    board_state11 = action11.next_board_state    
+                    for cube_source in find_cube_sources(board_state11, current_player):
+                        for cube_direction in Direction:
+                            action12 = try_action_cube_path1(board_state11, cube_source, cube_direction)
+                            if action12 is not None:
+                               action12.path_summary = action11.path_summary + [action12.path_summary[-1]]
+                               action12.has_capture = action11.has_capture or action12.has_capture                      
+                               actions.append(action12)  
+                
+                    action21 = try_action_stack_path2(board_state, stack_source, stack_direction)
+                    if action21 is not None:
+                        actions.append(action21)   
+                        
+                        board_state21 = action21.next_board_state    
+                        for cube_source in find_cube_sources(board_state21, current_player):
+                            for cube_direction in Direction:
+                                action22 = try_action_cube_path1(board_state21, cube_source, cube_direction)
+                                if action22 is not None:
+                                   action22.path_summary = action21.path_summary + [action22.path_summary[-1]]
+                                   action22.has_capture = action21.has_capture or action22.has_capture                      
+                                   actions.append(action22)  
 
     return actions
        
