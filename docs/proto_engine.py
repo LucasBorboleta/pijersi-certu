@@ -358,14 +358,38 @@ class GameState:
 @dataclass
 class Action:
     next_board_state: BoardState
-    path_summary: Path
+    path_vertices: Path
     has_capture: bool
 
 Actions = Sequence[Action]
-   
+  
 
-TABLE_GOAL_INDICES_BY_PLAYER = list()
-TABLE_GOAL_SCORES_BY_PLAYER = list()
+def make_goal_scores(player: Player) -> Sequence[int]:
+    table = array.array('B', [0 for _ in range(HEX_CODE_BASE)])
+    
+    for hex_state in iterate_hex_states():
+        
+        if hex_state.is_empty:
+            count = 0
+            
+        elif hex_state.player == player:
+            
+            if hex_state.has_stack:
+                count = 0
+                count += 1 if hex_state.bottom != Cube.WISE else 0
+                count += 1 if hex_state.top != Cube.WISE else 0
+            
+            else:
+                count = 1 if hex_state.bottom != Cube.WISE else 0
+            
+        hex_code = hex_state.encode()
+        table[hex_code] = count
+    return table
+  
+
+TABLE_GOAL_INDICES_BY_PLAYER = [rules.Hexagon.get_goal_indices(player) for player in Player]
+TABLE_GOAL_SCORES_BY_PLAYER = [make_goal_scores(player) for player in Player]
+
 
 def player_is_arrived(board_state: BoardState, player: Player) -> bool:
  
@@ -594,21 +618,105 @@ def make_tables_try_cube_path1() -> (Sequence[int], Sequence[int]):
     return (table_next_code, table_has_capture )
 
 
-( TABLE_TRY_CUBE_PATH1__NEXT_CODE, 
-  TABLE_TRY_CUBE_PATH1__HAS_CAPTURE ) =  make_tables_try_cube_path1()
+def make_tables_try_stack_path(table_next_code: Sequence[int] , 
+                               table_has_capture: Sequence[int], 
+                               next_mid_state=Optional[HexState]) -> None:
+   
+    for src_state in iterate_hex_states():
+        for dst_state in iterate_hex_states():
+            code = encode_path_state([src_state, dst_state])
+            
+            next_code = 0
+            has_capture = 0
+            
+            next_src_state = None
+            next_dst_state = None
+            
+            if not src_state.is_empty and src_state.has_stack:
+                
+                if dst_state.is_empty:
+                    #-- Just moves without stacking rules involved
+                    next_src_state = HexState.make_empty()
+                    next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+                    
+                elif dst_state.player != src_state.player:
+                    # >> Capturing rules must be considered
+                    
+                    if dst_state.has_stack:
+                        # == Destination has a stack owned by the non-active player
+                        if beats(src_state.top, dst_state.top):
+                            has_capture = 1
+                            next_src_state = HexState.make_empty()
+                            next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+                    
+                    else:
+                        # == Destination has a single cube owned by the non-active player
+                        if beats(src_state.top, dst_state.bottom):
+                            has_capture = 1
+                            next_src_state = HexState.make_empty()
+                            next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+             
+                if next_src_state is not None and next_dst_state is not None:
+                    
+                    if next_mid_state is None:
+                        next_code = encode_path_state([next_src_state, next_dst_state])
+                        
+                    else:
+                        next_code = encode_path_state([next_src_state, next_mid_state, next_dst_state])
+
+            table_next_code[code] = next_code
+            table_has_capture[code] = has_capture
+        
+    return (table_next_code, table_has_capture )
+
+
+def make_tables_try_stack_path1() -> (Sequence[int], Sequence[int]):
+    table_next_code = array.array('H', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
+    table_has_capture = array.array('B', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
+    
+    make_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=None)
+
+    return (table_next_code, table_has_capture)
+
+
+def make_tables_try_stack_path2() -> (Sequence[int], Sequence[int]):
+    table_next_code = array.array('L', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
+    table_has_capture = array.array('B', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
+    
+    make_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=HexState.make_empty())
+
+    return (table_next_code, table_has_capture)
+
+
+( TABLE_TRY_CUBE_PATH1_NEXT_CODE, 
+  TABLE_TRY_CUBE_PATH1_HAS_CAPTURE ) =  make_tables_try_cube_path1()
  
-TABLE_TRY_STACK_PATH1__NEXT_CODE = list()
-TRY_STACK_PATH1__HAS_CAPTURE = list()
+( TABLE_TRY_STACK_PATH1_NEXT_CODE, 
+  TABLE_TRY_STACK_PATH1_HAS_CAPTURE ) = make_tables_try_stack_path1()
  
-TABLE_TRY_STACK_PATH2__NEXT_CODE = list()
-TABLE_TRY_STACK_PATH2__HAS_CAPTURE = list()
+( TABLE_TRY_STACK_PATH2_NEXT_CODE,
+  TABLE_TRY_STACK_PATH2_HAS_CAPTURE ) = make_tables_try_stack_path2()
  
     
 def print_tables_try_cube_path1():
     print()
     print("-- print_tables_try_cube_path1 --")
-    print(TABLE_TRY_CUBE_PATH1__NEXT_CODE)
-    print(TABLE_TRY_CUBE_PATH1__HAS_CAPTURE)
+    print(TABLE_TRY_CUBE_PATH1_NEXT_CODE)
+    print(TABLE_TRY_CUBE_PATH1_HAS_CAPTURE)
+ 
+    
+def print_tables_try_stack_path1():
+    print()
+    print("-- print_tables_try_stack_path1 --")
+    print(TABLE_TRY_STACK_PATH1_NEXT_CODE)
+    print(TABLE_TRY_STACK_PATH1_HAS_CAPTURE)
+ 
+    
+def print_tables_try_stack_path2():
+    print()
+    print("-- print_tables_try_stack_path2 --")
+    print(TABLE_TRY_STACK_PATH2_NEXT_CODE)
+    print(TABLE_TRY_STACK_PATH2_HAS_CAPTURE)
 
 
 def try_path1(path_state: PathState, 
@@ -656,15 +764,15 @@ def try_path2(path_state: PathState,
 
 
 def try_cube_path1(path_state: PathState) -> (Optional[PathState], bool):
-    return try_path1(path_state, TABLE_TRY_CUBE_PATH1__NEXT_CODE, TABLE_TRY_CUBE_PATH1__HAS_CAPTURE)
+    return try_path1(path_state, TABLE_TRY_CUBE_PATH1_NEXT_CODE, TABLE_TRY_CUBE_PATH1_HAS_CAPTURE)
 
 
 def try_stack_path1(path_state: PathState) -> (Optional[PathState], bool):
-    return try_path1(path_state, TABLE_TRY_STACK_PATH1__NEXT_CODE, TRY_STACK_PATH1__HAS_CAPTURE)
+    return try_path1(path_state, TABLE_TRY_STACK_PATH1_NEXT_CODE, TABLE_TRY_STACK_PATH1_HAS_CAPTURE)
 
 
 def try_stack_path2(path_state: PathState) -> (PathState, bool):
-    return try_path2(path_state, TABLE_TRY_STACK_PATH2__NEXT_CODE, TABLE_TRY_STACK_PATH2__HAS_CAPTURE)
+    return try_path2(path_state, TABLE_TRY_STACK_PATH2_NEXT_CODE, TABLE_TRY_STACK_PATH2_HAS_CAPTURE)
 
 
 def apply_path_state(board_state: BoardState, path: Path, path_state: PathState) -> BoardState:
@@ -708,7 +816,7 @@ def try_path_action(board_state: BoardState, source: HexIndex, direction: Direct
         if next_path_state is not None:
             action = Action()
             action.next_board_state = apply_path_state(board_state, path, next_path_state)
-            action.path_summary = [source, path[-1]]
+            action.path_vertices = [source, path[-1]]
             action.has_capture = has_capture  
     return action                    
 
@@ -740,13 +848,13 @@ def find_cube_first_actions(game_state: GameState, find_one=False) -> Actions:
                         for stack_direction in Direction:
                             action21 = try_stack_path1_action(board_state1, stack_source, stack_direction)
                             if action21 is not None:
-                                action21.path_summary = action1.path_summary + [action21.path_summary[-1]]
+                                action21.path_vertices = action1.path_vertices + [action21.path_vertices[-1]]
                                 action21.has_capture = action1.has_capture or action21.has_capture                      
                                 actions.append(action21)  
 
                                 action22 = try_stack_path2_action(board_state1, stack_source, stack_direction)
                                 if action22 is not None:
-                                    action22.path_summary = action1.path_summary + [action22.path_summary[-1]]
+                                    action22.path_vertices = action1.path_vertices + [action22.path_vertices[-1]]
                                     action22.has_capture = action1.has_capture or action22.has_capture                      
                                     actions.append(action22)  
                         
@@ -771,7 +879,7 @@ def find_stack_first_actions(game_state: GameState) -> Actions:
                         for cube_direction in Direction:
                             action12 = try_cube_path1_action(board_state11, cube_source, cube_direction)
                             if action12 is not None:
-                               action12.path_summary = action11.path_summary + [action12.path_summary[-1]]
+                               action12.path_vertices = action11.path_vertices + [action12.path_vertices[-1]]
                                action12.has_capture = action11.has_capture or action12.has_capture                      
                                actions.append(action12)  
                 
@@ -784,7 +892,7 @@ def find_stack_first_actions(game_state: GameState) -> Actions:
                             for cube_direction in Direction:
                                 action22 = try_cube_path1_action(board_state21, cube_source, cube_direction)
                                 if action22 is not None:
-                                   action22.path_summary = action21.path_summary + [action22.path_summary[-1]]
+                                   action22.path_vertices = action21.path_vertices + [action22.path_vertices[-1]]
                                    action22.has_capture = action21.has_capture or action22.has_capture                      
                                    actions.append(action22)  
 
@@ -804,6 +912,8 @@ def main():
     print_table_fighter_count()
     
     print_tables_try_cube_path1()
+    print_tables_try_stack_path1()
+    print_tables_try_stack_path2()
     
     print()
     print("Bye")
