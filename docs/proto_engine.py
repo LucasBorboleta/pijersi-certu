@@ -15,6 +15,7 @@ from typing import Iterable
 from typing import NewType
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import TypeVar
 
 
@@ -212,8 +213,9 @@ def iterate_hex_states() -> Iterable[HexState]:
                         else:
                             top = None
                             yield HexState(is_empty=is_empty, has_stack=has_stack, player=player, bottom=bottom, top=top)
-  
-def test_iterate_hex_states():
+
+
+def test_iterate_hex_states() -> None:
     
     print()
     print("-- test_iterate_hex_states --")
@@ -325,7 +327,7 @@ def test_encode_and_decode_hex_state():
         assert hex_decoded_state == hex_state
 
 
-def test_encode_and_decode_path_state():
+def test_encode_and_decode_path_state() -> None:
     
     print()
     print("-- test_encode_and_decode_path_state --")
@@ -446,13 +448,13 @@ TABLE_CUBE_COUNT = make_table_fighter_count()
 TABLE_FIGHTER_COUNT = make_table_cube_count()
 
     
-def print_table_cube_count():
+def print_table_cube_count() -> None:
     print()
     print("-- print_table_cube_count --")
     print(TABLE_CUBE_COUNT)
     
     
-def print_table_fighter_count():
+def print_table_fighter_count() -> None:
     print()
     print("-- print_table_fighter_count --")
     print(TABLE_FIGHTER_COUNT)
@@ -538,7 +540,7 @@ def make_path_state(board_state: BoardState, path: Path) -> PathState:
     return path_state
 
 
-def make_tables_try_cube_path1() -> (Sequence[int], Sequence[int]):
+def make_tables_try_cube_path1() -> Tuple[Sequence[int], Sequence[int]]:
     table_next_code = array.array('H', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     table_has_capture = array.array('B', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     
@@ -615,7 +617,7 @@ def make_tables_try_cube_path1() -> (Sequence[int], Sequence[int]):
             table_next_code[code] = next_code
             table_has_capture[code] = has_capture
         
-    return (table_next_code, table_has_capture )
+    return (table_next_code, table_has_capture)
 
 
 def make_tables_try_stack_path(table_next_code: Sequence[int] , 
@@ -670,7 +672,7 @@ def make_tables_try_stack_path(table_next_code: Sequence[int] ,
     return (table_next_code, table_has_capture )
 
 
-def make_tables_try_stack_path1() -> (Sequence[int], Sequence[int]):
+def make_tables_try_stack_path1() -> Tuple[Sequence[int], Sequence[int]]:
     table_next_code = array.array('H', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     table_has_capture = array.array('B', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     
@@ -679,7 +681,7 @@ def make_tables_try_stack_path1() -> (Sequence[int], Sequence[int]):
     return (table_next_code, table_has_capture)
 
 
-def make_tables_try_stack_path2() -> (Sequence[int], Sequence[int]):
+def make_tables_try_stack_path2() -> Tuple[Sequence[int], Sequence[int]]:
     table_next_code = array.array('L', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     table_has_capture = array.array('B', [0 for _ in range(HEX_CODE_BASE*HEX_CODE_BASE)])
     
@@ -698,21 +700,21 @@ def make_tables_try_stack_path2() -> (Sequence[int], Sequence[int]):
   TABLE_TRY_STACK_PATH2_HAS_CAPTURE ) = make_tables_try_stack_path2()
  
     
-def print_tables_try_cube_path1():
+def print_tables_try_cube_path1() -> None:
     print()
     print("-- print_tables_try_cube_path1 --")
     print(TABLE_TRY_CUBE_PATH1_NEXT_CODE)
     print(TABLE_TRY_CUBE_PATH1_HAS_CAPTURE)
  
     
-def print_tables_try_stack_path1():
+def print_tables_try_stack_path1() -> None:
     print()
     print("-- print_tables_try_stack_path1 --")
     print(TABLE_TRY_STACK_PATH1_NEXT_CODE)
     print(TABLE_TRY_STACK_PATH1_HAS_CAPTURE)
  
     
-def print_tables_try_stack_path2():
+def print_tables_try_stack_path2() -> None:
     print()
     print("-- print_tables_try_stack_path2 --")
     print(TABLE_TRY_STACK_PATH2_NEXT_CODE)
@@ -721,7 +723,7 @@ def print_tables_try_stack_path2():
 
 def try_path1(path_state: PathState, 
               table_next_code: Sequence[HexCode], 
-              table_has_capture: Sequence[bool]) -> (Optional[PathState], bool):
+              table_has_capture: Sequence[bool]) -> Tuple[Optional[PathState], bool]:
 
     assert len(path_state) == 2
     
@@ -740,7 +742,7 @@ def try_path1(path_state: PathState,
 
 def try_path2(path_state: PathState, 
               table_next_code: Sequence[HexCode], 
-              table_has_capture: Sequence[bool]) -> (Optional[PathState], bool):
+              table_has_capture: Sequence[bool]) -> Tuple[Optional[PathState], bool]:
 
     assert len(path_state) == 3
     
@@ -763,15 +765,15 @@ def try_path2(path_state: PathState,
     return (next_path_state, has_capture)
 
 
-def try_cube_path1(path_state: PathState) -> (Optional[PathState], bool):
+def try_cube_path1(path_state: PathState) -> Tuple[Optional[PathState], bool]:
     return try_path1(path_state, TABLE_TRY_CUBE_PATH1_NEXT_CODE, TABLE_TRY_CUBE_PATH1_HAS_CAPTURE)
 
 
-def try_stack_path1(path_state: PathState) -> (Optional[PathState], bool):
+def try_stack_path1(path_state: PathState) -> Tuple[Optional[PathState], bool]:
     return try_path1(path_state, TABLE_TRY_STACK_PATH1_NEXT_CODE, TABLE_TRY_STACK_PATH1_HAS_CAPTURE)
 
 
-def try_stack_path2(path_state: PathState) -> (PathState, bool):
+def try_stack_path2(path_state: PathState) -> Tuple[PathState, bool]:
     return try_path2(path_state, TABLE_TRY_STACK_PATH2_NEXT_CODE, TABLE_TRY_STACK_PATH2_HAS_CAPTURE)
 
 
@@ -807,7 +809,9 @@ def try_stack_path2_action(board_state: BoardState, source: HexIndex, direction:
 
 
 def try_path_action(board_state: BoardState, source: HexIndex, direction: Direction,
-                    make_path: Callable, try_path: Callable) -> Optional[Action]:
+                    make_path: Callable[ [HexIndex, Direction], Optional[Path] ], 
+                    try_path: Callable[ [PathState], Tuple[Optional[PathState], bool] ]
+                    ) -> Optional[Action]:
     action = None
     path = make_path(source, direction)
     if path is not None:
@@ -899,7 +903,7 @@ def find_stack_first_actions(game_state: GameState) -> Actions:
     return actions
        
 
-def main():
+def main() -> None:
     print()
     print("Hello")
     print(f"sys.version = {sys.version}")
