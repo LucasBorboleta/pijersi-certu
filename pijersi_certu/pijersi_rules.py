@@ -1154,7 +1154,7 @@ class PijersiState:
 
     def is_terminal(self):
 
-        if self.__terminated is None:
+        if True or self.__terminated is None:
 
             self.__terminated = False
 
@@ -1228,7 +1228,7 @@ class PijersiState:
 
 
     def get_actions(self):
-        if self.__actions is None:
+        if True or self.__actions is None:
             self.__actions = list(self.__find_moves())
 
         return self.__actions
