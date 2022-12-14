@@ -21,6 +21,7 @@ import array
 import copy
 import enum
 from dataclasses import dataclass
+#from collections import namedtuple
 import math
 import os
 import random
@@ -424,6 +425,8 @@ class HexState:
     Self = TypeVar("Self", bound="HexState")
 
     CODE_BASE = HexCode((2*2*2)*(2*2*2)*2)
+    CODE_BASE_2 = CODE_BASE*CODE_BASE
+    CODE_BASE_3 = CODE_BASE_2*CODE_BASE
 
     __slots__ = ('is_empty', 'has_stack', 'player', 'bottom', 'top', '__code')
 
@@ -605,7 +608,7 @@ class Action:
     path_vertices: Optional[Path] = None
     capture_code: Optional[CaptureCode] = None
     move_code: Optional[MoveCode] = None
-
+# Action = namedtuple('Action', field_names=['next_board_codes', 'path_vertices', 'capture_code', 'move_code'])
 
 Actions = Sequence[Action]
 
@@ -757,27 +760,48 @@ class GameState:
 
     @staticmethod
     def encode_path_codes(path_codes: PathCodes) -> PathCode:
-        code = 0
-        shift = 1
-        for hex_code in path_codes:
-            code += shift*hex_code
-            shift *= HexState.CODE_BASE
+
+        if len(path_codes) == 2:
+            code = path_codes[0] + path_codes[1]*HexState.CODE_BASE
+
+        elif len(path_codes) == 3:
+            code = path_codes[0] + path_codes[1]*HexState.CODE_BASE + path_codes[2]*HexState.CODE_BASE_2
+
+        else:
+            code = 0
+            shift = 1
+            code_base = HexState.CODE_BASE
+            for hex_code in path_codes:
+                code += shift*hex_code
+                shift *= code_base
+
         return code
 
 
     @staticmethod
     def decode_path_code(code: PathCode, path_length: int) -> PathCodes:
-        path_codes = list()
 
         assert code >= 0
 
-        rest = code
-        for _ in range(path_length):
-            hex_code = rest % HexState.CODE_BASE
-            rest = rest // HexState.CODE_BASE
-            path_codes.append(hex_code)
+        if path_length == 2:
+            path_codes = (code % HexState.CODE_BASE,
+                          (code // HexState.CODE_BASE) % HexState.CODE_BASE)
 
-        assert rest == 0
+        elif path_length == 3:
+            path_codes = (code % HexState.CODE_BASE,
+                          (code // HexState.CODE_BASE) % HexState.CODE_BASE,
+                          (code // HexState.CODE_BASE_2) % HexState.CODE_BASE)
+
+        else:
+            path_codes = list()
+
+            rest = code
+            for _ in range(path_length):
+                hex_code = rest % HexState.CODE_BASE
+                rest = rest // HexState.CODE_BASE
+                path_codes.append(hex_code)
+
+            assert rest == 0
 
         return path_codes
 
@@ -957,7 +981,7 @@ class GameState:
         next_fst_hex = Hexagon.get_next_fst_index(source, direction)
 
         if next_fst_hex != Hexagon.NULL:
-            path = [source, next_fst_hex]
+            path = (source, next_fst_hex)
 
         else:
             path= None
@@ -975,14 +999,21 @@ class GameState:
             next_snd_hex = Hexagon.get_next_snd_index(source, direction)
 
             if next_snd_hex != Hexagon.NULL:
-                path = [source, next_fst_hex, next_snd_hex]
+                path = (source, next_fst_hex, next_snd_hex)
 
         return path
 
 
     @staticmethod
     def __make_path_codes(board_codes: BoardCodes, path: Path) -> PathCodes:
-        return [board_codes[hex_index] for hex_index in path]
+        if len(path) == 2:
+            return [board_codes[path[0]],  board_codes[path[1]]]
+
+        elif len(path) == 3:
+            return [board_codes[path[0]],  board_codes[path[1]], board_codes[path[2]]]
+
+        else:
+            return [board_codes[hex_index] for hex_index in path]
 
 
     @staticmethod
@@ -1049,8 +1080,20 @@ class GameState:
     @staticmethod
     def __apply_path_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
         next_board_codes = copy.copy(board_codes)
-        for (hex_index, hex_code) in zip(path, path_codes):
-            next_board_codes[hex_index] = hex_code
+
+        if len(path) == 2:
+            next_board_codes[path[0]] = path_codes[0]
+            next_board_codes[path[1]] = path_codes[1]
+
+        elif len(path) == 3:
+            next_board_codes[path[0]] = path_codes[0]
+            next_board_codes[path[1]] = path_codes[1]
+            next_board_codes[path[2]] = path_codes[2]
+
+        else:
+            for (hex_index, hex_code) in zip(path, path_codes):
+                next_board_codes[hex_index] = hex_code
+
         return next_board_codes
 
 
@@ -1175,8 +1218,8 @@ class GameState:
 
 
         def create_tables_try_cube_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
+            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
 
             for src_state in HexState.iterate_hex_states():
                 for dst_state in HexState.iterate_hex_states():
@@ -1307,8 +1350,8 @@ class GameState:
 
 
         def create_tables_try_stack_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
+            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
 
             create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=None)
 
@@ -1316,8 +1359,8 @@ class GameState:
 
 
         def create_tables_try_stack_path2() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('L', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE*HexState.CODE_BASE)])
+            table_next_code = array.array('L', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
 
             create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=HexState.make_empty())
 
