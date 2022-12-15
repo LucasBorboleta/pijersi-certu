@@ -761,10 +761,12 @@ class GameState:
     @staticmethod
     def encode_path_codes(path_codes: PathCodes) -> PathCode:
 
-        if len(path_codes) == 2:
+        path_length = len(path_codes)
+        
+        if path_length == 2:
             code = path_codes[0] + path_codes[1]*HexState.CODE_BASE
 
-        elif len(path_codes) == 3:
+        elif path_length == 3:
             code = path_codes[0] + path_codes[1]*HexState.CODE_BASE + path_codes[2]*HexState.CODE_BASE_2
 
         else:
@@ -1006,10 +1008,12 @@ class GameState:
 
     @staticmethod
     def __make_path_codes(board_codes: BoardCodes, path: Path) -> PathCodes:
-        if len(path) == 2:
+        path_length = len(path)
+        
+        if path_length == 2:
             return [board_codes[path[0]],  board_codes[path[1]]]
 
-        elif len(path) == 3:
+        elif path_length == 3:
             return [board_codes[path[0]],  board_codes[path[1]], board_codes[path[2]]]
 
         else:
@@ -1021,13 +1025,14 @@ class GameState:
                   table_next_code: Sequence[HexCode],
                   table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
 
-        assert len(path_codes) == 2
+        path_length = len(path_codes)
+        assert path_length == 2
 
         code = GameState.encode_path_codes(path_codes)
         next_code = table_next_code[code]
 
         if next_code != 0:
-            next_path_codes = GameState.decode_path_code(next_code, len(path_codes))
+            next_path_codes = GameState.decode_path_code(next_code, path_length)
             capture_code = table_has_capture[code]
 
         else:
@@ -1042,7 +1047,8 @@ class GameState:
                   table_next_code: Sequence[HexCode],
                   table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
 
-        assert len(path_codes) == 3
+        path_length = len(path_codes)
+        assert path_length == 3
 
         next_path_codes = None
         capture_code = False
@@ -1056,7 +1062,7 @@ class GameState:
 
             if next_code != 0:
                 # >> next_code is encoding a three hexagons path state
-                next_path_codes = GameState.decode_path_code(next_code, len(path_codes))
+                next_path_codes = GameState.decode_path_code(next_code, path_length)
                 capture_code = table_has_capture[code]
 
         return (next_path_codes, capture_code)
@@ -1080,12 +1086,14 @@ class GameState:
     @staticmethod
     def __apply_path_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
         next_board_codes = copy.copy(board_codes)
+        
+        path_length = len(path)
 
-        if len(path) == 2:
+        if path_length == 2:
             next_board_codes[path[0]] = path_codes[0]
             next_board_codes[path[1]] = path_codes[1]
 
-        elif len(path) == 3:
+        elif path_length == 3:
             next_board_codes[path[0]] = path_codes[0]
             next_board_codes[path[1]] = path_codes[1]
             next_board_codes[path[2]] = path_codes[2]
