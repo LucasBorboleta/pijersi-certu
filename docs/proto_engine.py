@@ -20,7 +20,6 @@ You should have received a copy of the GNU General Public License along with thi
 import array
 import enum
 from dataclasses import dataclass
-#from collections import namedtuple
 import math
 import os
 import random
@@ -618,7 +617,6 @@ class Action:
     path_vertices: Optional[Path] = None
     capture_code: Optional[CaptureCode] = None
     move_code: Optional[MoveCode] = None
-# Action = namedtuple('Action', field_names=['next_board_codes', 'path_vertices', 'capture_code', 'move_code'])
 
 Actions = Sequence[Action]
 
