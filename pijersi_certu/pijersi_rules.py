@@ -823,7 +823,8 @@ class PijersiState:
 
     __max_credit = 20
     __center_hexagon_indices = None
-
+    __use_random_find = False
+    
     __slots__ = ('__cube_status', '__hexagon_bottom', '__hexagon_top',
                  '__credit', '__player', '__turn',
                  '__actions', '__actions_by_simple_names', '__actions_by_names',
@@ -1289,9 +1290,7 @@ class PijersiState:
 
     def __find_moves(self):
 
-        use_random = True
-
-        if not use_random or random.choice((True, False)):
+        if not self.__use_random_find or random.choice((True, False)):
 
             for action in self.__find_stack_first_moves():
                 yield action
@@ -1309,9 +1308,10 @@ class PijersiState:
 
     def __find_cube_first_moves(self, find_one=False):
         found_one = False
-
+        
         sources_1 = self.__find_hexagons_with_movable_cube()
-        random.shuffle(sources_1)
+        if self.__use_random_find:
+            random.shuffle(sources_1)
 
         for source_1 in sources_1:
 
@@ -1319,7 +1319,8 @@ class PijersiState:
                 break
 
             directions_1 = [direction_1 for direction_1 in HexagonDirection]
-            random.shuffle(directions_1)
+            if self.__use_random_find:
+                random.shuffle(directions_1)
 
             for direction_1 in directions_1:
                 destination_1 = Hexagon.get_next_fst_indices(source_1, direction_1)
@@ -1335,7 +1336,8 @@ class PijersiState:
                         if state_1.__is_hexagon_with_movable_stack(destination_1):
 
                             directions_2 = [direction_2 for direction_2 in HexagonDirection]
-                            random.shuffle(directions_2)
+                            if self.__use_random_find:
+                                random.shuffle(directions_2)
 
                             for direction_2 in directions_2:
                                 destination_21 = Hexagon.get_next_fst_indices(destination_1, direction_2)
@@ -1358,7 +1360,8 @@ class PijersiState:
         found_one = False
 
         sources_1 = self.__find_hexagons_with_movable_stack()
-        random.shuffle(sources_1)
+        if self.__use_random_find:
+            random.shuffle(sources_1)
 
         for source_1 in sources_1:
 
@@ -1366,7 +1369,8 @@ class PijersiState:
                 break
 
             directions_1 = [direction_1 for direction_1 in HexagonDirection]
-            random.shuffle(directions_1)
+            if self.__use_random_find:
+                random.shuffle(directions_1)
 
             for direction_1 in directions_1:
                 destination_11 = Hexagon.get_next_fst_indices(source_1, direction_1)
@@ -1381,7 +1385,8 @@ class PijersiState:
                         state_11 = action_11.state.__fork()
 
                         directions_21 = [direction_21 for direction_21 in HexagonDirection]
-                        random.shuffle(directions_21)
+                        if self.__use_random_find:
+                            random.shuffle(directions_21)
 
                         for direction_21 in directions_21:
                             destination_21 = Hexagon.get_next_fst_indices(destination_11, direction_21)
@@ -1401,7 +1406,8 @@ class PijersiState:
                                 state_12 = action_12.state.__fork()
 
                                 directions_22 = [direction_22 for direction_22 in HexagonDirection]
-                                random.shuffle(directions_22)
+                                if self.__use_random_find:
+                                    random.shuffle(directions_22)
 
                                 for direction_22 in directions_22:
                                     destination_22 = Hexagon.get_next_fst_indices(destination_12, direction_22)
