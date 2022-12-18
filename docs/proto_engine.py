@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 import array
-import copy
 import enum
 from dataclasses import dataclass
 #from collections import namedtuple
@@ -27,7 +26,6 @@ import os
 import random
 import sys
 import timeit
-from typing import Callable
 from typing import Iterable
 from typing import NewType
 from typing import Optional
@@ -48,6 +46,15 @@ _do_debug = False
 
 OMEGA = 1_000.
 OMEGA_2 = OMEGA**2
+
+# The most compact storage
+# >> Try with all 32 signed bits or all 64 signed bits have not changed the profiling, neither the global time
+ARRAY_TYPE_BOOL = 'B'
+ARRAY_TYPE_COUNTER = 'B'
+ARRAY_TYPE_STATE_1 = 'B'
+ARRAY_TYPE_STATE_2 = 'H'
+ARRAY_TYPE_STATE_3 = 'L'
+
 
 HexIndex = NewType('HexIndex', int)
 Sources = Iterable[HexIndex]
@@ -153,7 +160,7 @@ class Hexagon:
 
     Self = TypeVar("Self", bound="HexState")
 
-    NULL = -102 # >> Should be negative and should be representable as a signed byte
+    NULL = 127 # >> Should be be representable as a byte
 
     __slots__ = ('name', 'position_uv', 'index')
 
@@ -348,7 +355,7 @@ class Hexagon:
     @staticmethod
     def __create_distance_to_goal():
 
-        Hexagon.__distance_to_goal = [ array.array('b',[ 0 for _ in Hexagon.get_all() ]) for _ in Player ]
+        Hexagon.__distance_to_goal = [ array.array('b', [ 0 for _ in Hexagon.get_all() ]) for _ in Player ]
 
         for player in Player:
             for hexagon_cube in Hexagon.get_all():
@@ -726,7 +733,7 @@ class GameState:
 
 
     def get_actions(self) -> Actions:
-        return self.__find_actions()
+        return self.__find_all_actions()
 
 
     def get_action_names(self) -> Actions:
@@ -759,51 +766,60 @@ class GameState:
 
 
     @staticmethod
+    def encode_path2_codes(path_codes: PathCodes) -> PathCode:
+        # >> optimization of 'encode_path_codes' for path2
+        return path_codes[0] + path_codes[1]*HexState.CODE_BASE
+
+
+    @staticmethod
+    def encode_path3_codes(path_codes: PathCodes) -> PathCode:
+        # >> optimization of 'encode_path_codes' for path3
+        return path_codes[0] + path_codes[1]*HexState.CODE_BASE + path_codes[2]*HexState.CODE_BASE_2
+
+
+    @staticmethod
     def encode_path_codes(path_codes: PathCodes) -> PathCode:
 
-        path_length = len(path_codes)
-        
-        if path_length == 2:
-            code = path_codes[0] + path_codes[1]*HexState.CODE_BASE
-
-        elif path_length == 3:
-            code = path_codes[0] + path_codes[1]*HexState.CODE_BASE + path_codes[2]*HexState.CODE_BASE_2
-
-        else:
-            code = 0
-            shift = 1
-            code_base = HexState.CODE_BASE
-            for hex_code in path_codes:
-                code += shift*hex_code
-                shift *= code_base
+        code = 0
+        shift = 1
+        code_base = HexState.CODE_BASE
+        for hex_code in path_codes:
+            code += shift*hex_code
+            shift *= code_base
 
         return code
+
+
+    @staticmethod
+    def decode_path2_code(code: PathCode) -> PathCodes:
+        # >> optimization of 'decode_path_code' for path2
+        return (code % HexState.CODE_BASE, 
+                (code // HexState.CODE_BASE) % HexState.CODE_BASE)
+
+
+    @staticmethod
+    def decode_path3_code(code: PathCode) -> PathCodes:
+        # >> optimization of 'decode_path_code' for path2
+        return(code % HexState.CODE_BASE, 
+               (code // HexState.CODE_BASE) % HexState.CODE_BASE, 
+               (code // HexState.CODE_BASE_2) % HexState.CODE_BASE)
 
 
     @staticmethod
     def decode_path_code(code: PathCode, path_length: int) -> PathCodes:
 
         assert code >= 0
+        assert path_length >= 0
 
-        if path_length == 2:
-            path_codes = (code % HexState.CODE_BASE,
-                          (code // HexState.CODE_BASE) % HexState.CODE_BASE)
+        path_codes = list()
 
-        elif path_length == 3:
-            path_codes = (code % HexState.CODE_BASE,
-                          (code // HexState.CODE_BASE) % HexState.CODE_BASE,
-                          (code // HexState.CODE_BASE_2) % HexState.CODE_BASE)
+        rest = code
+        for _ in range(path_length):
+            hex_code = rest % HexState.CODE_BASE
+            rest = rest // HexState.CODE_BASE
+            path_codes.append(hex_code)
 
-        else:
-            path_codes = list()
-
-            rest = code
-            for _ in range(path_length):
-                hex_code = rest % HexState.CODE_BASE
-                rest = rest // HexState.CODE_BASE
-                path_codes.append(hex_code)
-
-            assert rest == 0
+        assert rest == 0
 
         return path_codes
 
@@ -870,8 +886,13 @@ class GameState:
 
     @staticmethod
     def __make_empty_board_codes() -> BoardCodes :
-        board_codes = array.array('B', [0 for _ in Hexagon.get_all()])
+        board_codes = bytearray([0 for _ in Hexagon.get_all()])
         return board_codes
+
+
+    @staticmethod
+    def __copy_board_codes(board_codes: BoardCodes) -> BoardCodes :
+        return bytearray(board_codes)
 
 
     @staticmethod
@@ -961,19 +982,9 @@ class GameState:
         board_codes[hex_index] = hex_state.encode()
 
 
-    def __find_actions(self) -> Actions:
-        return self.__find_cube_first_actions() + self.__find_stack_first_actions()
-
-
     @staticmethod
     def __find_cube_sources(board_codes: BoardCodes, current_player: Player) -> Sources:
         table_code = GameState.TABLE_HAS_CUBE[current_player]
-        return [hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0]
-
-
-    @staticmethod
-    def __find_stack_sources(board_codes: BoardCodes, current_player: Player) -> Sources:
-        table_code = GameState.TABLE_HAS_STACK[current_player]
         return [hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0]
 
 
@@ -983,7 +994,7 @@ class GameState:
         next_fst_hex = Hexagon.get_next_fst_index(source, direction)
 
         if next_fst_hex != Hexagon.NULL:
-            path = (source, next_fst_hex)
+            path = [source, next_fst_hex]
 
         else:
             path= None
@@ -1001,23 +1012,19 @@ class GameState:
             next_snd_hex = Hexagon.get_next_snd_index(source, direction)
 
             if next_snd_hex != Hexagon.NULL:
-                path = (source, next_fst_hex, next_snd_hex)
+                path = [source, next_fst_hex, next_snd_hex]
 
         return path
 
 
     @staticmethod
-    def __make_path_codes(board_codes: BoardCodes, path: Path) -> PathCodes:
-        path_length = len(path)
-        
-        if path_length == 2:
-            return [board_codes[path[0]],  board_codes[path[1]]]
+    def __make_path2_codes(board_codes: BoardCodes, path: Path) -> PathCodes:
+        return [board_codes[path[0]],  board_codes[path[1]]]
 
-        elif path_length == 3:
-            return [board_codes[path[0]],  board_codes[path[1]], board_codes[path[2]]]
 
-        else:
-            return [board_codes[hex_index] for hex_index in path]
+    @staticmethod
+    def __make_path3_codes(board_codes: BoardCodes, path: Path) -> PathCodes:
+        return [board_codes[path[0]],  board_codes[path[1]], board_codes[path[2]]]
 
 
     @staticmethod
@@ -1025,14 +1032,11 @@ class GameState:
                   table_next_code: Sequence[HexCode],
                   table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
 
-        path_length = len(path_codes)
-        assert path_length == 2
-
-        code = GameState.encode_path_codes(path_codes)
+        code = GameState.encode_path2_codes(path_codes)
         next_code = table_next_code[code]
 
         if next_code != 0:
-            next_path_codes = GameState.decode_path_code(next_code, path_length)
+            next_path_codes = GameState.decode_path2_code(next_code)
             capture_code = table_has_capture[code]
 
         else:
@@ -1047,9 +1051,6 @@ class GameState:
                   table_next_code: Sequence[HexCode],
                   table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
 
-        path_length = len(path_codes)
-        assert path_length == 3
-
         next_path_codes = None
         capture_code = False
 
@@ -1057,12 +1058,12 @@ class GameState:
         # >> Such optimization is reducing the size of the index domain of table_next_code and table_has_capture
         if path_codes[1] == 0:
             compressed_path_codes = [path_codes[0], path_codes[2]]
-            code = GameState.encode_path_codes(compressed_path_codes)
+            code = GameState.encode_path2_codes(compressed_path_codes)
             next_code = table_next_code[code]
 
             if next_code != 0:
                 # >> next_code is encoding a three hexagons path state
-                next_path_codes = GameState.decode_path_code(next_code, path_length)
+                next_path_codes = GameState.decode_path3_code(next_code)
                 capture_code = table_has_capture[code]
 
         return (next_path_codes, capture_code)
@@ -1084,83 +1085,102 @@ class GameState:
 
 
     @staticmethod
-    def __apply_path_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
-        next_board_codes = copy.copy(board_codes)
-        
-        path_length = len(path)
+    def __apply_path2_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
+        next_board_codes = GameState.__copy_board_codes(board_codes)
 
-        if path_length == 2:
-            next_board_codes[path[0]] = path_codes[0]
-            next_board_codes[path[1]] = path_codes[1]
+        next_board_codes[path[0]] = path_codes[0]
+        next_board_codes[path[1]] = path_codes[1]
+        return next_board_codes
 
-        elif path_length == 3:
-            next_board_codes[path[0]] = path_codes[0]
-            next_board_codes[path[1]] = path_codes[1]
-            next_board_codes[path[2]] = path_codes[2]
 
-        else:
-            for (hex_index, hex_code) in zip(path, path_codes):
-                next_board_codes[hex_index] = hex_code
-
+    @staticmethod
+    def __apply_path3_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
+        next_board_codes = GameState.__copy_board_codes(board_codes)
+        next_board_codes[path[0]] = path_codes[0]
+        next_board_codes[path[1]] = path_codes[1]
+        next_board_codes[path[2]] = path_codes[2]
         return next_board_codes
 
 
     @staticmethod
     def __try_cube_path1_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection) -> Optional[Action]:
-        return GameState.__try_path_action(board_codes, source, direction,
-                                           GameState.__make_path1, GameState.__try_cube_path1, move_code=0)
 
-
-    @staticmethod
-    def __try_stack_path1_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection) -> Optional[Action]:
-        return GameState.__try_path_action(board_codes, source, direction,
-                                           GameState.__make_path1, GameState.__try_stack_path1, move_code=1)
-
-
-    @staticmethod
-    def __try_stack_path2_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection) -> Optional[Action]:
-        return GameState.__try_path_action(board_codes, source, direction,
-                                           GameState.__make_path2, GameState.__try_stack_path2, move_code=1)
-
-
-    @staticmethod
-    def __try_path_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection,
-                        make_path: Callable[ [HexIndex, HexagonDirection], Optional[Path] ],
-                        try_path: Callable[ [PathCodes], Tuple[Optional[PathCodes], bool] ],
-                        move_code: MoveCode) -> Optional[Action]:
-        action = None
-        path = make_path(source, direction)
+        path = GameState.__make_path1(source, direction)
         if path is not None:
-            path_codes = GameState.__make_path_codes(board_codes, path)
-            (next_path_codes, capture_code) = try_path(path_codes)
+            path_codes = GameState.__make_path2_codes(board_codes, path)
+            (next_path_codes, capture_code) = GameState.__try_cube_path1(path_codes)
             if next_path_codes is not None:
-                action = Action(next_board_codes=GameState.__apply_path_codes(board_codes, path, next_path_codes),
+                action = Action(next_board_codes=GameState.__apply_path2_codes(board_codes, path, next_path_codes),
                                 path_vertices=[source, path[-1]],
                                 capture_code=capture_code,
-                                move_code=move_code)
+                                move_code=0)
+            else:
+                action = None
+        else:
+            action = None
 
         return action
 
 
-    def __find_cube_first_actions(self) -> Actions:
-        actions = list()
+    @staticmethod
+    def __try_stack_path1_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection) -> Optional[Action]:
 
+        path = GameState.__make_path1(source, direction)
+        if path is not None:
+            path_codes = GameState.__make_path2_codes(board_codes, path)
+            (next_path_codes, capture_code) = GameState.__try_stack_path1(path_codes)
+            if next_path_codes is not None:
+                action = Action(next_board_codes=GameState.__apply_path2_codes(board_codes, path, next_path_codes),
+                                path_vertices=[source, path[-1]],
+                                capture_code=capture_code,
+                                move_code=1)
+            else:
+                action = None
+        else:
+            action = None
+
+        return action
+
+    @staticmethod
+    def __try_stack_path2_action(board_codes: BoardCodes, source: HexIndex, direction: HexagonDirection) -> Optional[Action]:
+
+        path = GameState.__make_path2(source, direction)
+        if path is not None:
+            path_codes = GameState.__make_path3_codes(board_codes, path)
+            (next_path_codes, capture_code) = GameState.__try_stack_path2(path_codes)
+            if next_path_codes is not None:
+                action = Action(next_board_codes=GameState.__apply_path3_codes(board_codes, path, next_path_codes),
+                                path_vertices=[source, path[-1]],
+                                capture_code=capture_code,
+                                move_code=1)
+            else:
+                action = None
+        else:
+            action = None
+
+        return action
+
+
+    def __find_all_actions(self) -> Actions:
+        actions = list()
         if not self.is_terminal:
             board_codes = self.board_codes
             current_player = self.current_player
 
-            for cube_source in GameState.__find_cube_sources(board_codes, current_player):
+            for cube_source_1 in GameState.__find_cube_sources(board_codes, current_player):
 
-                for cube_direction in HexagonDirection:
-                    action1 = GameState.__try_cube_path1_action(board_codes, cube_source, cube_direction)
+                for cube_direction_1 in HexagonDirection:
+
+                    #-- all first moves using a cube
+                    action1 = GameState.__try_cube_path1_action(board_codes, cube_source_1, cube_direction_1)
                     if action1 is not None:
                         actions.append(action1)
 
                         board_codes_1 = action1.next_board_codes
-                        stack_source = action1.path_vertices[-1]
-                        if GameState.TABLE_HAS_STACK[current_player][board_codes_1[stack_source]] != 0:
-                            for stack_direction in HexagonDirection:
-                                action21 = GameState.__try_stack_path1_action(board_codes_1, stack_source, stack_direction)
+                        stack_source_1 = action1.path_vertices[-1]
+                        if GameState.TABLE_HAS_STACK[current_player][board_codes_1[stack_source_1]] != 0:
+                            for stack_direction_1 in HexagonDirection:
+                                action21 = GameState.__try_stack_path1_action(board_codes_1, stack_source_1, stack_direction_1)
                                 if action21 is not None:
                                     action21 = Action(next_board_codes=action21.next_board_codes,
                                                       path_vertices=action1.path_vertices + [action21.path_vertices[-1]],
@@ -1168,7 +1188,7 @@ class GameState:
                                                       move_code=action1.move_code + 2*action21.move_code)
                                     actions.append(action21)
 
-                                    action22 = GameState.__try_stack_path2_action(board_codes_1, stack_source, stack_direction)
+                                    action22 = GameState.__try_stack_path2_action(board_codes_1, stack_source_1, stack_direction_1)
                                     if action22 is not None:
                                         action22 = Action(next_board_codes=action22.next_board_codes,
                                                           path_vertices=action1.path_vertices + [action22.path_vertices[-1]],
@@ -1176,49 +1196,43 @@ class GameState:
                                                           move_code=action1.move_code + 2*action22.move_code)
                                         actions.append(action22)
 
-        return actions
-
-
-    def __find_stack_first_actions(self) -> Actions:
-        actions = list()
-        if not self.is_terminal:
-            board_codes = self.board_codes
-            current_player = self.current_player
-
-            for stack_source in GameState.__find_stack_sources(board_codes, current_player):
-                for stack_direction in HexagonDirection:
-
-                    action11 = GameState.__try_stack_path1_action(board_codes, stack_source, stack_direction)
-                    if action11 is not None:
-                        actions.append(action11)
-
-                        board_codes_11 = action11.next_board_codes
-                        cube_source = action11.path_vertices[-1]
-                        for cube_direction in HexagonDirection:
-                            action12 = GameState.__try_cube_path1_action(board_codes_11, cube_source, cube_direction)
-                            if action12 is not None:
-                               action12 = Action(next_board_codes=action12.next_board_codes,
-                                                 path_vertices=action11.path_vertices + [action12.path_vertices[-1]],
-                                                 capture_code=action11.capture_code + 2*action12.capture_code,
-                                                 move_code=action11.move_code + 2*action12.move_code)
-                               actions.append(action12)
-
-                        action21 = GameState.__try_stack_path2_action(board_codes, stack_source, stack_direction)
-                        if action21 is not None:
-                            actions.append(action21)
-
-                            board_codes_21 = action21.next_board_codes
-                            cube_source = action21.path_vertices[-1]
-                            for cube_direction in HexagonDirection:
-                                action22 = GameState.__try_cube_path1_action(board_codes_21, cube_source, cube_direction)
-                                if action22 is not None:
-                                   action22 = Action(next_board_codes=action22.next_board_codes,
-                                                     path_vertices=action21.path_vertices + [action22.path_vertices[-1]],
-                                                     capture_code=action21.capture_code + 2*action22.capture_code,
-                                                     move_code=action21.move_code + 2*action22.move_code )
-                                   actions.append(action22)
+                        #-- all first moves using a stack
+                        stack_source_2 = cube_source_1
+                        stack_direction_2 = cube_direction_1
+                        
+                        if GameState.TABLE_HAS_STACK[current_player][board_codes[stack_source_2]] != 0:           
+                            action11 = GameState.__try_stack_path1_action(board_codes, stack_source_2, stack_direction_2)
+                            if action11 is not None:
+                                actions.append(action11)
+        
+                                board_codes_11 = action11.next_board_codes
+                                cube_source_2 = action11.path_vertices[-1]
+                                for cube_direction_2 in HexagonDirection:
+                                    action12 = GameState.__try_cube_path1_action(board_codes_11, cube_source_2, cube_direction_2)
+                                    if action12 is not None:
+                                       action12 = Action(next_board_codes=action12.next_board_codes,
+                                                         path_vertices=action11.path_vertices + [action12.path_vertices[-1]],
+                                                         capture_code=action11.capture_code + 2*action12.capture_code,
+                                                         move_code=action11.move_code + 2*action12.move_code)
+                                       actions.append(action12)
+        
+                                action21 = GameState.__try_stack_path2_action(board_codes, stack_source_2, stack_direction_2)
+                                if action21 is not None:
+                                    actions.append(action21)
+        
+                                    board_codes_21 = action21.next_board_codes
+                                    cube_source_2 = action21.path_vertices[-1]
+                                    for cube_direction_2 in HexagonDirection:
+                                        action22 = GameState.__try_cube_path1_action(board_codes_21, cube_source_2, cube_direction_2)
+                                        if action22 is not None:
+                                           action22 = Action(next_board_codes=action22.next_board_codes,
+                                                             path_vertices=action21.path_vertices + [action22.path_vertices[-1]],
+                                                             capture_code=action21.capture_code + 2*action22.capture_code,
+                                                             move_code=action21.move_code + 2*action22.move_code )
+                                           actions.append(action22)
 
         return actions
+
 
 
     @staticmethod
@@ -1226,8 +1240,8 @@ class GameState:
 
 
         def create_tables_try_cube_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE_2)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_next_code = array.array(ARRAY_TYPE_STATE_2, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
 
             for src_state in HexState.iterate_hex_states():
                 for dst_state in HexState.iterate_hex_states():
@@ -1358,8 +1372,8 @@ class GameState:
 
 
         def create_tables_try_stack_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('H', [0 for _ in range(HexState.CODE_BASE_2)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_next_code = array.array(ARRAY_TYPE_STATE_2, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
 
             create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=None)
 
@@ -1367,8 +1381,8 @@ class GameState:
 
 
         def create_tables_try_stack_path2() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
-            table_next_code = array.array('L', [0 for _ in range(HexState.CODE_BASE_2)])
-            table_has_capture = array.array('B', [0 for _ in range(HexState.CODE_BASE_2)])
+            table_next_code = array.array(ARRAY_TYPE_STATE_3, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
 
             create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=HexState.make_empty())
 
@@ -1376,7 +1390,7 @@ class GameState:
 
 
         def create_table_has_cube() -> Sequence[Sequence[int]]:
-            table = [ array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1389,7 +1403,7 @@ class GameState:
 
 
         def create_table_has_stack() -> Sequence[Sequence[int]]:
-            table = [ array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1402,7 +1416,7 @@ class GameState:
 
 
         def create_table_cube_count() -> Sequence[Sequence[int]]:
-            table = [ array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1420,7 +1434,7 @@ class GameState:
 
 
         def create_table_has_fighter() -> Sequence[Sequence[int]]:
-            table = [ array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1440,7 +1454,7 @@ class GameState:
 
 
         def create_table_fighter_count() -> Sequence[Sequence[int]]:
-            table = [ array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1460,7 +1474,7 @@ class GameState:
 
 
         def make_goal_scores() -> Sequence[Sequence[int]]:
-            table = [array.array('B', [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -1852,7 +1866,7 @@ if __name__ == "__main__":
 
     if True:
         do_profile_game_state = GameState()
-        cProfile.run('do_profile()', sort=SortKey.CUMULATIVE)
+        cProfile.run('do_profile()', sort=SortKey.TIME)
 
     print()
     print("Bye")
