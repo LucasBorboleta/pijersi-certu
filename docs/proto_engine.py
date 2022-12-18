@@ -1894,8 +1894,10 @@ def test():
 
         print()
         print("-- profile_get_actions --")
-
-        cProfile.run('test_profiling_get_actions()', sort=SortKey.TIME)
+        
+        test_profiling_1_data['pijersi_state'] = PijersiState()
+        
+        cProfile.run('test_profiling_1_get_actions()', sort=SortKey.TIME)
 
 
     test_encode_and_decode_hex_state()
@@ -1911,12 +1913,16 @@ def test():
     profile_get_actions()
 
 
-def test_profiling_get_actions():
-    #>> To be defined at the upper scope of the module because of "cProfile.run"
-    pijersi_state = PijersiState()
+test_profiling_1_data = dict()
+
+def test_profiling_1_get_actions():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+    
+    pijersi_state = test_profiling_1_data['pijersi_state']
+
     for _ in range(100):
         actions = pijersi_state.get_actions()
-        assert len(actions) == 186
+        assert actions is not None
 
 
 def main():
