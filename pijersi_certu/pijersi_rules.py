@@ -2667,7 +2667,6 @@ class Game:
             print(self.__log)
 
 
-
 def test_game_between_random_players():
 
     print("=====================================")

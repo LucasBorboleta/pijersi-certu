@@ -24,6 +24,7 @@ import math
 import os
 import random
 import sys
+import time
 import timeit
 from typing import Iterable
 from typing import Mapping
@@ -604,8 +605,8 @@ class PijersiState:
     Self = TypeVar("Self", bound="HexState")
 
     __init_done = False
-    __MAX_CREDIT = 20
-    __slots__ = ('board_codes', 'is_terminal', 'credit', 'turn', 'current_player')
+    __max_credit = 20
+    __slots__ = ('board_codes', 'terminated', 'credit', 'turn', 'current_player')
 
 
     TABLE_CUBE_FROM_NAME = None
@@ -640,29 +641,56 @@ class PijersiState:
 
     def __init__(self,
                  board_codes: BoardCodes=None,
-                 is_terminal: bool=False,
-                 credit: int=__MAX_CREDIT,
+                 terminated: bool=False,
+                 credit: int=0,
                  turn: int=1,
                  current_player: Player=Player.WHITE):
 
 
         self.board_codes = board_codes if board_codes is not None else PijersiState.__make_default_board_codes()
-        self.is_terminal = is_terminal
-        self.credit = credit
+        self.terminated = terminated
+        self.credit = credit if credit > 0 else PijersiState.__max_credit
         self.turn = turn
         self.current_player = current_player
 
 
-    def is_terminated(self) -> bool:
+    def get_credit(self) -> int:
+        return self.credit
+
+
+    @staticmethod
+    def get_max_credit() -> int:
+        return PijersiState.__max_credit
+
+
+    @staticmethod
+    def set_max_credit(max_credit: int):
+        assert max_credit > 0
+        PijersiState.__max_credit = max_credit
+
+
+    def is_terminal(self) -> bool:
         return (self.player_is_arrived(Player.WHITE) or
                 self.player_is_arrived(Player.BLACK) or
                 self.credit == 0 or
                 not self.has_action())
 
 
+    def get_current_player(self):
+        return self.current_player
+
+
+    def get_next_player(self):
+        return Player.BLACK if self.current_player == Player.WHITE else Player.WHITE
+
+
+    def get_turn(self):
+        return self.turn
+
+
     def has_action(self) -> bool:
 
-        if not self.is_terminal:
+        if not self.terminated:
             board_codes = self.board_codes
             current_player = self.current_player
 
@@ -714,12 +742,21 @@ class PijersiState:
         return rewards
 
 
+    def take_action(self, action: Action) -> Self:
+
+        return PijersiState(board_codes=action.next_board_codes,
+                            terminated=self.terminated,
+                            credit=max(0, self.credit - 1) if action.capture_code == 0 else self.__max_credit, 
+                            turn=self.turn + 1,
+                            current_player=self.get_next_player())
+
+
     def get_actions(self) -> Actions:
         return self.__find_all_actions()
 
 
     def get_action_names(self) -> Actions:
-        return [PijersiState.__make_action_name(action) for action in self.get_actions()]
+        return [PijersiState.make_action_name(action) for action in self.get_actions()]
 
 
     def get_fighter_counts(self)-> Sequence[int]:
@@ -849,7 +886,7 @@ class PijersiState:
 
 
     @staticmethod
-    def __make_action_name(action: Action) -> str:
+    def make_action_name(action: Action) -> str:
 
         hexagons = Hexagon.get_all()
 
@@ -1105,7 +1142,7 @@ class PijersiState:
 
 
         actions = list()
-        if not self.is_terminal:
+        if not self.terminated:
             board_codes = self.board_codes
             current_player = self.current_player
 
@@ -1671,6 +1708,153 @@ class PijersiState:
         print_tables_try_stack_path2()
 
 
+class RandomSearcher():
+
+    __slots__ = ('__name')
+
+
+    def __init__(self, name):
+        self.__name = name
+
+
+    def get_name(self):
+        return self.__name
+
+
+    def is_interactive(self):
+        return False
+
+
+    def search(self, state):
+        actions = state.get_actions()
+        action = random.choice(actions)
+        return action
+
+
+class Game:
+
+    __slots__ = ('__searcher', '__pijersi_state', '__log', '__turn', '__last_action', '__turn_duration')
+
+
+    def __init__(self):
+        self.__searcher = [None, None]
+
+        self.__pijersi_state = None
+        self.__log = None
+        self.__turn = None
+        self.__last_action = None
+        self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
+
+
+    def set_white_searcher(self, searcher):
+        self.__searcher[Player.WHITE] = searcher
+
+
+    def set_black_searcher(self, searcher):
+        self.__searcher[Player.BLACK] = searcher
+
+
+    def start(self):
+
+        assert self.__searcher[Player.WHITE] is not None
+        assert self.__searcher[Player.BLACK] is not None
+
+        self.__pijersi_state = PijersiState()
+
+        self.__pijersi_state.show()
+
+        self.__log = "Game started"
+
+
+    def get_log(self):
+        return self.__log
+
+
+    def get_turn(self):
+        return self.__turn
+
+
+    def get_last_action(self):
+        assert self.__last_action is not None
+        return self.__last_action
+
+
+    def get_summary(self):
+        return self.__pijersi_state.get_summary()
+
+
+    def get_state(self):
+        return self.__pijersi_state
+
+    def set_state(self, state):
+        self.__pijersi_state = state
+
+
+    def get_rewards(self):
+        return self.__pijersi_state.get_rewards()
+
+
+    def has_next_turn(self):
+        return not self.__pijersi_state.is_terminal()
+
+
+    def next_turn(self):
+
+        self.__log = ""
+
+        if self.has_next_turn():
+            player = self.__pijersi_state.get_current_player()
+            player_name = f"{Player_name(player)}-{self.__searcher[player].get_name()}"
+            action_count = len(self.__pijersi_state.get_actions())
+
+            print()
+            print(f"{player_name} is thinking ...")
+
+            turn_start = time.time()
+            action = self.__searcher[player].search(self.__pijersi_state)
+            turn_end = time.time()
+            turn_duration = turn_end - turn_start
+            self.__turn_duration[player].append(turn_duration)
+
+            self.__last_action = PijersiState.make_action_name(action)
+
+            print(f"{player_name} is done after %.1f seconds" % turn_duration)
+
+            self.__turn = self.__pijersi_state.get_turn()
+
+            self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {self.__last_action} amongst {action_count} actions"
+            print(self.__log)
+            print("-"*40)
+
+            self.__pijersi_state = self.__pijersi_state.take_action(action)
+            self.__pijersi_state.show()
+
+        if self.__pijersi_state.is_terminal():
+
+            rewards = self.__pijersi_state.get_rewards()
+            player = self.__pijersi_state.get_current_player()
+
+            print()
+            print("-"*40)
+
+            white_time = sum(self.__turn_duration[Player.WHITE])
+            black_time = sum(self.__turn_duration[Player.BLACK])
+
+            white_player = f"{Player_name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
+            black_player = f"{Player_name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
+
+            if rewards[Player.WHITE] == rewards[Player.BLACK]:
+                self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+
+            elif rewards[Player.WHITE] > rewards[Player.BLACK]:
+                self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+
+            else:
+                self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
+
+            print(self.__log)
+
+
 def test():
 
 
@@ -1841,7 +2025,7 @@ def test():
         new_state.show()
 
         print()
-        print(f"new_state.is_terminated() = {new_state.is_terminated()}")
+        print(f"new_state.is_terminal() = {new_state.is_terminal()}")
         print(f"new_state.has_action() = {new_state.has_action()}")
 
         new_action_names = new_state.get_action_names()
@@ -1900,6 +2084,32 @@ def test():
         cProfile.run('test_profiling_1_get_actions()', sort=SortKey.TIME)
 
 
+    def test_game_between_random_players():
+    
+        print("=====================================")
+        print(" test_game_between_random_players ...")
+        print("=====================================")
+    
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10_000)
+    
+        game = Game()
+    
+        game.set_white_searcher(RandomSearcher("random"))
+        game.set_black_searcher(RandomSearcher("random"))
+    
+        game.start()
+    
+        while game.has_next_turn():
+            game.next_turn()
+    
+        PijersiState.set_max_credit(default_max_credit)
+    
+        print("=====================================")
+        print("test_game_between_random_players done")
+        print("=====================================")
+
+
     test_encode_and_decode_hex_state()
     test_encode_and_decode_path_states()
     test_iterate_hex_states()
@@ -1911,6 +2121,8 @@ def test():
 
     benchmark_get_actions()
     profile_get_actions()
+
+    test_game_between_random_players()
 
 
 test_profiling_1_data = dict()
