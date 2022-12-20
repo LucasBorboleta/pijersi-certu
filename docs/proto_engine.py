@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 import array
 import enum
+from collections import Counter
 from dataclasses import dataclass
 import math
 import os
@@ -26,8 +27,8 @@ import random
 import sys
 import time
 import timeit
+from types import SimpleNamespace
 from typing import Iterable
-from typing import Mapping
 from typing import NewType
 from typing import Optional
 from typing import Sequence
@@ -81,18 +82,19 @@ class Reward(enum.IntEnum):
     assert LOSS + WIN == DRAW
 
 
+@enum.unique
 class Player(enum.IntEnum):
     WHITE = 0
     BLACK = 1
     assert WHITE < BLACK
 
-    @staticmethod
-    def name(player):
-        return "white" if player == Player.WHITE else Player.BLACK
+
+def Player_name(player: Player) -> str:
+    return "white" if player == Player.WHITE else "black"
 
 
 @enum.unique
-class CubeSort(enum.IntEnum):
+class Cube(enum.IntEnum):
     ROCK = 0
     PAPER = 1
     SCISSORS = 2
@@ -100,12 +102,35 @@ class CubeSort(enum.IntEnum):
     assert ROCK < PAPER < SCISSORS < WISE
 
 
-def CubeSort_beats(src: CubeSort, dst: CubeSort) -> bool:
-    assert src in CubeSort
-    assert dst in CubeSort
-    return (src, dst) in ((CubeSort.ROCK, CubeSort.SCISSORS),
-                          (CubeSort.SCISSORS, CubeSort.PAPER),
-                          (CubeSort.PAPER, CubeSort.ROCK))
+def Cube_beats(src: Cube, dst: Cube) -> bool:
+    assert src in Cube
+    assert dst in Cube
+    return (src, dst) in ((Cube.ROCK, Cube.SCISSORS),
+                          (Cube.SCISSORS, Cube.PAPER),
+                          (Cube.PAPER, Cube.ROCK))
+
+Cube_data = SimpleNamespace(TABLE_CUBE_FROM_NAME=None, TABLE_CUBE_TO_NAME=None)
+
+Cube_data.TABLE_CUBE_FROM_NAME = {
+    'R':(Player.WHITE, Cube.ROCK),
+    'P':(Player.WHITE, Cube.PAPER),
+    'S':(Player.WHITE, Cube.SCISSORS),
+    'W':(Player.WHITE, Cube.WISE),
+
+    'r':(Player.BLACK, Cube.ROCK),
+    'p':(Player.BLACK, Cube.PAPER),
+    's':(Player.BLACK, Cube.SCISSORS),
+    'w':(Player.BLACK, Cube.WISE)}
+
+Cube_data.TABLE_CUBE_TO_NAME = {(player, cube):name for (name, (player, cube)) in Cube_data.TABLE_CUBE_FROM_NAME.items()}
+
+
+def Cube_from_name(name: str) -> Cube:
+    return Cube_data.TABLE_CUBE_FROM_NAME[name]
+
+
+def Cube_to_name(player: Player, cube: Cube) -> str:
+    return Cube_data.TABLE_CUBE_TO_NAME[(player, cube)]
 
 
 @enum.unique
@@ -415,8 +440,8 @@ class HexState:
                  is_empty: bool=True,
                  has_stack: bool=False,
                  player: Optional[Player]=None,
-                 bottom: Optional[CubeSort]=None,
-                 top: Optional[CubeSort]=None):
+                 bottom: Optional[Cube]=None,
+                 top: Optional[Cube]=None):
 
         if is_empty:
             assert not has_stack
@@ -428,8 +453,8 @@ class HexState:
 
             if has_stack:
                 assert bottom is not None and top is not None
-                if top == CubeSort.WISE:
-                    assert bottom == CubeSort.WISE
+                if top == Cube.WISE:
+                    assert bottom == Cube.WISE
             else:
                 assert bottom is not None and top is None
 
@@ -447,12 +472,12 @@ class HexState:
 
 
     @staticmethod
-    def make_single(player: Player, cube: CubeSort) -> Self:
+    def make_single(player: Player, cube: Cube) -> Self:
         return HexState(player=player, bottom=cube, is_empty=False)
 
 
     @staticmethod
-    def make_stack(player: Player, bottom: CubeSort, top: CubeSort) -> Self:
+    def make_stack(player: Player, bottom: Cube, top: Cube) -> Self:
         return HexState(player=player, bottom=bottom, top=top, is_empty=False, has_stack=True)
 
 
@@ -523,12 +548,12 @@ class HexState:
 
             bits_bottom = rest % 4
             rest = rest // 4
-            bottom = tuple(CubeSort)[bits_bottom]
+            bottom = tuple(Cube)[bits_bottom]
 
             if has_stack:
                 bits_top = rest % 4
                 rest = rest // 4
-                top = tuple(CubeSort)[bits_top]
+                top = tuple(Cube)[bits_top]
 
         assert rest == 0
 
@@ -553,18 +578,18 @@ class HexState:
 
             else:
                 for player in Player:
-                    for bottom in CubeSort:
+                    for bottom in Cube:
                         for has_stack in (True, False):
                             if has_stack:
-                                if bottom == CubeSort.WISE:
-                                    for top in CubeSort:
+                                if bottom == Cube.WISE:
+                                    for top in Cube:
                                         yield HexState(is_empty=is_empty,
                                                        has_stack=has_stack,
                                                        player=player,
                                                        bottom=bottom,
                                                        top=top)
                                 else:
-                                    for top in (CubeSort.ROCK, CubeSort.PAPER, CubeSort.SCISSORS):
+                                    for top in (Cube.ROCK, Cube.PAPER, Cube.SCISSORS):
                                         yield HexState(is_empty=is_empty,
                                                        has_stack=has_stack,
                                                        player=player,
@@ -590,9 +615,33 @@ class PijersiAction:
     capture_code: Optional[CaptureCode] = None
     move_code: Optional[MoveCode] = None
 
+    __TABLE_MOVE_CODE_TO_NAMES = [None for _ in range(4)]
+    __TABLE_MOVE_CODE_TO_NAMES[0] = ['-', '']
+    __TABLE_MOVE_CODE_TO_NAMES[1] = ['=', '-']
+    __TABLE_MOVE_CODE_TO_NAMES[2] = ['-', '=']
+    __TABLE_MOVE_CODE_TO_NAMES[3] = ['=', '-']
+
+    __TABLE_CAPTURE_CODE_TO_NAMES = [None for _ in range(4)]
+    __TABLE_CAPTURE_CODE_TO_NAMES[0] = ['', '']
+    __TABLE_CAPTURE_CODE_TO_NAMES[1] = ['!', '']
+    __TABLE_CAPTURE_CODE_TO_NAMES[2] = ['', '!']
+    __TABLE_CAPTURE_CODE_TO_NAMES[3] = ['!', '!']
+
 
     def __str__(self):
-        return PijersiState.make_action_name(self)
+
+        hexagons = Hexagon.get_all()
+
+        hex_names = [hexagons[hex_index].name for hex_index in self.path_vertices]
+        move_names = PijersiAction.__TABLE_MOVE_CODE_TO_NAMES[self.move_code]
+        capture_names = PijersiAction.__TABLE_CAPTURE_CODE_TO_NAMES[self.capture_code]
+
+        action_name = hex_names[0]
+        for (move_name, hex_name, capture_name) in zip(move_names, hex_names[1:], capture_names):
+            action_name += move_name + hex_name + capture_name
+
+        return action_name
+
 
 PijersiActions = Sequence[PijersiAction]
 
@@ -604,14 +653,8 @@ class PijersiState:
     __init_done = False
     __max_credit = 20
     __slots__ = ('__board_codes', '__player', '__credit', '__turn',
-                 '__actions', '__action_names', '__action_simple_names')
+                 '__actions', '__actions_by_names', '__actions_by_simple_names')
 
-
-    __TABLE_CUBE_FROM_NAME = None
-    __TABLE_CUBE_TO_NAME = None
-
-    __TABLE_MOVE_CODE_TO_NAMES = None
-    __TABLE_CAPTURE_CODE_TO_NAMES = None
 
     __TABLE_HAS_CUBE = None
     __TABLE_HAS_STACK = None
@@ -620,6 +663,8 @@ class PijersiState:
 
     __TABLE_HAS_FIGHTER = None
     __TABLE_FIGHTER_COUNT = None
+
+    __TABLE_CUBE_COUNT_BY_SORT = None
 
     __TABLE_MAKE_PATH1 = None
     __TABLE_MAKE_PATH2 = None
@@ -649,63 +694,11 @@ class PijersiState:
         self.__credit = credit if credit is not None else PijersiState.__max_credit
         self.__turn = turn
         self.__actions = None
-        self.__action_names = None
+        self.__actions_by_names = None
 
 
     @staticmethod
     def init():
-
-
-        def create_table_cube_from_name() -> Mapping[str, Tuple[Player, CubeSort]]:
-
-            table = dict()
-
-            table['R'] = (Player.WHITE, CubeSort.ROCK)
-            table['P'] = (Player.WHITE, CubeSort.PAPER)
-            table['S'] = (Player.WHITE, CubeSort.SCISSORS)
-            table['W'] = (Player.WHITE, CubeSort.WISE)
-
-            table['r'] = (Player.BLACK, CubeSort.ROCK)
-            table['p'] = (Player.BLACK, CubeSort.PAPER)
-            table['s'] = (Player.BLACK, CubeSort.SCISSORS)
-            table['w'] = (Player.BLACK, CubeSort.WISE)
-
-            return table
-
-
-        def create_table_cube_to_name() -> Mapping[Tuple[Player, CubeSort], str]:
-
-            table = dict()
-
-            table[(Player.WHITE, CubeSort.ROCK)] = 'R'
-            table[(Player.WHITE, CubeSort.PAPER)] = 'P'
-            table[(Player.WHITE, CubeSort.SCISSORS)] = 'S'
-            table[(Player.WHITE, CubeSort.WISE)] = 'W'
-
-            table[(Player.BLACK, CubeSort.ROCK)] = 'r'
-            table[(Player.BLACK, CubeSort.PAPER)] = 'p'
-            table[(Player.BLACK, CubeSort.SCISSORS)] = 's'
-            table[(Player.BLACK, CubeSort.WISE)] = 'w'
-
-            return table
-
-
-        def create_table_move_code_to_names() -> Sequence[Tuple[str, str]]:
-            table = [None for _ in range(4)]
-            table[0] = ['-', '']
-            table[1] = ['=', '-']
-            table[2] = ['-', '=']
-            table[3] = ['=', '-']
-            return table
-
-
-        def create_table_capture_code_to_names() -> Sequence[Tuple[str, str]]:
-            table = [None for _ in range(4)]
-            table[0] = ['', '']
-            table[1] = ['!', '']
-            table[2] = ['', '!']
-            table[3] = ['!', '!']
-            return table
 
 
         def create_table_has_cube() -> Sequence[Sequence[int]]:
@@ -761,10 +754,10 @@ class PijersiState:
 
                     if hex_state.has_stack:
                         count = 0
-                        count = max(count, 1 if hex_state.bottom != CubeSort.WISE else 0)
-                        count = max(count, 1 if hex_state.top != CubeSort.WISE else 0)
+                        count = max(count, 1 if hex_state.bottom != Cube.WISE else 0)
+                        count = max(count, 1 if hex_state.top != Cube.WISE else 0)
                     else:
-                        count = 1 if hex_state.bottom != CubeSort.WISE else 0
+                        count = 1 if hex_state.bottom != Cube.WISE else 0
 
                     hex_code = hex_state.encode()
                     table[hex_state.player][hex_code] = count
@@ -781,13 +774,31 @@ class PijersiState:
 
                     if hex_state.has_stack:
                         count = 0
-                        count += 1 if hex_state.bottom != CubeSort.WISE else 0
-                        count += 1 if hex_state.top != CubeSort.WISE else 0
+                        count += 1 if hex_state.bottom != Cube.WISE else 0
+                        count += 1 if hex_state.top != Cube.WISE else 0
                     else:
-                        count = 1 if hex_state.bottom != CubeSort.WISE else 0
+                        count = 1 if hex_state.bottom != Cube.WISE else 0
 
                     hex_code = hex_state.encode()
                     table[hex_state.player][hex_code] = count
+
+            return table
+
+
+        def create_table_cube_count_by_sort() ->Sequence[Sequence[Sequence[int]]] :
+            table = [ [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)])
+                       for _ in Cube] for _ in Player]
+
+            for hex_state in HexState.iterate_hex_states():
+
+                if not hex_state.is_empty:
+                    hex_code = hex_state.encode()
+
+                    if hex_state.has_stack:
+                        table[hex_state.player][hex_state.bottom][hex_code] += 1
+                        table[hex_state.player][hex_state.top][hex_code] += 1
+                    else:
+                        table[hex_state.player][hex_state.bottom][hex_code] += 1
 
             return table
 
@@ -868,12 +879,12 @@ class PijersiState:
                             if not dst_state.has_stack:
                                 # == Destination has a single cube owned by the active player
                                 if src_state.has_stack:
-                                    if src_state.top != CubeSort.WISE or (src_state.top == CubeSort.WISE and dst_state.bottom == CubeSort.WISE):
+                                    if src_state.top != Cube.WISE or (src_state.top == Cube.WISE and dst_state.bottom == Cube.WISE):
                                         next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
                                         next_dst_state = HexState.make_stack(player=src_state.player, bottom=dst_state.bottom, top=src_state.top)
 
                                 else:
-                                    if src_state.bottom != CubeSort.WISE or (src_state.bottom == CubeSort.WISE and dst_state.bottom == CubeSort.WISE):
+                                    if src_state.bottom != Cube.WISE or (src_state.bottom == Cube.WISE and dst_state.bottom == Cube.WISE):
                                         next_src_state = HexState.make_empty()
                                         next_dst_state = HexState.make_stack(player=src_state.player, bottom=dst_state.bottom, top=src_state.bottom)
 
@@ -883,13 +894,13 @@ class PijersiState:
                                 # == Destination has a stack owned by the non-active player
 
                                 if src_state.has_stack:
-                                    if CubeSort_beats(src_state.top, dst_state.top):
+                                    if Cube_beats(src_state.top, dst_state.top):
                                         capture_code = 1
                                         next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
                                         next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.top)
 
                                 else:
-                                    if CubeSort_beats(src_state.bottom, dst_state.top):
+                                    if Cube_beats(src_state.bottom, dst_state.top):
                                         capture_code = 1
                                         next_src_state = HexState.make_empty()
                                         next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
@@ -898,12 +909,12 @@ class PijersiState:
                                 # == Destination has a single cube owned by the non-active player
 
                                 if src_state.has_stack:
-                                    if CubeSort_beats(src_state.top, dst_state.bottom):
+                                    if Cube_beats(src_state.top, dst_state.bottom):
                                         capture_code = 1
                                         next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
                                         next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.top)
                                 else:
-                                    if CubeSort_beats(src_state.bottom, dst_state.bottom):
+                                    if Cube_beats(src_state.bottom, dst_state.bottom):
                                         capture_code = 1
                                         next_src_state = HexState.make_empty()
                                         next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
@@ -943,14 +954,14 @@ class PijersiState:
 
                             if dst_state.has_stack:
                                 # == Destination has a stack owned by the non-active player
-                                if CubeSort_beats(src_state.top, dst_state.top):
+                                if Cube_beats(src_state.top, dst_state.top):
                                     capture_code = 1
                                     next_src_state = HexState.make_empty()
                                     next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
 
                             else:
                                 # == Destination has a single cube owned by the non-active player
-                                if CubeSort_beats(src_state.top, dst_state.bottom):
+                                if Cube_beats(src_state.top, dst_state.bottom):
                                     capture_code = 1
                                     next_src_state = HexState.make_empty()
                                     next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
@@ -989,12 +1000,6 @@ class PijersiState:
 
         if not PijersiState.__init_done:
 
-            PijersiState.__TABLE_CUBE_FROM_NAME = create_table_cube_from_name()
-            PijersiState.__TABLE_CUBE_TO_NAME = create_table_cube_to_name()
-
-            PijersiState.__TABLE_MOVE_CODE_TO_NAMES = create_table_move_code_to_names()
-            PijersiState.__TABLE_CAPTURE_CODE_TO_NAMES = create_table_capture_code_to_names()
-
             PijersiState.__TABLE_HAS_CUBE = create_table_has_cube()
             PijersiState.__TABLE_HAS_STACK = create_table_has_stack()
 
@@ -1003,6 +1008,8 @@ class PijersiState:
             PijersiState.__TABLE_HAS_FIGHTER = create_table_has_fighter()
 
             PijersiState.__TABLE_FIGHTER_COUNT= create_table_fighter_count()
+
+            PijersiState.__TABLE_CUBE_COUNT_BY_SORT = create_table_cube_count_by_sort()
 
             PijersiState.__TABLE_MAKE_PATH1 = create_table_make_path1()
             PijersiState.__TABLE_MAKE_PATH2 = create_table_make_path2()
@@ -1024,30 +1031,6 @@ class PijersiState:
 
     @staticmethod
     def print_tables():
-
-
-        def print_table_cube_from_name():
-            print()
-            print("-- print_table_cube_from_name --")
-            print(PijersiState.__TABLE_CUBE_FROM_NAME)
-
-
-        def print_table_cube_to_name():
-            print()
-            print("-- print_table_cube_to_name --")
-            print(PijersiState.__TABLE_CUBE_TO_NAME)
-
-
-        def print_table_move_code_to_names():
-            print()
-            print("-- print_table_move_code_to_names --")
-            print(PijersiState.__TABLE_MOVE_CODE_TO_NAMES)
-
-
-        def print_table_capture_code_to_names():
-            print()
-            print("-- print_table_capture_code_to_names --")
-            print(PijersiState.__TABLE_CAPTURE_CODE_TO_NAMES)
 
 
         def print_table_has_cube():
@@ -1078,6 +1061,13 @@ class PijersiState:
             print()
             print("-- print_table_fighter_count --")
             print(PijersiState.__TABLE_FIGHTER_COUNT)
+
+
+        def print_table_cube_count_by_sort():
+            print()
+            print("-- print_table_cube_count_by_sort --")
+            print(PijersiState.__TABLE_CUBE_COUNT_BY_SORT)
+
 
         def print_table_make_path1():
             print()
@@ -1123,12 +1113,6 @@ class PijersiState:
             print(PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE)
             print(PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
 
-
-        print_table_cube_from_name()
-        print_table_cube_to_name()
-
-        print_table_move_code_to_names()
-        print_table_capture_code_to_names()
 
         print_table_cube_count()
         print_table_has_cube()
@@ -1221,16 +1205,16 @@ class PijersiState:
 
     def get_action_names(self) -> PijersiActions:
 
-        if self.__action_names is None:
-            self.__action_names = [PijersiState.make_action_name(action) for action in self.get_actions()]
-        return self.__action_names
+        if self.__actions_by_names is None:
+            self.__actions_by_names = {str(action):action for action in self.get_actions()}
+        return self.__actions_by_names.keys()
 
 
     def get_action_simple_names(self) -> PijersiActions:
 
-        if self.__action_simple_names is None:
-            self.__action_simple_names = [action.replace('!', '') for action in self.get_action_names()]
-        return self.__action_simple_names
+        if self.__actions_by_simple_names is None:
+            self.__actions_by_simple_names = {str(action).replace('!', ''):action for action in self.get_actions()}
+        return self.__actions_by_simple_names.keys()
 
 
     def take_action(self, action: PijersiAction) -> Self:
@@ -1242,32 +1226,13 @@ class PijersiState:
 
 
     def take_action_by_name(self, action_name):
-       action_index = self.get_action_names().index(action_name)
-       action = self.get_actions()[action_index]
+       _ = self.get_action_simple_names()
+       action = self.__actions_by_simple_names[action_name.replace('!', '')]
        return self.take_action(action)
 
 
     def take_action_by_simple_name(self, action_name):
-       action_index = self.get_action_simple_names().index(action_name)
-       action = self.get_actions()[action_index]
-       return self.take_action(action)
-
-
-    @staticmethod
-    def make_action_name(action: PijersiAction) -> str:
-
-        hexagons = Hexagon.get_all()
-
-        hex_names = [hexagons[hex_index].name for hex_index in action.path_vertices]
-        move_names = PijersiState.__TABLE_MOVE_CODE_TO_NAMES[action.move_code]
-        capture_names = PijersiState.__TABLE_CAPTURE_CODE_TO_NAMES[action.capture_code]
-
-        action_name = hex_names[0]
-        for (move_name, hex_name, capture_name) in zip(move_names, hex_names[1:], capture_names):
-            action_name += move_name + hex_name + capture_name
-
-        return action_name
-
+       return self.take_action_by_name(action_name)
 
 
     def get_fighter_counts(self)-> Sequence[int]:
@@ -1315,12 +1280,12 @@ class PijersiState:
                     row_text += ".."
 
                 elif not hex_state.has_stack:
-                    bottom_label = PijersiState.__TABLE_CUBE_TO_NAME[(hex_state.player, hex_state.bottom)]
+                    bottom_label = Cube_to_name(hex_state.player, hex_state.bottom)
                     row_text += "." + bottom_label
 
                 elif hex_state.has_stack:
-                    bottom_label = PijersiState.__TABLE_CUBE_TO_NAME[(hex_state.player, hex_state.bottom)]
-                    top_label = PijersiState.__TABLE_CUBE_TO_NAME[(hex_state.player, hex_state.top)]
+                    bottom_label = Cube_to_name(hex_state.player, hex_state.bottom)
+                    top_label = Cube_to_name(hex_state.player, hex_state.top)
                     row_text += top_label + bottom_label
 
                 row_text += shift
@@ -1328,7 +1293,21 @@ class PijersiState:
 
 
     def get_summary(self) -> str:
-        return "NOT-IMPLEMENTED"
+
+        captures = Counter()
+
+        for player in Player:
+            states = [ self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
+
+            for cube in Cube:
+                cube_table = PijersiState.__TABLE_CUBE_COUNT_BY_SORT[player][cube]
+                captures[Cube_to_name(player, cube)] = sum([cube_table[hex_code] for hex_code in states])
+
+        summary = (
+            f"turn {self.__turn} / player {Player_name(self.__player)} / credit {self.__credit} / " +
+             "alived " + " ".join([f"{cube_name}:{cube_count}" for (cube_name, cube_count) in sorted(captures.items())]))
+
+        return summary
 
 
     @staticmethod
@@ -1432,21 +1411,21 @@ class PijersiState:
     @staticmethod
     def __set_cube_from_names(board_codes: BoardCodes, hex_name: str, cube_name: str):
         hex_index = Hexagon.get(hex_name).index
-        (player, cube) = PijersiState.__TABLE_CUBE_FROM_NAME[cube_name]
+        (player, cube) = Cube_from_name(cube_name)
         PijersiState.__set_cube(board_codes, hex_index, player, cube)
 
 
     @staticmethod
-    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: CubeSort, top_name: CubeSort):
+    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: Cube, top_name: Cube):
         hex_index = Hexagon.get(hex_name).index
-        (player, bottom) = PijersiState.__TABLE_CUBE_FROM_NAME[bottom_name]
-        (top_player, top) = PijersiState.__TABLE_CUBE_FROM_NAME[top_name]
+        (player, bottom) = Cube_from_name(bottom_name)
+        (top_player, top) = Cube_from_name(top_name)
         assert top_player == player
         PijersiState.__set_stack(board_codes, hex_index, player, bottom, top)
 
 
     @staticmethod
-    def __set_cube(board_codes: BoardCodes, hex_index: HexIndex, player: Player, cube: CubeSort):
+    def __set_cube(board_codes: BoardCodes, hex_index: HexIndex, player: Player, cube: Cube):
         hex_state = HexState.decode(board_codes[hex_index])
 
         assert hex_state.is_empty
@@ -1458,7 +1437,7 @@ class PijersiState:
 
 
     @staticmethod
-    def __set_stack(board_codes: BoardCodes, hex_index: HexIndex, player: Player, bottom: CubeSort, top: CubeSort):
+    def __set_stack(board_codes: BoardCodes, hex_index: HexIndex, player: Player, bottom: Cube, top: Cube):
         hex_state = HexState.decode(board_codes[hex_index])
 
         assert hex_state.is_empty
@@ -1489,8 +1468,8 @@ class PijersiState:
 
 
     @staticmethod
-    def __find_cube_sources(board_codes: BoardCodes, current_player: Player) -> Sources:
-        table_code = PijersiState.__TABLE_HAS_CUBE[current_player]
+    def __find_cube_sources(board_codes: BoardCodes, player: Player) -> Sources:
+        table_code = PijersiState.__TABLE_HAS_CUBE[player]
         return [hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0]
 
 
@@ -1821,7 +1800,7 @@ class Game:
 
         if self.has_next_turn():
             player = self.__pijersi_state.get_current_player()
-            player_name = f"{Player.name(player)}-{self.__searcher[player].get_name()}"
+            player_name = f"{Player_name(player)}-{self.__searcher[player].get_name()}"
             action_count = len(self.__pijersi_state.get_actions())
 
             print()
@@ -1845,6 +1824,8 @@ class Game:
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
             self.__pijersi_state.show()
+            #TODO: remove call to 'get_summary'
+            print(self.get_summary())
 
         if self.__pijersi_state.is_terminal():
 
@@ -1857,8 +1838,8 @@ class Game:
             white_time = sum(self.__turn_duration[Player.WHITE])
             black_time = sum(self.__turn_duration[Player.BLACK])
 
-            white_player = f"{Player.name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
-            black_player = f"{Player.name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
+            white_player = f"{Player_name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
+            black_player = f"{Player_name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
 
             if rewards[Player.WHITE] == rewards[Player.BLACK]:
                 self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
@@ -1878,19 +1859,19 @@ def test():
     def generate_random_hex_state(is_empty: Optional[bool]=None,
                                   has_stack: Optional[bool]=None,
                                   player: Optional[Player]=None,
-                                  bottom: Optional[CubeSort]=None,
-                                  top: Optional[CubeSort]=None) -> HexState:
+                                  bottom: Optional[Cube]=None,
+                                  top: Optional[Cube]=None) -> HexState:
 
         is_empty = random.choice((True, False)) if is_empty is None else is_empty
         if not is_empty:
             player = random.choice(tuple(Player)) if player is None else player
-            bottom = random.choice(tuple(CubeSort)) if bottom is None else bottom
+            bottom = random.choice(tuple(Cube)) if bottom is None else bottom
             has_stack = random.choice((True, False)) if has_stack is None else has_stack
             if has_stack:
-                if bottom == CubeSort.WISE:
-                    top = random.choice(tuple(CubeSort)) if top is None else top
+                if bottom == Cube.WISE:
+                    top = random.choice(tuple(Cube)) if top is None else top
                 else:
-                    top = random.choice((CubeSort.ROCK, CubeSort.PAPER, CubeSort.SCISSORS)) if top is None else top
+                    top = random.choice((Cube.ROCK, Cube.PAPER, Cube.SCISSORS)) if top is None else top
 
         else:
             has_stack = False
@@ -1950,7 +1931,7 @@ def test():
 
         for _ in range(hex_state_count):
 
-            hex_state = generate_random_hex_state(is_empty=False, has_stack=True, bottom=CubeSort.WISE)
+            hex_state = generate_random_hex_state(is_empty=False, has_stack=True, bottom=Cube.WISE)
             print()
             print(f"hex_state = {hex_state}")
 
@@ -1994,6 +1975,9 @@ def test():
         new_state = PijersiState()
         print("new_state =>")
         new_state.show()
+        print()
+        print("summary =>")
+        print(new_state.get_summary())
 
         print()
         print(f"new_state.is_terminal() = {new_state.is_terminal()}")
@@ -2081,7 +2065,7 @@ def test():
         print("=====================================")
 
 
-    if False:
+    if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
@@ -2090,7 +2074,7 @@ def test():
     if True:
         test_pijersi_state()
 
-    if False:
+    if True:
         benchmark_get_actions()
         profile_get_actions()
 
