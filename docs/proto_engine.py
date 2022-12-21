@@ -1294,18 +1294,18 @@ class PijersiState:
 
     def get_summary(self) -> str:
 
-        captures = Counter()
+        counters = Counter()
 
         for player in Player:
-            states = [ self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
+            player_codes = [ self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
 
             for cube in Cube:
-                cube_table = PijersiState.__TABLE_CUBE_COUNT_BY_SORT[player][cube]
-                captures[Cube_to_name(player, cube)] = sum([cube_table[hex_code] for hex_code in states])
+                player_cube_table = PijersiState.__TABLE_CUBE_COUNT_BY_SORT[player][cube]
+                counters[Cube_to_name(player, cube)] = sum([player_cube_table[hex_code] for hex_code in player_codes])
 
         summary = (
             f"turn {self.__turn} / player {Player_name(self.__player)} / credit {self.__credit} / " +
-             "alived " + " ".join([f"{cube_name}:{cube_count}" for (cube_name, cube_count) in sorted(captures.items())]))
+             "alive " + " ".join([f"{cube_name}:{cube_count}" for (cube_name, cube_count) in sorted(counters.items())]))
 
         return summary
 
