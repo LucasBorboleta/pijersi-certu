@@ -959,11 +959,11 @@ class PijersiState:
             assert False
 
 
-    def show(self):
+    def get_show_text(self):
 
+        show_text = ""
+        
         shift = " " * len("a1KR")
-
-        print()
 
         for (row_shift_count, row_hexagon_names) in Hexagon.get_layout():
 
@@ -994,12 +994,17 @@ class PijersiState:
                     assert False
 
                 row_text += shift
-            print(row_text)
+
+            show_text += row_text + "\n"
+
+        return show_text
 
 
+    def show(self):
+        print()
+        print(self.get_show_text())
         print()
         print(self.get_summary())
-
 
 
     def get_center_hexagon_indices(self):
@@ -1058,17 +1063,20 @@ class PijersiState:
 
     def get_summary(self):
 
-        captured_labels = collections.Counter()
+        counters = collections.Counter()
+
+        for cube in Cube.all:
+            counters[cube.label] = 0
 
         for (cube_index, cube_status) in enumerate(self.__cube_status):
             cube = Cube.all[cube_index]
 
-            if cube_status == CubeStatus.CAPTURED:
-                captured_labels[cube.label] += 1
+            if cube_status == CubeStatus.ACTIVATED:
+                counters[cube.label] += 1
 
         summary = (
             f"turn {self.__turn} / player {Player.name(self.__player)} / credit {self.__credit} / " +
-             "captured %s" % " ".join([f"{label}:{count}" for (label, count) in sorted(captured_labels.items())]))
+             "alive %s" % " ".join([f"{label}:{count}" for (label, count) in sorted(counters.items())]))
 
         return summary
 
@@ -1925,6 +1933,8 @@ class RandomSearcher():
 
     def search(self, state):
         actions = state.get_actions()
+        # >> sorting help for testing against other implementations if random generations are identical
+        actions.sort(key=str)
         action = random.choice(actions)
         return action
 

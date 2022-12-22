@@ -1258,11 +1258,11 @@ class PijersiState:
         return distances_to_goal
 
 
-    def show(self):
+    def get_show_text(self) -> str:
+        
+        show_text = ""
 
         shift = " " * len("a1KR")
-
-        print()
 
         for (row_shift_count, row_hexagon_names) in Hexagon.get_layout():
 
@@ -1289,7 +1289,16 @@ class PijersiState:
                     row_text += top_label + bottom_label
 
                 row_text += shift
-            print(row_text)
+            show_text += row_text + "\n"
+
+        return show_text
+
+
+    def show(self):
+        print()
+        print(self.get_show_text())
+        print()
+        print(self.get_summary())
 
 
     def get_summary(self) -> str:
@@ -1723,6 +1732,8 @@ class RandomSearcher():
 
     def search(self, state):
         actions = state.get_actions()
+        # >> sorting help for testing against other implementations if random generations are identical
+        actions.sort(key=str)
         action = random.choice(actions)
         return action
 
@@ -1824,8 +1835,6 @@ class Game:
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
             self.__pijersi_state.show()
-            #TODO: remove call to 'get_summary'
-            print(self.get_summary())
 
         if self.__pijersi_state.is_terminal():
 
@@ -1967,20 +1976,12 @@ def test():
             assert path_decoded_state == path_state
 
 
-    def test_pijersi_state():
+    def test_first_get_actions():
 
         print()
-        print("-- test_pijersi_state --")
+        print("-- test_first_get_actions --")
 
         new_state = PijersiState()
-        print("new_state =>")
-        new_state.show()
-        print()
-        print("summary =>")
-        print(new_state.get_summary())
-
-        print()
-        print(f"new_state.is_terminal() = {new_state.is_terminal()}")
 
         new_action_names = new_state.get_action_names()
         new_action_name_set = set(new_action_names)
@@ -1994,10 +1995,41 @@ def test():
         assert new_action_name_set == old_action_name_set
 
 
-    def benchmark_get_actions():
+    def test_first_get_summary():
 
         print()
-        print("-- benchmark_get_actions --")
+        print("-- test_first_get_summary --")
+
+        new_state = PijersiState()
+        summary = new_state.get_summary()
+        print()
+        print(f"summary = {summary}")
+        assert summary == "turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
+
+
+    def test_first_get_show_text():
+
+        print()
+        print("-- test_first_get_show_text --")
+
+        new_state = PijersiState()
+        new_show_text = new_state.get_show_text()
+
+        old_state = rules.PijersiState()
+        old_show_text = old_state.get_show_text()
+
+        print()
+        print(f"new_show_text = \n {new_show_text}")
+
+        print()
+        print(f"old_show_text = \n {old_show_text}")
+        assert new_show_text == old_show_text
+
+
+    def benchmark_first_get_actions():
+
+        print()
+        print("-- benchmark_first_get_actions --")
 
         new_state = PijersiState()
         new_actions = new_state.get_actions()
@@ -2029,10 +2061,10 @@ def test():
               ', time_old/time_new = ', time_old/time_new)
 
 
-    def profile_get_actions():
+    def profile_first_get_actions():
 
         print()
-        print("-- profile_get_actions --")
+        print("-- profile_first_get_actions --")
 
         test_profiling_1_data['pijersi_state'] = PijersiState()
 
@@ -2041,44 +2073,119 @@ def test():
 
     def test_game_between_random_players():
 
-        print("=====================================")
-        print(" test_game_between_random_players ...")
-        print("=====================================")
+        print()
+        print("-- test_game_between_random_players --")
+        
+        game_count = 10
+        
+        for game_index in range(game_count):
 
-        default_max_credit = PijersiState.get_max_credit()
-        PijersiState.set_max_credit(10_000)
+            test_seed = random.randint(1, 1000)
+            test_max_credit = 100
+            
+            #-- Run new games
+    
+            default_max_credit = PijersiState.get_max_credit()
+            PijersiState.set_max_credit(test_max_credit)
+            
+            random.seed(a=test_seed)
+            new_show_texts = []
+            new_action_sets = []
+            new_summaries = []
+            new_game = Game()
+    
+            new_game.set_white_searcher(RandomSearcher("random"))
+            new_game.set_black_searcher(RandomSearcher("random"))
+    
+            new_game.start()
+            new_show_texts.append(new_game.get_state().get_show_text())
+            new_action_sets.append(set(new_game.get_state().get_action_names()))
+            new_summaries.append(new_game.get_state().get_summary())
+    
+            while new_game.has_next_turn():
+                new_game.next_turn()
+                new_show_texts.append(new_game.get_state().get_show_text())
+                new_action_sets.append(set(new_game.get_state().get_action_names()))
+                new_summaries.append(new_game.get_state().get_summary())
+                
+            new_rewards = new_game.get_state().get_rewards()    
+    
+            PijersiState.set_max_credit(default_max_credit)
+    
+            #-- Run old games
+    
+            default_max_credit = rules.PijersiState.get_max_credit()
+            rules.PijersiState.set_max_credit(test_max_credit)
+            
+            random.seed(a=test_seed)
+            old_show_texts = []
+            old_action_sets = []
+            old_summaries = []
+            old_game = rules.Game()
+    
+            old_game.set_white_searcher(RandomSearcher("random"))
+            old_game.set_black_searcher(RandomSearcher("random"))
+    
+            old_game.start()
+            old_show_texts.append(old_game.get_state().get_show_text())
+            old_action_sets.append(set(old_game.get_state().get_action_names()))
+            old_summaries.append(old_game.get_state().get_summary())
+    
+            while old_game.has_next_turn():
+                old_game.next_turn()
+                old_show_texts.append(old_game.get_state().get_show_text())
+                old_action_sets.append(set(old_game.get_state().get_action_names()))
+                old_summaries.append(old_game.get_state().get_summary())
+    
+            old_rewards = old_game.get_state().get_rewards()    
+    
+            rules.PijersiState.set_max_credit(default_max_credit)
+    
+            #-- Compare new games to old games
+    
+            print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
+            assert len(new_show_texts) == len(old_show_texts)
+            for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
+                assert new_show_text == old_show_text
+    
+            print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
+            assert len(new_action_sets) == len(old_action_sets)
+            for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
+                assert new_action_set == old_action_set
+    
+            print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
+            assert len(new_summaries) == len(old_summaries)
+            for (new_summary, old_summary) in zip(new_summaries, old_summaries):
+                assert new_summary == old_summary
+    
+            print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
+            assert new_rewards == old_rewards
+            
+            print(f"game {game_index} from {list(range(game_count))} OK")
 
-        game = Game()
 
-        game.set_white_searcher(RandomSearcher("random"))
-        game.set_black_searcher(RandomSearcher("random"))
-
-        game.start()
-
-        while game.has_next_turn():
-            game.next_turn()
-
-        PijersiState.set_max_credit(default_max_credit)
-
-        print("=====================================")
-        print("test_game_between_random_players done")
-        print("=====================================")
-
-
-    if True:
+    if False:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
         PijersiState.print_tables()
 
     if True:
-        test_pijersi_state()
+        test_first_get_actions()
 
     if True:
-        benchmark_get_actions()
-        profile_get_actions()
+        test_first_get_summary()
 
     if True:
+        test_first_get_show_text()
+        
+    if True:
+        benchmark_first_get_actions()
+        
+    if True:
+        profile_first_get_actions()
+
+    if False:
         test_game_between_random_players()
 
 
