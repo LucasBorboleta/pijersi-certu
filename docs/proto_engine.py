@@ -1196,9 +1196,9 @@ class PijersiState:
         return rewards
 
 
-    def get_actions(self) -> PijersiActions:
+    def get_actions(self, use_cache=True) -> PijersiActions:
 
-        if True or self.__actions is None:
+        if not use_cache or self.__actions is None:
             self.__actions = self.__find_all_actions()
         return self.__actions
 
@@ -1713,7 +1713,7 @@ class PijersiState:
         return action
 
 
-class RandomSearcher():
+class Searcher():
 
     __slots__ = ('__name')
 
@@ -1722,15 +1722,28 @@ class RandomSearcher():
         self.__name = name
 
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.__name
 
 
-    def is_interactive(self):
+    def is_interactive(self) -> bool:
         return False
 
 
-    def search(self, state):
+    def search(self, state: PijersiState) -> PijersiAction:
+        actions = state.get_actions()
+        action = actions[0]
+        return action
+
+
+class RandomSearcher(Searcher):
+
+
+    def __init__(self, name):
+        super().__init__(name)
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
         actions = state.get_actions()
         # >> sorting help for testing against other implementations if random generations are identical
         actions.sort(key=str)
@@ -1740,24 +1753,31 @@ class RandomSearcher():
 
 class Game:
 
-    __slots__ = ('__searcher', '__pijersi_state', '__log', '__turn', '__last_action', '__turn_duration')
+    __slots__ = ('__searcher', '__pijersi_state', '__enabled_log', '__log', '__turn', '__last_action', '__turn_duration')
 
 
     def __init__(self):
         self.__searcher = [None, None]
-
         self.__pijersi_state = None
-        self.__log = None
+        
+        self.__enabled_log = True
+        self.__log = ""
         self.__turn = None
         self.__last_action = None
         self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
 
-
-    def set_white_searcher(self, searcher):
+    
+    def enable_log(self, condition: bool):
+        self.__enabled_log = condition
+        if not self.__enabled_log:
+            self.__log = ""
+            
+        
+    def set_white_searcher(self, searcher: Searcher):
         self.__searcher[Player.WHITE] = searcher
 
 
-    def set_black_searcher(self, searcher):
+    def set_black_searcher(self, searcher: Searcher):
         self.__searcher[Player.BLACK] = searcher
 
 
@@ -1768,40 +1788,41 @@ class Game:
 
         self.__pijersi_state = PijersiState()
 
-        self.__pijersi_state.show()
+        if self.__enabled_log:
+            self.__pijersi_state.show()
+            self.__log = "Game started"
 
-        self.__log = "Game started"
 
-
-    def get_log(self):
+    def get_log(self) -> str:
         return self.__log
 
 
-    def get_turn(self):
+    def get_turn(self) -> int:
         return self.__turn
 
 
-    def get_last_action(self):
+    def get_last_action(self) -> str:
         assert self.__last_action is not None
         return self.__last_action
 
 
-    def get_summary(self):
+    def get_summary(self) -> str:
         return self.__pijersi_state.get_summary()
 
 
-    def get_state(self):
+    def get_state(self) -> PijersiState:
         return self.__pijersi_state
 
-    def set_state(self, state):
+
+    def set_state(self, state: PijersiState):
         self.__pijersi_state = state
 
 
-    def get_rewards(self):
+    def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
         return self.__pijersi_state.get_rewards()
 
 
-    def has_next_turn(self):
+    def has_next_turn(self) -> bool:
         return not self.__pijersi_state.is_terminal()
 
 
@@ -1811,55 +1832,59 @@ class Game:
 
         if self.has_next_turn():
             player = self.__pijersi_state.get_current_player()
-            player_name = f"{Player_name(player)}-{self.__searcher[player].get_name()}"
-            action_count = len(self.__pijersi_state.get_actions())
 
-            print()
-            print(f"{player_name} is thinking ...")
-
-            turn_start = time.time()
+            if self.__enabled_log:
+                player_name = f"{Player_name(player)}-{self.__searcher[player].get_name()}"
+                print()
+                print(f"{player_name} is thinking ...")
+                turn_start = time.time()
+                
             action = self.__searcher[player].search(self.__pijersi_state)
-            turn_end = time.time()
-            turn_duration = turn_end - turn_start
-            self.__turn_duration[player].append(turn_duration)
 
             self.__last_action = str(action)
-
-            print(f"{player_name} is done after %.1f seconds" % turn_duration)
-
             self.__turn = self.__pijersi_state.get_turn()
+            
+            if self.__enabled_log:
+                turn_end = time.time()
+                turn_duration = turn_end - turn_start
+                self.__turn_duration[player].append(turn_duration)
+                print(f"{player_name} is done after %.1f seconds" % turn_duration)
 
-            self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
-            print(self.__log)
-            print("-"*40)
+                action_count = len(self.__pijersi_state.get_actions())
+                self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
+                print(self.__log)
+                print("-"*40)
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
-            self.__pijersi_state.show()
+            
+            if self.__enabled_log:
+                self.__pijersi_state.show()
 
         if self.__pijersi_state.is_terminal():
 
             rewards = self.__pijersi_state.get_rewards()
             player = self.__pijersi_state.get_current_player()
 
-            print()
-            print("-"*40)
+            if self.__enabled_log:
+                print()
+                print("-"*40)
 
-            white_time = sum(self.__turn_duration[Player.WHITE])
-            black_time = sum(self.__turn_duration[Player.BLACK])
-
-            white_player = f"{Player_name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
-            black_player = f"{Player_name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
-
-            if rewards[Player.WHITE] == rewards[Player.BLACK]:
-                self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-
-            elif rewards[Player.WHITE] > rewards[Player.BLACK]:
-                self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-
-            else:
-                self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
-
-            print(self.__log)
+                white_time = sum(self.__turn_duration[Player.WHITE])
+                black_time = sum(self.__turn_duration[Player.BLACK])
+    
+                white_player = f"{Player_name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
+                black_player = f"{Player_name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
+    
+                if rewards[Player.WHITE] == rewards[Player.BLACK]:
+                    self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+    
+                elif rewards[Player.WHITE] > rewards[Player.BLACK]:
+                    self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+    
+                else:
+                    self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
+    
+                print(self.__log)
 
 
 def test():
@@ -2044,12 +2069,12 @@ def test():
 
 
         def do_new():
-            new_actions = new_state.get_actions()
+            new_actions = new_state.get_actions(use_cache=False)
             assert id(new_actions) != new_actions_id
 
 
         def do_old():
-            old_actions = old_state.get_actions()
+            old_actions = old_state.get_actions(use_cache=False)
             assert id(old_actions) != old_actions_id
 
 
@@ -2077,11 +2102,12 @@ def test():
         print("-- test_game_between_random_players --")
         
         game_count = 10
+        game_enabled_log = False
         
         for game_index in range(game_count):
 
-            test_seed = random.randint(1, 1000)
-            test_max_credit = 100
+            test_seed = random.randint(1, 1_000)
+            test_max_credit = random.randint(10, 100)
             
             #-- Run new games
     
@@ -2093,6 +2119,7 @@ def test():
             new_action_sets = []
             new_summaries = []
             new_game = Game()
+            new_game.enable_log(game_enabled_log)
     
             new_game.set_white_searcher(RandomSearcher("random"))
             new_game.set_black_searcher(RandomSearcher("random"))
@@ -2122,6 +2149,7 @@ def test():
             old_action_sets = []
             old_summaries = []
             old_game = rules.Game()
+            old_game.enable_log(game_enabled_log)
     
             old_game.set_white_searcher(RandomSearcher("random"))
             old_game.set_black_searcher(RandomSearcher("random"))
@@ -2142,6 +2170,8 @@ def test():
             rules.PijersiState.set_max_credit(default_max_credit)
     
             #-- Compare new games to old games
+            
+            print()
     
             print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
             assert len(new_show_texts) == len(old_show_texts)
@@ -2164,7 +2194,73 @@ def test():
             print(f"game {game_index} from {list(range(game_count))} OK")
 
 
-    if False:
+    def benchmark_game_between_random_players():
+
+        print()
+        print("-- benchmark_game_between_random_players --")
+                
+        test_seed = random.randint(1, 1_000)
+        test_max_credit_limits = (20, 1_000)
+        game_count = 20
+        game_enabled_log = False
+
+        def do_new():
+            random.seed(a=test_seed)
+            
+            for game_index in range(game_count):
+    
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+                        
+                default_max_credit = PijersiState.get_max_credit()
+                PijersiState.set_max_credit(test_max_credit)
+                
+                new_game = Game()
+                new_game.enable_log(game_enabled_log)
+        
+                new_game.set_white_searcher(RandomSearcher("random"))
+                new_game.set_black_searcher(RandomSearcher("random"))
+        
+                new_game.start()
+        
+                while new_game.has_next_turn():
+                    new_game.next_turn()
+                            
+                PijersiState.set_max_credit(default_max_credit)
+
+
+        def do_old():
+            random.seed(a=test_seed)
+            
+            for game_index in range(game_count):
+    
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+                        
+                default_max_credit = rules.PijersiState.get_max_credit()
+                rules.PijersiState.set_max_credit(test_max_credit)
+                
+                old_game = rules.Game()
+                old_game.enable_log(game_enabled_log)
+        
+                old_game.set_white_searcher(RandomSearcher("random"))
+                old_game.set_black_searcher(RandomSearcher("random"))
+        
+                old_game.start()
+        
+                while old_game.has_next_turn():
+                    old_game.next_turn()
+                            
+                rules.PijersiState.set_max_credit(default_max_credit)
+
+
+        time_new = timeit.timeit(do_new, number=1)
+        time_old = timeit.timeit(do_old, number=1)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
+    if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
@@ -2185,8 +2281,11 @@ def test():
     if True:
         profile_first_get_actions()
 
-    if False:
+    if True:
         test_game_between_random_players()
+
+    if True:
+        benchmark_game_between_random_players()
 
 
 test_profiling_1_data = dict()
@@ -2197,7 +2296,7 @@ def test_profiling_1_get_actions():
     pijersi_state = test_profiling_1_data['pijersi_state']
 
     for _ in range(100):
-        actions = pijersi_state.get_actions()
+        actions = pijersi_state.get_actions(use_cache=False)
         assert actions is not None
 
 

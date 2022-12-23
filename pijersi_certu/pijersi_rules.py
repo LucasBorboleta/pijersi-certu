@@ -1236,8 +1236,8 @@ class PijersiState:
         return self.__terminated
 
 
-    def get_actions(self):
-        if True or self.__actions is None:
+    def get_actions(self, use_cache=True):
+        if not use_cache or self.__actions is None:
             self.__actions = list(self.__find_moves())
 
         return self.__actions
@@ -2553,21 +2553,30 @@ SEARCHER_CATALOG.add( MctsSearcher("mcts-90s-jrp", time_limit=90_000, rolloutPol
 SEARCHER_CATALOG.add( MctsSearcher("mcts-300i-rnd", iteration_limit=300, rolloutPolicy=mcts.randomPolicy) )
 
 
+
+
 class Game:
 
-    __slots__ = ('__searcher', '__pijersi_state', '__log', '__turn', '__last_action', '__turn_duration')
+    __slots__ = ('__searcher', '__pijersi_state', '__enabled_log', '__log', '__turn', '__last_action', '__turn_duration')
 
 
     def __init__(self):
         self.__searcher = [None, None]
-
         self.__pijersi_state = None
-        self.__log = None
+        
+        self.__enabled_log = True
+        self.__log = ""
         self.__turn = None
         self.__last_action = None
         self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
 
-
+    
+    def enable_log(self, condition: bool):
+        self.__enabled_log = condition
+        if not self.__enabled_log:
+            self.__log = ""
+            
+        
     def set_white_searcher(self, searcher):
         self.__searcher[Player.WHITE] = searcher
 
@@ -2583,32 +2592,33 @@ class Game:
 
         self.__pijersi_state = PijersiState()
 
-        self.__pijersi_state.show()
+        if self.__enabled_log:
+            self.__pijersi_state.show()
+            self.__log = "Game started"
 
-        self.__log = "Game started"
 
-
-    def get_log(self):
+    def get_log(self) -> str:
         return self.__log
 
 
-    def get_turn(self):
+    def get_turn(self) -> int:
         return self.__turn
 
 
-    def get_last_action(self):
+    def get_last_action(self) -> str:
         assert self.__last_action is not None
         return self.__last_action
 
 
-    def get_summary(self):
+    def get_summary(self) -> str:
         return self.__pijersi_state.get_summary()
 
 
-    def get_state(self):
+    def get_state(self) -> PijersiState:
         return self.__pijersi_state
 
-    def set_state(self, state):
+
+    def set_state(self, state: PijersiState):
         self.__pijersi_state = state
 
 
@@ -2616,7 +2626,7 @@ class Game:
         return self.__pijersi_state.get_rewards()
 
 
-    def has_next_turn(self):
+    def has_next_turn(self) -> bool:
         return not self.__pijersi_state.is_terminal()
 
 
@@ -2626,55 +2636,59 @@ class Game:
 
         if self.has_next_turn():
             player = self.__pijersi_state.get_current_player()
-            player_name = f"{Player.name(player)}-{self.__searcher[player].get_name()}"
-            action_count = len(self.__pijersi_state.get_actions())
 
-            print()
-            print(f"{player_name} is thinking ...")
-
-            turn_start = time.time()
+            if self.__enabled_log:
+                player_name = f"{Player.name(player)}-{self.__searcher[player].get_name()}"
+                print()
+                print(f"{player_name} is thinking ...")
+                turn_start = time.time()
+                
             action = self.__searcher[player].search(self.__pijersi_state)
-            turn_end = time.time()
-            turn_duration = turn_end - turn_start
-            self.__turn_duration[player].append(turn_duration)
 
             self.__last_action = str(action)
-
-            print(f"{player_name} is done after %.1f seconds" % turn_duration)
-
             self.__turn = self.__pijersi_state.get_turn()
+            
+            if self.__enabled_log:
+                turn_end = time.time()
+                turn_duration = turn_end - turn_start
+                self.__turn_duration[player].append(turn_duration)
+                print(f"{player_name} is done after %.1f seconds" % turn_duration)
 
-            self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
-            print(self.__log)
-            print("-"*40)
+                action_count = len(self.__pijersi_state.get_actions())
+                self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
+                print(self.__log)
+                print("-"*40)
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
-            self.__pijersi_state.show()
+            
+            if self.__enabled_log:
+                self.__pijersi_state.show()
 
         if self.__pijersi_state.is_terminal():
 
             rewards = self.__pijersi_state.get_rewards()
             player = self.__pijersi_state.get_current_player()
 
-            print()
-            print("-"*40)
+            if self.__enabled_log:
+                print()
+                print("-"*40)
 
-            white_time = sum(self.__turn_duration[Player.WHITE])
-            black_time = sum(self.__turn_duration[Player.BLACK])
-
-            white_player = f"{Player.name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
-            black_player = f"{Player.name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
-
-            if rewards[Player.WHITE] == rewards[Player.BLACK]:
-                self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-
-            elif rewards[Player.WHITE] > rewards[Player.BLACK]:
-                self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-
-            else:
-                self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
-
-            print(self.__log)
+                white_time = sum(self.__turn_duration[Player.WHITE])
+                black_time = sum(self.__turn_duration[Player.BLACK])
+    
+                white_player = f"{Player.name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
+                black_player = f"{Player.name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
+    
+                if rewards[Player.WHITE] == rewards[Player.BLACK]:
+                    self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+    
+                elif rewards[Player.WHITE] > rewards[Player.BLACK]:
+                    self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+    
+                else:
+                    self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
+    
+                print(self.__log)
 
 
 def test_game_between_random_players():
