@@ -24,6 +24,7 @@ from dataclasses import dataclass
 import math
 import os
 import random
+import re
 import sys
 import time
 import timeit
@@ -69,6 +70,128 @@ PathCode = NewType('PathCode', int)
 
 BoardCodes = Sequence[HexCode]
 PathCodes = Sequence[HexCode]
+
+
+@enum.unique
+class SimpleNotationCase(enum.Enum):
+
+    INVALID = 'invalid'
+
+    MOVE_CUBE = 'xx-xx'
+    MOVE_STACK = 'xx=xx'
+
+    MOVE_CUBE_MOVE_STACK = 'xx-xx=xx'
+    MOVE_STACK_MOVE_CUBE = 'xx=xx-xx'
+
+
+class Notation:
+
+    __slots__ = ()
+
+
+    def __init__(self):
+        assert False
+
+
+    @staticmethod
+    def simplify_notation(notation: str) -> str:
+        return notation.strip().replace(' ', '').replace('!', '')
+
+
+    @staticmethod
+    def classify_notation(notation: str) -> Tuple[SimpleNotationCase, int]:
+        notation_simplified = Notation.simplify_notation(notation)
+        notation_case = Notation.classify_simple_notation(notation_simplified)
+
+        # guess number of capture
+        capture = 0
+        if re.match(r"^.*!.*$ ", notation):
+            capture += 1
+            if re.match(r"^.*![^!]+!.*$ ", notation):
+                capture += 1
+
+        return (notation_case, capture)
+
+
+    @staticmethod
+    def classify_simple_notation(notation: str) -> SimpleNotationCase:
+        if re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
+            # move cube
+            return SimpleNotationCase.MOVE_CUBE
+
+        elif re.match(r'^[a-i][1-9]=[a-i][1-9]$', notation):
+            # move stack
+            return SimpleNotationCase.MOVE_STACK
+
+        elif re.match(r'^[a-i][1-9]-[a-i][1-9]=[a-i][1-9]$', notation):
+            # move cube move stack
+            return SimpleNotationCase.MOVE_CUBE_MOVE_STACK
+
+        elif re.match(r'^[a-i][1-9]=[a-i][1-9]-[a-i][1-9]$', notation):
+            # move stack move cube
+            return SimpleNotationCase.MOVE_STACK_MOVE_CUBE
+
+        else:
+            return SimpleNotationCase.INVALID
+
+
+    @staticmethod
+    def validate_simple_notation(action_input, action_names):
+        #TODO: add typing
+
+        def split_actions(action_names):
+            action_cases = {}
+
+            for this_name in action_names:
+                this_case = Notation.classify_simple_notation(this_name)
+                if this_case not in action_cases:
+                    action_cases[this_case] = set()
+                action_cases[this_case].add(this_name)
+
+            return action_cases
+
+
+        action_input_simplified = Notation.simplify_notation(action_input)
+
+        validated = action_input in action_names or action_input_simplified in action_names
+
+        if validated:
+            message = "validated action"
+
+        else:
+            action_cases = split_actions(action_names)
+            action_input_case = Notation.classify_simple_notation(action_input_simplified)
+
+            if action_input_case == SimpleNotationCase.INVALID:
+                message = "invalid action syntax !"
+
+            elif action_input_case not in action_cases:
+                message = f"{action_input_case.value} : impossible action !"
+
+            else:
+                message = "invalid action !"
+
+            # guess hints from each case of action
+            action_hints = []
+            for this_case in action_cases:
+                # find the longest match from the start
+                upper_length = min(len(action_input_simplified), len(this_case.value))
+                match_length = 0
+                for this_name in action_cases[this_case]:
+                    for end in range(match_length, upper_length + 1):
+                        if action_input_simplified[:end] == this_name[:end]:
+                            match_length = max(match_length, end)
+                        else:
+                            break
+
+                action_hints.append(action_input_simplified[:match_length] + this_case.value[match_length:])
+
+            if len(action_hints) == 1:
+                message += " hint : " + action_hints[0]
+            else:
+                message += " hints : " + "  ".join(action_hints)
+
+        return (validated, message)
 
 
 @enum.unique
@@ -695,6 +818,7 @@ class PijersiState:
         self.__turn = turn
         self.__actions = None
         self.__actions_by_names = None
+        self.__actions_by_simple_names = None
         self.__terminated = None
 
     @staticmethod
@@ -1219,6 +1343,16 @@ class PijersiState:
         return self.__actions_by_simple_names.keys()
 
 
+    def get_action_by_name(self, action_name: str) -> PijersiAction:
+        _ = self.get_action_names()
+        return self.__actions_by_names[action_name]
+
+
+    def get_action_by_simple_name(self, action_name: str) -> PijersiAction:
+        _ = self.get_action_simple_names()
+        return self.__actions_by_simple_names[action_name]
+
+
     def take_action(self, action: PijersiAction) -> Self:
 
         return PijersiState(board_codes=action.next_board_codes,
@@ -1228,8 +1362,7 @@ class PijersiState:
 
 
     def take_action_by_name(self, action_name):
-       _ = self.get_action_simple_names()
-       action = self.__actions_by_simple_names[action_name.replace('!', '')]
+       action = self.get_action_names()[action_name.replace('!', '')]
        return self.take_action(action)
 
 
@@ -1741,7 +1874,7 @@ class Searcher():
 class RandomSearcher(Searcher):
 
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         super().__init__(name)
 
 
@@ -1750,6 +1883,60 @@ class RandomSearcher(Searcher):
         # >> sorting help for testing against other implementations if random generations are identical
         actions.sort(key=str)
         action = random.choice(actions)
+        return action
+
+
+class HumanSearcher(Searcher):
+
+    __slots__ = ('__action_simple_name', '__use_command_line')
+
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.__action_simple_name = None
+        self.__use_command_line = False
+
+
+    def is_interactive(self) -> bool:
+        return True
+
+
+    def use_command_line(self, condition: bool):
+        assert condition in (True, False)
+        self.__use_command_line = condition
+
+
+    def set_action_simple_name(self, action_name: str):
+        assert not self.__use_command_line
+        self.__action_simple_name = action_name
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
+
+        if self.__use_command_line:
+            return self.__search_using_command_line(state)
+
+        else:
+            action = state.get_action_by_simple_name(self.__action_simple_name)
+            self.__action_simple_name = None
+            return action
+
+
+    def __search_using_command_line(self, state: PijersiState) -> PijersiAction:
+        assert self.__use_command_line
+
+        action_names = state.get_action_simple_names()
+
+        action_validated = False
+        while not action_validated:
+            action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
+            (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
+            print(validation_message)
+
+        action = state.get_action_by_simple_name(action_input)
+
+        print(f"HumanSearcher: action {action} has been selected")
+
         return action
 
 
@@ -2003,25 +2190,6 @@ def test():
             assert path_decoded_state == path_state
 
 
-    def test_first_get_actions():
-
-        print()
-        print("-- test_first_get_actions --")
-
-        new_state = PijersiState()
-
-        new_action_names = new_state.get_action_names()
-        new_action_name_set = set(new_action_names)
-
-        old_state = rules.PijersiState()
-        old_action_names = old_state.get_action_names()
-        old_action_name_set = set(old_action_names)
-
-        print(f"len(new_action_name_set) = {len(new_action_name_set)} ; len(old_action_name_set) = {len(old_action_name_set)}")
-        assert len(new_action_name_set) == len(old_action_name_set)
-        assert new_action_name_set == old_action_name_set
-
-
     def test_first_get_summary():
 
         print()
@@ -2034,23 +2202,123 @@ def test():
         assert summary == "turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
 
 
-    def test_first_get_show_text():
+    def test_game_between_random_players():
+
+        print("=====================================")
+        print(" test_game_between_random_players ...")
+        print("=====================================")
+
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10_000)
+
+        game = Game()
+
+        game.set_white_searcher(RandomSearcher("random"))
+        game.set_black_searcher(RandomSearcher("random"))
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        PijersiState.set_max_credit(default_max_credit)
+
+        print("=====================================")
+        print("test_game_between_random_players done")
+        print("=====================================")
+
+
+    def test_game_between_random_and_human_players():
+
+        print("==============================================")
+        print("test_game_between_random_and_human_players ...")
+        print("==============================================")
+
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10)
+
+        game = Game()
+
+        human_searcher = HumanSearcher("human")
+        human_searcher.use_command_line(True)
+        game.set_white_searcher(human_searcher)
+
+        game.set_black_searcher(RandomSearcher("random"))
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        PijersiState.set_max_credit(default_max_credit)
+
+        print("===============================================")
+        print("test_game_between_random_and_human_players done")
+        print("===============================================")
+
+
+    test_encode_and_decode_hex_state()
+    test_encode_and_decode_path_states()
+    test_iterate_hex_states()
+    PijersiState.print_tables()
+
+    test_first_get_summary()
+
+    test_game_between_random_players()
+
+    if False:
+        test_game_between_random_and_human_players()
+
+
+def profile():
+
+
+    def profile_get_actions():
 
         print()
-        print("-- test_first_get_show_text --")
+        print("-- profile_get_actions --")
 
-        new_state = PijersiState()
-        new_show_text = new_state.get_show_text()
+        profile_data['pijersi_state'] = PijersiState()
 
-        old_state = rules.PijersiState()
-        old_show_text = old_state.get_show_text()
+        cProfile.run('profile_fun_get_actions()', sort=SortKey.TIME)
 
-        print()
-        print(f"new_show_text = \n {new_show_text}")
+
+    def profile_is_terminal():
 
         print()
-        print(f"old_show_text = \n {old_show_text}")
-        assert new_show_text == old_show_text
+        print("-- profile_is_terminal --")
+
+        profile_data['pijersi_state'] = PijersiState()
+
+        cProfile.run('profile_fun_is_terminal()', sort=SortKey.TIME)
+
+    profile_is_terminal()
+    profile_get_actions()
+
+
+profile_data = dict()
+
+
+def profile_fun_get_actions():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+
+    pijersi_state = profile_data['pijersi_state']
+
+    for _ in range(100):
+        actions = pijersi_state.get_actions(use_cache=False)
+        assert actions is not None
+
+
+def profile_fun_is_terminal():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+
+    pijersi_state = profile_data['pijersi_state']
+
+    for _ in range(100_000):
+        assert not pijersi_state.is_terminal(use_cache=False)
+
+
+def benchmark():
 
 
     def benchmark_first_get_actions():
@@ -2113,30 +2381,122 @@ def test():
               ', time_old/time_new = ', time_old/time_new)
 
 
-    def profile_first_get_actions():
+    def benchmark_game_between_random_players():
 
         print()
-        print("-- profile_first_get_actions --")
+        print("-- benchmark_game_between_random_players --")
 
-        test_profiling_1_data['pijersi_state'] = PijersiState()
+        test_seed = random.randint(1, 1_000)
+        test_max_credit_limits = (20, 1_000)
+        game_count = 20
+        game_enabled_log = False
 
-        cProfile.run('test_profiling_1_get_actions()', sort=SortKey.TIME)
+        def do_new():
+            random.seed(a=test_seed)
+
+            for game_index in range(game_count):
+
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+
+                default_max_credit = PijersiState.get_max_credit()
+                PijersiState.set_max_credit(test_max_credit)
+
+                new_game = Game()
+                new_game.enable_log(game_enabled_log)
+
+                new_game.set_white_searcher(RandomSearcher("random"))
+                new_game.set_black_searcher(RandomSearcher("random"))
+
+                new_game.start()
+
+                while new_game.has_next_turn():
+                    new_game.next_turn()
+
+                PijersiState.set_max_credit(default_max_credit)
 
 
-    def profile_first_is_terminal():
+        def do_old():
+            random.seed(a=test_seed)
+
+            for game_index in range(game_count):
+
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+
+                default_max_credit = rules.PijersiState.get_max_credit()
+                rules.PijersiState.set_max_credit(test_max_credit)
+
+                old_game = rules.Game()
+                old_game.enable_log(game_enabled_log)
+
+                old_game.set_white_searcher(RandomSearcher("random"))
+                old_game.set_black_searcher(RandomSearcher("random"))
+
+                old_game.start()
+
+                while old_game.has_next_turn():
+                    old_game.next_turn()
+
+                rules.PijersiState.set_max_credit(default_max_credit)
+
+
+        time_new = timeit.timeit(do_new, number=1)
+        time_old = timeit.timeit(do_old, number=1)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
+    benchmark_first_get_actions()
+    benchmark_first_is_terminal()
+    benchmark_game_between_random_players()
+
+
+def verify():
+
+
+    def verify_first_get_show_text():
 
         print()
-        print("-- profile_first_is_terminal --")
+        print("-- verify_first_get_show_text --")
 
-        test_profiling_1_data['pijersi_state'] = PijersiState()
+        new_state = PijersiState()
+        new_show_text = new_state.get_show_text()
 
-        cProfile.run('test_profiling_2_is_terminal()', sort=SortKey.TIME)
-
-
-    def test_game_between_random_players():
+        old_state = rules.PijersiState()
+        old_show_text = old_state.get_show_text()
 
         print()
-        print("-- test_game_between_random_players --")
+        print(f"new_show_text = \n {new_show_text}")
+
+        print()
+        print(f"old_show_text = \n {old_show_text}")
+        assert new_show_text == old_show_text
+
+
+    def verify_first_get_actions():
+
+        print()
+        print("-- verify_first_get_actions --")
+
+        new_state = PijersiState()
+
+        new_action_names = new_state.get_action_names()
+        new_action_name_set = set(new_action_names)
+
+        old_state = rules.PijersiState()
+        old_action_names = old_state.get_action_names()
+        old_action_name_set = set(old_action_names)
+
+        print(f"len(new_action_name_set) = {len(new_action_name_set)} ; len(old_action_name_set) = {len(old_action_name_set)}")
+        assert len(new_action_name_set) == len(old_action_name_set)
+        assert new_action_name_set == old_action_name_set
+
+
+    def verify_game_between_random_players():
+
+        print()
+        print("-- verify_game_between_random_players --")
 
         game_count = 10
         game_enabled_log = False
@@ -2231,132 +2591,26 @@ def test():
             print(f"game {game_index} from {list(range(game_count))} OK")
 
 
-    def benchmark_game_between_random_players():
-
-        print()
-        print("-- benchmark_game_between_random_players --")
-
-        test_seed = random.randint(1, 1_000)
-        test_max_credit_limits = (20, 1_000)
-        game_count = 20
-        game_enabled_log = False
-
-        def do_new():
-            random.seed(a=test_seed)
-
-            for game_index in range(game_count):
-
-                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-
-                default_max_credit = PijersiState.get_max_credit()
-                PijersiState.set_max_credit(test_max_credit)
-
-                new_game = Game()
-                new_game.enable_log(game_enabled_log)
-
-                new_game.set_white_searcher(RandomSearcher("random"))
-                new_game.set_black_searcher(RandomSearcher("random"))
-
-                new_game.start()
-
-                while new_game.has_next_turn():
-                    new_game.next_turn()
-
-                PijersiState.set_max_credit(default_max_credit)
-
-
-        def do_old():
-            random.seed(a=test_seed)
-
-            for game_index in range(game_count):
-
-                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-
-                default_max_credit = rules.PijersiState.get_max_credit()
-                rules.PijersiState.set_max_credit(test_max_credit)
-
-                old_game = rules.Game()
-                old_game.enable_log(game_enabled_log)
-
-                old_game.set_white_searcher(RandomSearcher("random"))
-                old_game.set_black_searcher(RandomSearcher("random"))
-
-                old_game.start()
-
-                while old_game.has_next_turn():
-                    old_game.next_turn()
-
-                rules.PijersiState.set_max_credit(default_max_credit)
-
-
-        time_new = timeit.timeit(do_new, number=1)
-        time_old = timeit.timeit(do_old, number=1)
-        print("do_new() => ", time_new)
-        print("do_old() => ", time_old,
-              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
-              ', time_old/time_new = ', time_old/time_new)
-
-
-    if False:
-        test_encode_and_decode_hex_state()
-        test_encode_and_decode_path_states()
-        test_iterate_hex_states()
-        PijersiState.print_tables()
-
-    if False:
-        test_first_get_actions()
-
-    if False:
-        test_first_get_summary()
-
-    if False:
-        test_first_get_show_text()
-
-    if True:
-        benchmark_first_get_actions()
-
-    if True:
-        benchmark_first_is_terminal()
-
-    if False:
-        profile_first_is_terminal()
-
-    if False:
-        profile_first_get_actions()
-
-    if False:
-        test_game_between_random_players()
-
-    if True:
-        benchmark_game_between_random_players()
-
-
-test_profiling_1_data = dict()
-
-
-def test_profiling_1_get_actions():
-    #>> Defined at the uper scope of the module because of "cProfile.run"
-
-    pijersi_state = test_profiling_1_data['pijersi_state']
-
-    for _ in range(100):
-        actions = pijersi_state.get_actions(use_cache=False)
-        assert actions is not None
-
-
-def test_profiling_2_is_terminal():
-    #>> Defined at the uper scope of the module because of "cProfile.run"
-
-    pijersi_state = test_profiling_1_data['pijersi_state']
-
-    for _ in range(100_000):
-        assert not pijersi_state.is_terminal(use_cache=False)
+    verify_first_get_show_text()
+    verify_first_get_actions()
+    verify_game_between_random_players()
 
 
 def main():
     Hexagon.init()
     PijersiState.init()
-    test()
+
+    if True:
+        test()
+
+    if True:
+        profile()
+
+    if True:
+        benchmark() # against old implementation
+
+    if True:
+        verify() # against old implementation
 
 
 if __name__ == "__main__":
