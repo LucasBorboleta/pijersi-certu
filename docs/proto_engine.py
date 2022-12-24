@@ -30,9 +30,11 @@ import time
 import timeit
 from types import SimpleNamespace
 from typing import Iterable
+from typing import Mapping
 from typing import NewType
 from typing import Optional
 from typing import Sequence
+from typing import Set
 from typing import Tuple
 from typing import TypeVar
 
@@ -136,10 +138,9 @@ class Notation:
 
 
     @staticmethod
-    def validate_simple_notation(action_input, action_names):
-        #TODO: add typing
+    def validate_simple_notation(action_input: str, action_names: Sequence[str]) -> Tuple[bool, str]:
 
-        def split_actions(action_names):
+        def split_actions(action_names: Sequence[str]) -> Mapping[SimpleNotationCase, Set(str)]:
             action_cases = {}
 
             for this_name in action_names:
@@ -2388,7 +2389,7 @@ def benchmark():
 
         test_seed = random.randint(1, 1_000)
         test_max_credit_limits = (20, 1_000)
-        game_count = 20
+        game_count = 10
         game_enabled_log = False
 
         def do_new():
