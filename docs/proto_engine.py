@@ -354,7 +354,7 @@ class Hexagon:
     @staticmethod
     def __create_distance_to_goal():
 
-        Hexagon.__distance_to_goal = [ array.array('b', [ 0 for _ in Hexagon.get_all() ]) for _ in Player ]
+        Hexagon.__distance_to_goal = [array.array('b', [0 for _ in Hexagon.get_all()]) for _ in Player]
 
         for player in Player:
             for hexagon_cube in Hexagon.get_all():
@@ -653,7 +653,7 @@ class PijersiState:
     __init_done = False
     __max_credit = 20
     __slots__ = ('__board_codes', '__player', '__credit', '__turn',
-                 '__actions', '__actions_by_names', '__actions_by_simple_names')
+                 '__actions', '__actions_by_names', '__actions_by_simple_names', '__terminated')
 
 
     __TABLE_HAS_CUBE = None
@@ -695,14 +695,14 @@ class PijersiState:
         self.__turn = turn
         self.__actions = None
         self.__actions_by_names = None
-
+        self.__terminated = None
 
     @staticmethod
     def init():
 
 
         def create_table_has_cube() -> Sequence[Sequence[int]]:
-            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -715,7 +715,7 @@ class PijersiState:
 
 
         def create_table_has_stack() -> Sequence[Sequence[int]]:
-            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -728,7 +728,7 @@ class PijersiState:
 
 
         def create_table_cube_count() -> Sequence[Sequence[int]]:
-            table = [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -746,7 +746,7 @@ class PijersiState:
 
 
         def create_table_has_fighter() -> Sequence[Sequence[int]]:
-            table = [ array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -766,7 +766,7 @@ class PijersiState:
 
 
         def create_table_fighter_count() -> Sequence[Sequence[int]]:
-            table = [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
+            table = [array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
 
@@ -786,7 +786,7 @@ class PijersiState:
 
 
         def create_table_cube_count_by_sort() ->Sequence[Sequence[Sequence[int]]] :
-            table = [ [ array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)])
+            table = [[array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)])
                        for _ in Cube] for _ in Player]
 
             for hex_state in HexState.iterate_hex_states():
@@ -805,7 +805,7 @@ class PijersiState:
 
         def create_table_make_path1() -> Sequence[Optional[Sequence[int]]]:
 
-            table = [ [None for direction in HexagonDirection] for source in Hexagon.get_all_indices()]
+            table = [[None for direction in HexagonDirection] for source in Hexagon.get_all_indices()]
 
             for source in Hexagon.get_all_indices():
                 for direction in HexagonDirection:
@@ -822,7 +822,7 @@ class PijersiState:
 
         def create_table_make_path2() -> Sequence[Optional[Sequence[int]]]:
 
-            table = [ [None for direction in HexagonDirection] for source in Hexagon.get_all_indices()]
+            table = [[None for direction in HexagonDirection] for source in Hexagon.get_all_indices()]
 
             for source in Hexagon.get_all_indices():
                 for direction in HexagonDirection:
@@ -844,8 +844,8 @@ class PijersiState:
 
 
         def create_table_goal_distances() -> Sequence[Sequence[int]]:
-            return [ [Hexagon.get_distance_to_goal(hex_index, player)
-                      for hex_index in Hexagon.get_all_indices() ] for player in Player]
+            return [[Hexagon.get_distance_to_goal(hex_index, player)
+                      for hex_index in Hexagon.get_all_indices()] for player in Player]
 
 
         def create_tables_try_cube_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
@@ -1157,11 +1157,13 @@ class PijersiState:
         return self.__turn
 
 
-    def is_terminal(self) -> bool:
-        return (self.__player_is_arrived(Player.WHITE) or
-                self.__player_is_arrived(Player.BLACK) or
-                self.__credit == 0 or
-                not self.__has_action())
+    def is_terminal(self, use_cache: bool=True) -> bool:
+        if not use_cache or self.__terminated is None:
+            self.__terminated = (self.__player_is_arrived(Player.WHITE) or
+                                    self.__player_is_arrived(Player.BLACK) or
+                                    self.__credit == 0 or
+                                    not self.__has_action())
+        return self.__terminated
 
 
     def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
@@ -1196,7 +1198,7 @@ class PijersiState:
         return rewards
 
 
-    def get_actions(self, use_cache=True) -> PijersiActions:
+    def get_actions(self, use_cache: bool=True) -> PijersiActions:
 
         if not use_cache or self.__actions is None:
             self.__actions = self.__find_all_actions()
@@ -1236,11 +1238,11 @@ class PijersiState:
 
 
     def get_fighter_counts(self)-> Sequence[int]:
-        return [sum([PijersiState.__TABLE_FIGHTER_COUNT[player][hex_code] for hex_code in self.__board_codes ]) for player in Player]
+        return [sum((PijersiState.__TABLE_FIGHTER_COUNT[player][hex_code] for hex_code in self.__board_codes)) for player in Player]
 
 
     def get_cube_counts(self)-> Sequence[int]:
-        return [sum([PijersiState.__TABLE_CUBE_COUNT[player][hex_code] for hex_code in self.__board_codes ]) for player in Player]
+        return [sum((PijersiState.__TABLE_CUBE_COUNT[player][hex_code] for hex_code in self.__board_codes)) for player in Player]
 
 
     def get_distances_to_goal(self) -> Sequence[Sequence[int]]:
@@ -1259,7 +1261,7 @@ class PijersiState:
 
 
     def get_show_text(self) -> str:
-        
+
         show_text = ""
 
         shift = " " * len("a1KR")
@@ -1306,11 +1308,11 @@ class PijersiState:
         counters = Counter()
 
         for player in Player:
-            player_codes = [ self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
+            player_codes = [self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
 
             for cube in Cube:
                 player_cube_table = PijersiState.__TABLE_CUBE_COUNT_BY_SORT[player][cube]
-                counters[Cube_to_name(player, cube)] = sum([player_cube_table[hex_code] for hex_code in player_codes])
+                counters[Cube_to_name(player, cube)] = sum((player_cube_table[hex_code] for hex_code in player_codes))
 
         summary = (
             f"turn {self.__turn} / player {Player_name(self.__player)} / credit {self.__credit} / " +
@@ -1458,20 +1460,20 @@ class PijersiState:
         hex_state.top = top
         board_codes[hex_index] = hex_state.encode()
 
+
     def __player_is_arrived(self, player: Player) -> bool:
 
         goal_indices = PijersiState.__TABLE_GOAL_INDICES[player]
         has_fighter = PijersiState.__TABLE_HAS_FIGHTER[player]
 
-        return sum([has_fighter[self.__board_codes[hex_index]] for hex_index in goal_indices]) != 0
+        return sum((has_fighter[self.__board_codes[hex_index]] for hex_index in goal_indices)) != 0
 
 
     def __has_action(self) -> bool:
 
         for cube_source in PijersiState.__find_cube_sources(self.__board_codes, self.__player):
             for cube_direction in HEXAGON_DIRECTION_ITERATOR:
-                action1 = PijersiState.__try_cube_path1_action(self.__board_codes, cube_source, cube_direction)
-                if action1 is not None:
+                if PijersiState.__try_cube_path1_action(self.__board_codes, cube_source, cube_direction) is not None:
                     return True
         return False
 
@@ -1479,7 +1481,7 @@ class PijersiState:
     @staticmethod
     def __find_cube_sources(board_codes: BoardCodes, player: Player) -> Sources:
         table_code = PijersiState.__TABLE_HAS_CUBE[player]
-        return [hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0]
+        return (hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0)
 
 
     def __find_all_actions(self) -> PijersiActions:
@@ -1759,20 +1761,20 @@ class Game:
     def __init__(self):
         self.__searcher = [None, None]
         self.__pijersi_state = None
-        
+
         self.__enabled_log = True
         self.__log = ""
         self.__turn = None
         self.__last_action = None
         self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
 
-    
+
     def enable_log(self, condition: bool):
         self.__enabled_log = condition
         if not self.__enabled_log:
             self.__log = ""
-            
-        
+
+
     def set_white_searcher(self, searcher: Searcher):
         self.__searcher[Player.WHITE] = searcher
 
@@ -1838,12 +1840,12 @@ class Game:
                 print()
                 print(f"{player_name} is thinking ...")
                 turn_start = time.time()
-                
+
             action = self.__searcher[player].search(self.__pijersi_state)
 
             self.__last_action = str(action)
             self.__turn = self.__pijersi_state.get_turn()
-            
+
             if self.__enabled_log:
                 turn_end = time.time()
                 turn_duration = turn_end - turn_start
@@ -1856,7 +1858,7 @@ class Game:
                 print("-"*40)
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
-            
+
             if self.__enabled_log:
                 self.__pijersi_state.show()
 
@@ -1871,19 +1873,19 @@ class Game:
 
                 white_time = sum(self.__turn_duration[Player.WHITE])
                 black_time = sum(self.__turn_duration[Player.BLACK])
-    
+
                 white_player = f"{Player_name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
                 black_player = f"{Player_name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
-    
+
                 if rewards[Player.WHITE] == rewards[Player.BLACK]:
                     self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-    
+
                 elif rewards[Player.WHITE] > rewards[Player.BLACK]:
                     self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-    
+
                 else:
                     self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
-    
+
                 print(self.__log)
 
 
@@ -2086,6 +2088,31 @@ def test():
               ', time_old/time_new = ', time_old/time_new)
 
 
+    def benchmark_first_is_terminal():
+
+        print()
+        print("-- benchmark_first_is_terminal --")
+
+        new_state = PijersiState()
+        old_state = rules.PijersiState()
+
+
+        def do_new():
+            assert not new_state.is_terminal(use_cache=False)
+
+
+        def do_old():
+            assert not old_state.is_terminal(use_cache=False)
+
+
+        time_new = timeit.timeit(do_new, number=1_000)
+        time_old = timeit.timeit(do_old, number=1_000)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
     def profile_first_get_actions():
 
         print()
@@ -2096,101 +2123,111 @@ def test():
         cProfile.run('test_profiling_1_get_actions()', sort=SortKey.TIME)
 
 
+    def profile_first_is_terminal():
+
+        print()
+        print("-- profile_first_is_terminal --")
+
+        test_profiling_1_data['pijersi_state'] = PijersiState()
+
+        cProfile.run('test_profiling_2_is_terminal()', sort=SortKey.TIME)
+
+
     def test_game_between_random_players():
 
         print()
         print("-- test_game_between_random_players --")
-        
+
         game_count = 10
         game_enabled_log = False
-        
+
         for game_index in range(game_count):
 
             test_seed = random.randint(1, 1_000)
             test_max_credit = random.randint(10, 100)
-            
+
             #-- Run new games
-    
+
             default_max_credit = PijersiState.get_max_credit()
             PijersiState.set_max_credit(test_max_credit)
-            
+
             random.seed(a=test_seed)
             new_show_texts = []
             new_action_sets = []
             new_summaries = []
             new_game = Game()
             new_game.enable_log(game_enabled_log)
-    
+
             new_game.set_white_searcher(RandomSearcher("random"))
             new_game.set_black_searcher(RandomSearcher("random"))
-    
+
             new_game.start()
             new_show_texts.append(new_game.get_state().get_show_text())
             new_action_sets.append(set(new_game.get_state().get_action_names()))
             new_summaries.append(new_game.get_state().get_summary())
-    
+
             while new_game.has_next_turn():
                 new_game.next_turn()
                 new_show_texts.append(new_game.get_state().get_show_text())
                 new_action_sets.append(set(new_game.get_state().get_action_names()))
                 new_summaries.append(new_game.get_state().get_summary())
-                
-            new_rewards = new_game.get_state().get_rewards()    
-    
+
+            new_rewards = new_game.get_state().get_rewards()
+
             PijersiState.set_max_credit(default_max_credit)
-    
+
             #-- Run old games
-    
+
             default_max_credit = rules.PijersiState.get_max_credit()
             rules.PijersiState.set_max_credit(test_max_credit)
-            
+
             random.seed(a=test_seed)
             old_show_texts = []
             old_action_sets = []
             old_summaries = []
             old_game = rules.Game()
             old_game.enable_log(game_enabled_log)
-    
+
             old_game.set_white_searcher(RandomSearcher("random"))
             old_game.set_black_searcher(RandomSearcher("random"))
-    
+
             old_game.start()
             old_show_texts.append(old_game.get_state().get_show_text())
             old_action_sets.append(set(old_game.get_state().get_action_names()))
             old_summaries.append(old_game.get_state().get_summary())
-    
+
             while old_game.has_next_turn():
                 old_game.next_turn()
                 old_show_texts.append(old_game.get_state().get_show_text())
                 old_action_sets.append(set(old_game.get_state().get_action_names()))
                 old_summaries.append(old_game.get_state().get_summary())
-    
-            old_rewards = old_game.get_state().get_rewards()    
-    
+
+            old_rewards = old_game.get_state().get_rewards()
+
             rules.PijersiState.set_max_credit(default_max_credit)
-    
+
             #-- Compare new games to old games
-            
+
             print()
-    
+
             print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
             assert len(new_show_texts) == len(old_show_texts)
             for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
                 assert new_show_text == old_show_text
-    
+
             print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
             assert len(new_action_sets) == len(old_action_sets)
             for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
                 assert new_action_set == old_action_set
-    
+
             print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
             assert len(new_summaries) == len(old_summaries)
             for (new_summary, old_summary) in zip(new_summaries, old_summaries):
                 assert new_summary == old_summary
-    
+
             print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
             assert new_rewards == old_rewards
-            
+
             print(f"game {game_index} from {list(range(game_count))} OK")
 
 
@@ -2198,7 +2235,7 @@ def test():
 
         print()
         print("-- benchmark_game_between_random_players --")
-                
+
         test_seed = random.randint(1, 1_000)
         test_max_credit_limits = (20, 1_000)
         game_count = 20
@@ -2206,49 +2243,49 @@ def test():
 
         def do_new():
             random.seed(a=test_seed)
-            
+
             for game_index in range(game_count):
-    
+
                 test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-                        
+
                 default_max_credit = PijersiState.get_max_credit()
                 PijersiState.set_max_credit(test_max_credit)
-                
+
                 new_game = Game()
                 new_game.enable_log(game_enabled_log)
-        
+
                 new_game.set_white_searcher(RandomSearcher("random"))
                 new_game.set_black_searcher(RandomSearcher("random"))
-        
+
                 new_game.start()
-        
+
                 while new_game.has_next_turn():
                     new_game.next_turn()
-                            
+
                 PijersiState.set_max_credit(default_max_credit)
 
 
         def do_old():
             random.seed(a=test_seed)
-            
+
             for game_index in range(game_count):
-    
+
                 test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-                        
+
                 default_max_credit = rules.PijersiState.get_max_credit()
                 rules.PijersiState.set_max_credit(test_max_credit)
-                
+
                 old_game = rules.Game()
                 old_game.enable_log(game_enabled_log)
-        
+
                 old_game.set_white_searcher(RandomSearcher("random"))
                 old_game.set_black_searcher(RandomSearcher("random"))
-        
+
                 old_game.start()
-        
+
                 while old_game.has_next_turn():
                     old_game.next_turn()
-                            
+
                 rules.PijersiState.set_max_credit(default_max_credit)
 
 
@@ -2260,28 +2297,34 @@ def test():
               ', time_old/time_new = ', time_old/time_new)
 
 
-    if True:
+    if False:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
         PijersiState.print_tables()
 
-    if True:
+    if False:
         test_first_get_actions()
 
-    if True:
+    if False:
         test_first_get_summary()
 
-    if True:
+    if False:
         test_first_get_show_text()
-        
-    if True:
-        benchmark_first_get_actions()
-        
-    if True:
-        profile_first_get_actions()
 
     if True:
+        benchmark_first_get_actions()
+
+    if True:
+        benchmark_first_is_terminal()
+
+    if False:
+        profile_first_is_terminal()
+
+    if False:
+        profile_first_get_actions()
+
+    if False:
         test_game_between_random_players()
 
     if True:
@@ -2289,6 +2332,7 @@ def test():
 
 
 test_profiling_1_data = dict()
+
 
 def test_profiling_1_get_actions():
     #>> Defined at the uper scope of the module because of "cProfile.run"
@@ -2298,6 +2342,15 @@ def test_profiling_1_get_actions():
     for _ in range(100):
         actions = pijersi_state.get_actions(use_cache=False)
         assert actions is not None
+
+
+def test_profiling_2_is_terminal():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+
+    pijersi_state = test_profiling_1_data['pijersi_state']
+
+    for _ in range(100_000):
+        assert not pijersi_state.is_terminal(use_cache=False)
 
 
 def main():

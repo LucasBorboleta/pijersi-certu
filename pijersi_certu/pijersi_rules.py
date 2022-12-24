@@ -824,7 +824,7 @@ class PijersiState:
     __max_credit = 20
     __center_hexagon_indices = None
     __use_random_find = False
-    
+
     __slots__ = ('__cube_status', '__hexagon_bottom', '__hexagon_top',
                  '__credit', '__player', '__turn',
                  '__actions', '__actions_by_simple_names', '__actions_by_names',
@@ -962,7 +962,7 @@ class PijersiState:
     def get_show_text(self):
 
         show_text = ""
-        
+
         shift = " " * len("a1KR")
 
         for (row_shift_count, row_hexagon_names) in Hexagon.get_layout():
@@ -1161,9 +1161,9 @@ class PijersiState:
        self.take_action(action)
 
 
-    def is_terminal(self):
+    def is_terminal(self, use_cache=True):
 
-        if True or self.__terminated is None:
+        if not use_cache or self.__terminated is None:
 
             self.__terminated = False
 
@@ -1316,7 +1316,7 @@ class PijersiState:
 
     def __find_cube_first_moves(self, find_one=False):
         found_one = False
-        
+
         sources_1 = self.__find_hexagons_with_movable_cube()
         if self.__use_random_find:
             random.shuffle(sources_1)
@@ -2032,14 +2032,14 @@ class MinimaxSearcher():
         do_check = False
 
         initial_state = MinimaxState(state, state.get_current_player())
-        
+
         self.__alpha_cut_count = list()
         self.__beta_cut_count = list()
 
         (best_value, action_values) = self.alphabeta(state=initial_state,
                                                     player=1,
                                                     return_action_values=True)
-        
+
         if False:
             if len(self.__alpha_cut_count) > 0:
                 alpha_cut_mean = sum(self.__alpha_cut_count)/len(self.__alpha_cut_count)
@@ -2048,7 +2048,7 @@ class MinimaxSearcher():
             else:
                 alpha_cut_mean = 0
                 alpha_cut_q95 = 0
-            
+
             if len(self.__beta_cut_count) > 0:
                 beta_cut_mean = sum(self.__beta_cut_count)/len(self.__beta_cut_count)
                 self.__beta_cut_count.sort()
@@ -2056,7 +2056,7 @@ class MinimaxSearcher():
             else:
                 beta_cut_mean = 0
                 beta_cut_q95 = 0
-                
+
             print( f"alpha_cut #{len(self.__alpha_cut_count)} actions mean={alpha_cut_mean:.1f} q95={alpha_cut_q95:.1f}" + " / " +
                    f"beta_cut #{len(self.__beta_cut_count)} actions mean={beta_cut_mean:.1f} q95={beta_cut_q95:.1f}")
 
@@ -2388,12 +2388,12 @@ class MinimaxSearcher():
         if player == 1:
 
             state_value = -math.inf
-            
+
             action_count = 0
 
             for action in actions:
                 action_count += 1
-                
+
                 child_state = state.take_action(action)
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
@@ -2406,7 +2406,7 @@ class MinimaxSearcher():
 
                 if state_value >= beta:
                     self.__beta_cut_count.append(action_count)
-                    
+
                     if self.__debug:
                         print("--- beta cut-off")
                     break
@@ -2416,7 +2416,7 @@ class MinimaxSearcher():
         elif player == -1:
 
             state_value = math.inf
-            
+
             action_count = 0
 
             for (action, next_action) in make_pair_iterator(actions):
@@ -2563,20 +2563,20 @@ class Game:
     def __init__(self):
         self.__searcher = [None, None]
         self.__pijersi_state = None
-        
+
         self.__enabled_log = True
         self.__log = ""
         self.__turn = None
         self.__last_action = None
         self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
 
-    
+
     def enable_log(self, condition: bool):
         self.__enabled_log = condition
         if not self.__enabled_log:
             self.__log = ""
-            
-        
+
+
     def set_white_searcher(self, searcher):
         self.__searcher[Player.WHITE] = searcher
 
@@ -2642,12 +2642,12 @@ class Game:
                 print()
                 print(f"{player_name} is thinking ...")
                 turn_start = time.time()
-                
+
             action = self.__searcher[player].search(self.__pijersi_state)
 
             self.__last_action = str(action)
             self.__turn = self.__pijersi_state.get_turn()
-            
+
             if self.__enabled_log:
                 turn_end = time.time()
                 turn_duration = turn_end - turn_start
@@ -2660,7 +2660,7 @@ class Game:
                 print("-"*40)
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
-            
+
             if self.__enabled_log:
                 self.__pijersi_state.show()
 
@@ -2675,19 +2675,19 @@ class Game:
 
                 white_time = sum(self.__turn_duration[Player.WHITE])
                 black_time = sum(self.__turn_duration[Player.BLACK])
-    
+
                 white_player = f"{Player.name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
                 black_player = f"{Player.name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
-    
+
                 if rewards[Player.WHITE] == rewards[Player.BLACK]:
                     self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-    
+
                 elif rewards[Player.WHITE] > rewards[Player.BLACK]:
                     self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
-    
+
                 else:
                     self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
-    
+
                 print(self.__log)
 
 
