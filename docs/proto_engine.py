@@ -28,6 +28,8 @@ from typing import Union
 import cProfile
 from pstats import SortKey
 
+import mcts
+
 _package_home = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "pijersi_certu")
 sys.path.append(_package_home)
 import pijersi_rules as old_code
@@ -1861,6 +1863,93 @@ class PijersiState:
         return action
 
 
+class Searcher():
+
+    __slots__ = ('__name',)
+
+
+    def __init__(self, name):
+        self.__name = name
+
+
+    def get_name(self) -> str:
+        return self.__name
+
+
+    def is_interactive(self) -> bool:
+        return False
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
+        actions = state.get_actions()
+        action = actions[0]
+        return action
+
+
+class RandomSearcher(Searcher):
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
+        actions = state.get_actions()
+        # >> sorting help for testing against other implementations if random generators are identical
+        actions.sort(key=str)
+        action = random.choice(actions)
+        return action
+
+
+class HumanSearcher(Searcher):
+
+    __slots__ = ('__action_simple_name', '__use_command_line')
+
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.__action_simple_name = None
+        self.__use_command_line = False
+
+
+    def is_interactive(self) -> bool:
+        return True
+
+
+    def use_command_line(self, condition: bool):
+        assert condition in (True, False)
+        self.__use_command_line = condition
+
+
+    def set_action_simple_name(self, action_name: str):
+        assert not self.__use_command_line
+        self.__action_simple_name = action_name
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
+
+        if self.__use_command_line:
+            return self.__search_using_command_line(state)
+
+        action = state.get_action_by_simple_name(self.__action_simple_name)
+        self.__action_simple_name = None
+        return action
+
+
+    def __search_using_command_line(self, state: PijersiState) -> PijersiAction:
+        assert self.__use_command_line
+
+        action_names = state.get_action_simple_names()
+
+        action_validated = False
+        while not action_validated:
+            action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
+            (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
+            print(validation_message)
+
+        action = state.get_action_by_simple_name(action_input)
+
+        print(f"HumanSearcher: action {action} has been selected")
+
+        return action
+
+
 class MinimaxState:
 
     Self = TypeVar("Self", bound="MinimaxState")
@@ -1912,7 +2001,7 @@ class MinimaxState:
         return MinimaxState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-class MinimaxSearcher():
+class MinimaxSearcher(Searcher):
 
     __slots__ = ('__name', '__max_depth',
                  '__cube_weight', '__fighter_weight',
@@ -1940,6 +2029,8 @@ class MinimaxSearcher():
                   dmin_weight: Optional[float]=None,
                   dave_weight: Optional[float]=None,
                   credit_weight: Optional[int]=None):
+ 
+        super().__init__(name)
 
         self.__debug = False
         self.__debug_level = 1
@@ -1951,7 +2042,6 @@ class MinimaxSearcher():
         else:
             weights = MinimaxSearcher.default_weights_by_depth[2]
 
-        self.__name = name
         self.__max_depth = max_depth
 
         self.__dmin_weight = dmin_weight if dmin_weight is not None else weights['dmin_weight']
@@ -1962,10 +2052,6 @@ class MinimaxSearcher():
 
         self.__alpha_cuts = []
         self.__beta_cuts = []
-
-
-    def get_name(self) -> str:
-        return self.__name
 
 
     def is_interactive(self) -> bool:
@@ -2361,89 +2447,173 @@ class MinimaxSearcher():
         return state_value
 
 
-class Searcher():
+def extractStatistics(mcts_searcher, action):
+    statistics = {}
+    statistics['rootNumVisits'] = mcts_searcher.root.numVisits
+    statistics['rootTotalReward'] = mcts_searcher.root.totalReward
+    statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
+    statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
+    return statistics
 
-    __slots__ = ('__name',)
+
+def pijersiRandomPolicy(state):
+
+    
+    def score_action(action):
+        return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
 
 
-    def __init__(self, name):
+    def make_action_classes(actions):
+        action_classes = {}
+        for action in actions:
+            score = score_action(action)
+            if score not in action_classes:
+                action_classes[score] = [action]
+            else:
+                action_classes[score].append(action)
+        return action_classes
+    
+
+    while not state.isTerminal():
+        pijersi_state = state.get_pijersi_state()
+    
+        actions = pijersi_state.get_actions()
+        
+        action_classes = make_action_classes(actions)
+        score = random.choice(list(action_classes.keys()))
+        action = random.choice(action_classes[score])
+        
+        state = state.takeAction(action)
+    return state.getReward()
+
+
+class PijersiMcts(mcts.mcts):
+
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args,** kwargs)
+
+
+    def getBestActions(self):
+        bestActions = []
+        bestValue = -math.inf
+        node = self.root
+        currentPlayer = node.state.getCurrentPlayer()
+        for (action, child) in node.children.items():
+            childValue = currentPlayer*child.totalReward/child.numVisits
+            if childValue > bestValue:
+                bestValue = childValue
+                bestActions = [action]
+            elif childValue == bestValue:
+                bestActions.append(action)
+        return bestActions
+
+
+class MctsState:
+    """Adaptater to mcts.StateInterface for PijersiState"""
+
+    __slots__ = ('__pijersi_state', '__maximizer_player')
+
+
+    def __init__(self, pijersi_state, maximizer_player):
+        self.__pijersi_state = pijersi_state
+        self.__maximizer_player = maximizer_player
+
+
+    def get_pijersi_state(self):
+        return self.__pijersi_state
+
+
+    def getCurrentPlayer(self):
+       """ Returns 1 if it is the maximizer player's turn to choose an action,
+       or -1 for the minimiser player"""
+       return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
+
+
+    def isTerminal(self):
+        return self.__pijersi_state.is_terminal()
+
+
+    def getReward(self):
+        """Returns the reward for this state: 0 for a draw,
+        positive for a win by maximizer player or negative for a win by the minimizer player.
+        Only needed for terminal states."""
+
+        pijersi_rewards = self.__pijersi_state.get_rewards()
+
+        if pijersi_rewards[self.__maximizer_player] == Reward.DRAW:
+            mcts_reward = 0
+
+        elif pijersi_rewards[self.__maximizer_player] == Reward.WIN:
+            mcts_reward = 1
+
+        else:
+            mcts_reward = -1
+
+        return mcts_reward
+
+
+    def getPossibleActions(self):
+        return self.__pijersi_state.get_actions()
+
+
+    def takeAction(self, action):
+        return MctsState(self.__pijersi_state.take_action(action), self.__maximizer_player)
+
+
+class MctsSearcher():
+
+    __slots__ = ('__name', '__time_limit', '__iteration_limit', '__capture_weight', '__searcher')
+
+
+    def __init__(self, name, time_limit=None, iteration_limit=None, rolloutPolicy=mcts.randomPolicy):
         self.__name = name
 
+        default_time_limit = 1_000
 
-    def get_name(self) -> str:
+        assert time_limit is None or iteration_limit is None
+
+        if time_limit is None and iteration_limit is None:
+            time_limit = default_time_limit
+
+        self.__time_limit = time_limit
+        self.__iteration_limit = iteration_limit
+
+
+        if self.__time_limit is not None:
+            # time in milli-seconds
+            self.__searcher = PijersiMcts(timeLimit=self.__time_limit, rolloutPolicy=rolloutPolicy)
+
+        elif self.__iteration_limit is not None:
+            # number of mcts rounds
+            self.__searcher = PijersiMcts(iterationLimit=self.__iteration_limit, rolloutPolicy=rolloutPolicy)
+
+
+    def get_name(self):
         return self.__name
 
 
-    def is_interactive(self) -> bool:
+    def is_interactive(self):
         return False
 
 
-    def search(self, state: PijersiState) -> PijersiAction:
-        actions = state.get_actions()
-        action = actions[0]
-        return action
+    def search(self, state):
 
+        # >> when search is done, ignore the automatically selected action
+        _ = self.__searcher.search(initialState=MctsState(state, state.get_current_player()))
 
-class RandomSearcher(Searcher):
+        best_actions = self.__searcher.getBestActions()
+        action = random.choice(best_actions)
 
+        statistics = extractStatistics(self.__searcher, action)
+        print("mcts statitics:" +
+              f" chosen action= {statistics['actionTotalReward']} total reward" +
+              f" over {statistics['actionNumVisits']} visits /"
+              f" all explored actions= {statistics['rootTotalReward']} total reward" +
+              f" over {statistics['rootNumVisits']} visits")
 
-    def search(self, state: PijersiState) -> PijersiAction:
-        actions = state.get_actions()
-        # >> sorting help for testing against other implementations if random generators are identical
-        actions.sort(key=str)
-        action = random.choice(actions)
-        return action
-
-
-class HumanSearcher(Searcher):
-
-    __slots__ = ('__action_simple_name', '__use_command_line')
-
-
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.__action_simple_name = None
-        self.__use_command_line = False
-
-
-    def is_interactive(self) -> bool:
-        return True
-
-
-    def use_command_line(self, condition: bool):
-        assert condition in (True, False)
-        self.__use_command_line = condition
-
-
-    def set_action_simple_name(self, action_name: str):
-        assert not self.__use_command_line
-        self.__action_simple_name = action_name
-
-
-    def search(self, state: PijersiState) -> PijersiAction:
-
-        if self.__use_command_line:
-            return self.__search_using_command_line(state)
-
-        action = state.get_action_by_simple_name(self.__action_simple_name)
-        self.__action_simple_name = None
-        return action
-
-
-    def __search_using_command_line(self, state: PijersiState) -> PijersiAction:
-        assert self.__use_command_line
-
-        action_names = state.get_action_simple_names()
-
-        action_validated = False
-        while not action_validated:
-            action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
-            (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
-            print(validation_message)
-
-        action = state.get_action_by_simple_name(action_input)
-
-        print(f"HumanSearcher: action {action} has been selected")
+        if _DO_DEBUG:
+            for (child_action, child) in self.__searcher.root.children.items():
+                print(f"    action {child_action} numVisits={child.numVisits} totalReward={child.totalReward}")
 
         return action
 
@@ -2734,6 +2904,32 @@ def test():
         print("=====================================")
         print("test_game_between_random_players done")
         print("=====================================")
+    
+    
+    def test_game_between_mcts_players():
+    
+        print("==================================")
+        print("test_game_between_mcts_players ...")
+        print("==================================")
+    
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10)
+    
+        game = Game()
+    
+        game.set_white_searcher(MctsSearcher("mcts-10s", time_limit=10_000, rolloutPolicy=pijersiRandomPolicy))
+        game.set_black_searcher(MctsSearcher("mcts-10i", iteration_limit=10))
+    
+        game.start()
+    
+        while game.has_next_turn():
+            game.next_turn()
+    
+        PijersiState.set_max_credit(default_max_credit)
+    
+        print("===================================")
+        print("test_game_between_mcts_players done")
+        print("===================================")
 
 
     def test_game_between_random_and_human_players():
@@ -2854,13 +3050,16 @@ def test():
         PijersiState.print_tables()
         test_first_get_summary()
 
-    if True:
+    if False:
         test_game_between_random_players()
 
+    if True:
+        test_game_between_mcts_players()
+        
     if False:
         test_game_between_random_and_human_players()
 
-    if True:
+    if False:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
     if False:
@@ -3200,13 +3399,13 @@ def main():
     if True:
         test()
 
-    if True:
+    if False:
         profile()
 
-    if True:
+    if False:
         benchmark() # against old implementation
 
-    if True:
+    if False:
         verify() # against old implementation
 
 
