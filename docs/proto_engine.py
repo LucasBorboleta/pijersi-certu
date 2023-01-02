@@ -4,9 +4,9 @@
 """pijersi_rules.py implements the rules engine for the PIJERSI boardgame."""
 
 import array
-import enum
 from collections import Counter
 from dataclasses import dataclass
+import enum
 import math
 import os
 import random
@@ -299,7 +299,7 @@ class Hexagon:
     __next_snd_indices = []
     __position_uv_to_hexagon = {}
     __distance = {}
-    __distance_to_goal = None
+    __distance_to_goal = [[]]
 
 
     all = None # shortcut to Hexagon.get_all()
@@ -325,7 +325,7 @@ class Hexagon:
 
 
     @staticmethod
-    def distance(position_uv_1: Tuple[int, int], position_uv_2: Tuple[int, int]):
+    def distance(position_uv_1: Tuple[int, int], position_uv_2: Tuple[int, int]) -> float:
         """reference: https://www.redblobgames.com/grids/hexagons/#distances"""
         (u1, v1) = position_uv_1
         (u2, v2) = position_uv_2
@@ -616,7 +616,7 @@ class HexState:
         return HexState(player=player, bottom=bottom, top=top, is_empty=False, has_stack=True)
 
 
-    def __str__(self):
+    def __str__(self: Self) -> str:
         return ( f"HexState(is_empty={self.is_empty}" +
                  f", has_stack={self.has_stack}" +
                  f", player={self.player.name if self.player is not None else None}" +
@@ -624,11 +624,11 @@ class HexState:
                  f", top={self.top.name if self.top is not None else None})" )
 
 
-    def __repr__(self):
+    def __repr__(self: Self) -> str:
         return str(self)
 
 
-    def __eq__(self, other):
+    def __eq__(self, other: Self) -> bool:
         return (self.is_empty == other.is_empty and
                 self.has_stack == other.has_stack and
                 self.player == other.player and
@@ -745,6 +745,8 @@ BoardStates = Sequence[HexState]
 
 @dataclass
 class PijersiAction:
+    Self = TypeVar("Self", bound="PijersiAction")
+
     next_board_codes: Optional[(BoardCodes)] = None
     path_vertices: Optional[Path] = None
     capture_code: Optional[CaptureCode] = None
@@ -763,7 +765,7 @@ class PijersiAction:
     __TABLE_CAPTURE_CODE_TO_NAMES[3] = ['!', '!']
 
 
-    def __str__(self):
+    def __str__(self: Self) -> str:
 
         hexagons = Hexagon.get_all()
 
@@ -1283,15 +1285,15 @@ class PijersiState:
         return self.__credit
 
 
-    def get_current_player(self):
+    def get_current_player(self) -> Player.T:
         return self.__player
 
 
-    def get_other_player(self):
+    def get_other_player(self) -> Player.T:
         return Player.T.BLACK if self.__player == Player.T.WHITE else Player.T.WHITE
 
 
-    def get_turn(self):
+    def get_turn(self) -> int:
         return self.__turn
 
 
@@ -1343,14 +1345,14 @@ class PijersiState:
         return self.__actions
 
 
-    def get_action_names(self) -> PijersiActions:
+    def get_action_names(self) -> Sequence[str]:
 
         if self.__actions_by_names is None:
             self.__actions_by_names = {str(action):action for action in self.get_actions()}
         return self.__actions_by_names.keys()
 
 
-    def get_action_simple_names(self) -> PijersiActions:
+    def get_action_simple_names(self) -> Sequence[str]:
 
         if self.__actions_by_simple_names is None:
             self.__actions_by_simple_names = {str(action).replace('!', ''):action for action in self.get_actions()}
@@ -1375,12 +1377,12 @@ class PijersiState:
                             turn=self.__turn + 1)
 
 
-    def take_action_by_name(self, action_name):
+    def take_action_by_name(self, action_name: str) -> Self:
         action = self.get_action_names()[action_name.replace('!', '')]
         return self.take_action(action)
 
 
-    def take_action_by_simple_name(self, action_name):
+    def take_action_by_simple_name(self, action_name: str) -> Self:
         return self.take_action_by_name(action_name)
 
 
@@ -1574,7 +1576,7 @@ class PijersiState:
 
 
     @staticmethod
-    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: Cube.T, top_name: Cube.T):
+    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: str, top_name: str):
         hex_index = Hexagon.get(hex_name).index
         (player, bottom) = Cube.from_name(bottom_name)
         (top_player, top) = Cube.from_name(top_name)
