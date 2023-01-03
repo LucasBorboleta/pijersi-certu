@@ -15,6 +15,7 @@ from statistics import mean
 import sys
 import time
 import timeit
+from typing import Callable
 from typing import Iterable
 from typing import Mapping
 from typing import NewType
@@ -48,9 +49,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
-
-
-_DO_DEBUG = False
 
 OMEGA = 1_000.
 OMEGA_2 = OMEGA**2
@@ -795,7 +793,8 @@ class PijersiState:
     __init_done = False
     __max_credit = 20
     __slots__ = ('__board_codes', '__player', '__credit', '__turn',
-                 '__actions', '__actions_by_names', '__actions_by_simple_names', '__terminated')
+                 '__actions', '__actions_by_names', '__actions_by_simple_names',
+                 '__is_terminal_cache', '__has_action_cache', '__player_is_arrived_cache')
 
 
     __TABLE_HAS_CUBE = None
@@ -838,7 +837,10 @@ class PijersiState:
         self.__actions = None
         self.__actions_by_names = None
         self.__actions_by_simple_names = None
-        self.__terminated = None
+        self.__is_terminal_cache = None
+        self.__has_action_cache = None
+        self.__player_is_arrived_cache = None
+
 
     @staticmethod
     def init():
@@ -1303,12 +1305,12 @@ class PijersiState:
 
 
     def is_terminal(self, use_cache: bool=True) -> bool:
-        if not use_cache or self.__terminated is None:
-            self.__terminated = (self.__player_is_arrived(Player.T.WHITE) or
-                                    self.__player_is_arrived(Player.T.BLACK) or
-                                    self.__credit == 0 or
-                                    not self.__has_action())
-        return self.__terminated
+        if not use_cache or self.__is_terminal_cache is None:
+            self.__is_terminal_cache = (self.__player_is_arrived(Player.T.WHITE, use_cache) or
+                                        self.__player_is_arrived(Player.T.BLACK, use_cache) or
+                                        self.__credit == 0 or
+                                        not self.__has_action(use_cache))
+        return self.__is_terminal_cache
 
 
     def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
@@ -1327,7 +1329,7 @@ class PijersiState:
             rewards[Player.T.WHITE] = Reward.DRAW
             rewards[Player.T.BLACK] = Reward.DRAW
 
-        elif self.__has_action():
+        elif not self.__has_action():
 
             if self.__player == Player.T.WHITE:
                 rewards[Player.T.BLACK] = Reward.WIN
@@ -1615,21 +1617,34 @@ class PijersiState:
         board_codes[hex_index] = hex_state.encode()
 
 
-    def __player_is_arrived(self, player: Player.T) -> bool:
+    def __player_is_arrived(self, player: Player.T, use_cache: bool=True) -> bool:
 
-        goal_indices = PijersiState.__TABLE_GOAL_INDICES[player]
-        has_fighter = PijersiState.__TABLE_HAS_FIGHTER[player]
+        if not use_cache or self.__player_is_arrived_cache is None:
+            self.__player_is_arrived_cache = [None for _ in Player.T]
 
-        return sum((has_fighter[self.__board_codes[hex_index]] for hex_index in goal_indices)) != 0
+            for cache_player in Player.T:
+
+                goal_indices = PijersiState.__TABLE_GOAL_INDICES[cache_player]
+                has_fighter = PijersiState.__TABLE_HAS_FIGHTER[cache_player]
+
+                self.__player_is_arrived_cache[cache_player] = sum((has_fighter[self.__board_codes[hex_index]] for hex_index in goal_indices)) != 0
+
+        return self.__player_is_arrived_cache[player]
 
 
-    def __has_action(self) -> bool:
+    def __has_action(self, use_cache: bool=True) -> bool:
 
-        for cube_source in PijersiState.__find_cube_sources(self.__board_codes, self.__player):
-            for cube_direction in Hexagon.DIRECTION_ITERATOR:
-                if PijersiState.__try_cube_path1_action(self.__board_codes, cube_source, cube_direction) is not None:
-                    return True
-        return False
+        if not use_cache or self.__has_action_cache is None:
+
+            self.__has_action_cache = False
+
+            for cube_source in PijersiState.__find_cube_sources(self.__board_codes, self.__player):
+                for cube_direction in Hexagon.DIRECTION_ITERATOR:
+                    if PijersiState.__try_cube_path1_action(self.__board_codes, cube_source, cube_direction) is not None:
+                        self.__has_action_cache = True
+                        break
+
+        return self.__has_action_cache
 
 
     @staticmethod
@@ -2003,7 +2018,7 @@ class MinimaxState:
 
 class MinimaxSearcher(Searcher):
 
-    __slots__ = ('__name', '__max_depth',
+    __slots__ = ('__max_depth',
                  '__cube_weight', '__fighter_weight',
                  '__dmin_weight', '__dave_weight', '__credit_weight',
                  '__debug', '__debug_level', '__alpha_cuts', '__beta_cuts')
@@ -2029,7 +2044,7 @@ class MinimaxSearcher(Searcher):
                   dmin_weight: Optional[float]=None,
                   dave_weight: Optional[float]=None,
                   credit_weight: Optional[int]=None):
- 
+
         super().__init__(name)
 
         self.__debug = False
@@ -2447,53 +2462,11 @@ class MinimaxSearcher(Searcher):
         return state_value
 
 
-def extractStatistics(mcts_searcher, action):
-    statistics = {}
-    statistics['rootNumVisits'] = mcts_searcher.root.numVisits
-    statistics['rootTotalReward'] = mcts_searcher.root.totalReward
-    statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
-    statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
-    return statistics
-
-
-def pijersiRandomPolicy(state):
-
-    
-    def score_action(action):
-        return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
-
-
-    def make_action_classes(actions):
-        action_classes = {}
-        for action in actions:
-            score = score_action(action)
-            if score not in action_classes:
-                action_classes[score] = [action]
-            else:
-                action_classes[score].append(action)
-        return action_classes
-    
-
-    while not state.isTerminal():
-        pijersi_state = state.get_pijersi_state()
-    
-        actions = pijersi_state.get_actions()
-        
-        action_classes = make_action_classes(actions)
-        score = random.choice(list(action_classes.keys()))
-        action = random.choice(action_classes[score])
-        
-        state = state.takeAction(action)
-    return state.getReward()
-
-
 class PijersiMcts(mcts.mcts):
-
-    def __init__(self,*args, **kwargs):
-        super().__init__(*args,** kwargs)
+    """My adaptation of mcts.mcts"""
 
 
-    def getBestActions(self):
+    def getBestActions(self) -> Mapping[PijersiAction, float]:
         bestActions = []
         bestValue = -math.inf
         node = self.root
@@ -2511,29 +2484,31 @@ class PijersiMcts(mcts.mcts):
 class MctsState:
     """Adaptater to mcts.StateInterface for PijersiState"""
 
+    Self = TypeVar("Self", bound="MctsState")
+
     __slots__ = ('__pijersi_state', '__maximizer_player')
 
 
-    def __init__(self, pijersi_state, maximizer_player):
+    def __init__(self, pijersi_state: PijersiState, maximizer_player: Player.T):
         self.__pijersi_state = pijersi_state
         self.__maximizer_player = maximizer_player
 
 
-    def get_pijersi_state(self):
+    def get_pijersi_state(self) -> PijersiState:
         return self.__pijersi_state
 
 
-    def getCurrentPlayer(self):
-       """ Returns 1 if it is the maximizer player's turn to choose an action,
-       or -1 for the minimiser player"""
-       return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
+    def getCurrentPlayer(self) -> int:
+        """ Returns 1 if it is the maximizer player's turn to choose an action,
+        or -1 for the minimiser player"""
+        return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
 
 
-    def isTerminal(self):
+    def isTerminal(self) -> bool:
         return self.__pijersi_state.is_terminal()
 
 
-    def getReward(self):
+    def getReward(self) -> float:
         """Returns the reward for this state: 0 for a draw,
         positive for a win by maximizer player or negative for a win by the minimizer player.
         Only needed for terminal states."""
@@ -2552,21 +2527,26 @@ class MctsState:
         return mcts_reward
 
 
-    def getPossibleActions(self):
+    def getPossibleActions(self) -> Sequence[PijersiAction]:
         return self.__pijersi_state.get_actions()
 
 
-    def takeAction(self, action):
+    def takeAction(self, action: PijersiAction) -> Self:
         return MctsState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-class MctsSearcher():
+class MctsSearcher(Searcher):
 
-    __slots__ = ('__name', '__time_limit', '__iteration_limit', '__capture_weight', '__searcher')
+    __slots__ = ('__time_limit', '__iteration_limit', '__capture_weight', '__searcher', '__debug')
 
 
-    def __init__(self, name, time_limit=None, iteration_limit=None, rolloutPolicy=mcts.randomPolicy):
-        self.__name = name
+    def __init__(self, name: str,
+                 time_limit: Optional[int]=None,
+                 iteration_limit: Optional[int]=None,
+                 rolloutPolicy: Callable[[MctsState], float]=mcts.randomPolicy):
+
+        super().__init__(name)
+        self.__debug = False
 
         default_time_limit = 1_000
 
@@ -2588,15 +2568,11 @@ class MctsSearcher():
             self.__searcher = PijersiMcts(iterationLimit=self.__iteration_limit, rolloutPolicy=rolloutPolicy)
 
 
-    def get_name(self):
-        return self.__name
-
-
-    def is_interactive(self):
+    def is_interactive(self) -> bool:
         return False
 
 
-    def search(self, state):
+    def search(self, state: MctsState) -> PijersiAction:
 
         # >> when search is done, ignore the automatically selected action
         _ = self.__searcher.search(initialState=MctsState(state, state.get_current_player()))
@@ -2604,18 +2580,99 @@ class MctsSearcher():
         best_actions = self.__searcher.getBestActions()
         action = random.choice(best_actions)
 
-        statistics = extractStatistics(self.__searcher, action)
+        statistics = MctsSearcher.extractStatistics(self.__searcher, action)
         print("mcts statitics:" +
               f" chosen action= {statistics['actionTotalReward']} total reward" +
               f" over {statistics['actionNumVisits']} visits /"
               f" all explored actions= {statistics['rootTotalReward']} total reward" +
               f" over {statistics['rootNumVisits']} visits")
 
-        if _DO_DEBUG:
+        if self.__debug:
             for (child_action, child) in self.__searcher.root.children.items():
                 print(f"    action {child_action} numVisits={child.numVisits} totalReward={child.totalReward}")
 
         return action
+
+    @staticmethod
+    def extractStatistics(mcts_searcher: PijersiMcts, action: PijersiAction) -> Mapping[str, Union[int, float]]:
+        statistics = {}
+        statistics['rootNumVisits'] = mcts_searcher.root.numVisits
+        statistics['rootTotalReward'] = mcts_searcher.root.totalReward
+        statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
+        statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
+        return statistics
+
+
+def pijersiRandomPolicy(state: MctsState) -> float:
+
+
+    def score_action(action: PijersiAction) -> int:
+        return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
+
+
+    def make_action_classes(actions: Sequence[PijersiAction]) -> Mapping[int, Sequence[PijersiAction]]:
+        action_classes = {}
+        for action in actions:
+            score = score_action(action)
+            if score not in action_classes:
+                action_classes[score] = [action]
+            else:
+                action_classes[score].append(action)
+        return action_classes
+
+
+    while not state.isTerminal():
+        pijersi_state = state.get_pijersi_state()
+
+        actions = pijersi_state.get_actions()
+
+        # >> Insight: selecting first the class of action by its score
+        # >> better balance actions with high score
+        # >> rather than selecting direcly the action
+        action_classes = make_action_classes(actions)
+        score = random.choice(list(action_classes.keys()))
+        action = random.choice(action_classes[score])
+
+        state = state.takeAction(action)
+    return state.getReward()
+
+
+class SearcherCatalog:
+
+    __slots__ = ('__catalog')
+
+
+    def __init__(self):
+        self.__catalog = {}
+
+
+    def add(self, searcher: Searcher):
+        searcher_name = searcher.get_name()
+        assert searcher_name not in self.__catalog
+        self.__catalog[searcher_name] = searcher
+
+
+    def get_names(self) -> Sequence[str]:
+        return list(sorted(self.__catalog.keys()))
+
+
+    def get(self, name: str) -> Searcher:
+        assert name in self.__catalog
+        return self.__catalog[name]
+
+
+SEARCHER_CATALOG = SearcherCatalog()
+
+SEARCHER_CATALOG.add( HumanSearcher("human") )
+SEARCHER_CATALOG.add( RandomSearcher("random") )
+
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
+
+SEARCHER_CATALOG.add( MctsSearcher("mcts-90s-jrp", time_limit=90_000, rolloutPolicy=pijersiRandomPolicy) )
+SEARCHER_CATALOG.add( MctsSearcher("mcts-300i-rnd", iteration_limit=300, rolloutPolicy=mcts.randomPolicy) )
 
 
 class Game:
@@ -2904,29 +2961,29 @@ def test():
         print("=====================================")
         print("test_game_between_random_players done")
         print("=====================================")
-    
-    
+
+
     def test_game_between_mcts_players():
-    
+
         print("==================================")
         print("test_game_between_mcts_players ...")
         print("==================================")
-    
+
         default_max_credit = PijersiState.get_max_credit()
-        PijersiState.set_max_credit(10)
-    
+        PijersiState.set_max_credit(20)
+
         game = Game()
-    
-        game.set_white_searcher(MctsSearcher("mcts-10s", time_limit=10_000, rolloutPolicy=pijersiRandomPolicy))
-        game.set_black_searcher(MctsSearcher("mcts-10i", iteration_limit=10))
-    
+
+        game.set_white_searcher(MctsSearcher("mcts-500ms", time_limit=500, rolloutPolicy=pijersiRandomPolicy))
+        game.set_black_searcher(MctsSearcher("mcts-15i", iteration_limit=15))
+
         game.start()
-    
+
         while game.has_next_turn():
             game.next_turn()
-    
+
         PijersiState.set_max_credit(default_max_credit)
-    
+
         print("===================================")
         print("test_game_between_mcts_players done")
         print("===================================")
@@ -3043,23 +3100,23 @@ def test():
         print("=====================================")
 
 
-    if False:
+    if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
         PijersiState.print_tables()
         test_first_get_summary()
 
-    if False:
+    if True:
         test_game_between_random_players()
 
     if True:
         test_game_between_mcts_players()
-        
+
     if False:
         test_game_between_random_and_human_players()
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
     if False:
@@ -3110,7 +3167,7 @@ def profile_fun_is_terminal():
 
     pijersi_state = profile_data['pijersi_state']
 
-    for _ in range(100_000):
+    for _ in range(1_000):
         assert not pijersi_state.is_terminal(use_cache=False)
 
 
@@ -3169,8 +3226,8 @@ def benchmark():
             assert not old_state.is_terminal(use_cache=False)
 
 
-        time_new = timeit.timeit(do_new, number=1_000)
-        time_old = timeit.timeit(do_old, number=1_000)
+        time_new = timeit.timeit(do_new, number=100)
+        time_old = timeit.timeit(do_old, number=100)
         print("do_new() => ", time_new)
         print("do_old() => ", time_old,
               ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
@@ -3399,20 +3456,21 @@ def main():
     if True:
         test()
 
-    if False:
+    if True:
         profile()
 
-    if False:
+    if True:
         benchmark() # against old implementation
 
-    if False:
+    if True:
         verify() # against old implementation
 
 
 if __name__ == "__main__":
     print()
     print("Hello")
-    print(f"sys.version = {sys.version}")
+    print()
+    print(f"Python sys.version = {sys.version}")
 
     main()
 
