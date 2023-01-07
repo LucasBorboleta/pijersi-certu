@@ -187,7 +187,7 @@ class CanvasConfig:
     RATIO = NX/NY
     HEIGHT = 640
     WIDTH = HEIGHT*RATIO
-
+    
     # Canvas background
     USE_BACKGROUND_PHOTO = True
     BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
@@ -234,15 +234,15 @@ class CubeConfig:
 
     __cube_file_name = {}
 
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.WISE)] = 'wise-black.png'
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.ROCK)] = 'rock-black.png'
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.PAPER)] = 'paper-black.png'
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.SCISSORS)] = 'scissors-black.png'
+    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.WISE)] = 'wise-black.png'
+    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.ROCK)] = 'rock-black.png'
+    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.PAPER)] = 'paper-black.png'
+    __cube_file_name[(rules.Player.BLACK, rules.CubeSort.SCISSORS)] = 'scissors-black.png'
 
-    __cube_file_name[(rules.Player.T.WHITE, rules.Cube.T.WISE)] = 'wise-white.png'
-    __cube_file_name[(rules.Player.T.WHITE, rules.Cube.T.ROCK)] = 'rock-white.png'
-    __cube_file_name[(rules.Player.T.WHITE, rules.Cube.T.PAPER)] = 'paper-white.png'
-    __cube_file_name[(rules.Player.T.WHITE, rules.Cube.T.SCISSORS)] = 'scissors-white.png'
+    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.WISE)] = 'wise-white.png'
+    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.ROCK)] = 'rock-white.png'
+    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.PAPER)] = 'paper-white.png'
+    __cube_file_name[(rules.Player.WHITE, rules.CubeSort.SCISSORS)] = 'scissors-white.png'
 
     CUBE_FILE_PATH = {}
 
@@ -295,16 +295,16 @@ class HexagonLineColor(enum.Enum):
 
 class GuiInputStep(enum.Enum):
     NONE = enum.auto()
-
+    
     # No hexagon selected
     WAIT_SELECTION = enum.auto()
-
+    
     # Starting hexagon selected
     SELECTED_STEP_1 = enum.auto()
-
+    
     # First move done
     SELECTED_STEP_2 = enum.auto()
-
+    
     # Second move done
     FINISHED = enum.auto()
 
@@ -355,7 +355,7 @@ class GraphicalHexagon:
 
     def contains_point(self, point):
         """ Is the point inside the current hexagon ?"""
-
+        
         #>> This implementation relies of the following properties:
         #>> - All hexagons of the Pijersi board are regular hexagons: all the 6 sides are of equal lengths.
         #>> - All hexagons have the same sizes.
@@ -365,18 +365,18 @@ class GraphicalHexagon:
         SAFE_RELATIVE_INSIDE_WIDTH = 0.99
 
         is_inside = True
-
+        
         (hexagon_x, hexagon_y) = (self.center[0], self.center[1])
         (point_x, point_y) = point
-
+        
         # Compute the standardized point : translated and scaled regarding the actual hexagon
         x = (point_x - hexagon_x)/(CanvasConfig.HEXA_WIDTH/2)
         y = (point_y - hexagon_y)/(CanvasConfig.HEXA_WIDTH/2)
-
+        
         if is_inside:
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
-
+            
         if is_inside:
             # first rotation by CanvasConfig.HEXA_SIDE_ANGLE
             (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
@@ -384,15 +384,15 @@ class GraphicalHexagon:
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
-
+            
         if is_inside:
             # second rotation by CanvasConfig.HEXA_SIDE_ANGLE
             (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
                       CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
-
-
+    
+        
         return is_inside
 
 
@@ -459,10 +459,10 @@ class GameGui(ttk.Frame):
     def __init__(self):
 
         self.__face_drawers = dict()
-        self.__face_drawers[rules.Cube.T.PAPER] = self.__draw_paper_face
-        self.__face_drawers[rules.Cube.T.ROCK] = self.__draw_rock_face
-        self.__face_drawers[rules.Cube.T.SCISSORS] = self.__draw_scissors_face
-        self.__face_drawers[rules.Cube.T.WISE] = self.__draw_wise_face
+        self.__face_drawers[rules.CubeSort.PAPER] = self.__draw_paper_face
+        self.__face_drawers[rules.CubeSort.ROCK] = self.__draw_rock_face
+        self.__face_drawers[rules.CubeSort.SCISSORS] = self.__draw_scissors_face
+        self.__face_drawers[rules.CubeSort.WISE] = self.__draw_wise_face
 
         self.__cube_photos = None
 
@@ -510,7 +510,7 @@ class GameGui(ttk.Frame):
 
         self.__gui_stack_selected = False
         self.__move_stack = False
-
+        
         # Create widgets
 
         self.__root = tk.Tk()
@@ -789,8 +789,8 @@ class GameGui(ttk.Frame):
 
 
     def __command_update_players(self, *_):
-        self.__searcher[rules.Player.T.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
-        self.__searcher[rules.Player.T.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
+        self.__searcher[rules.Player.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
+        self.__searcher[rules.Player.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
 
 
     def __command_update_turn(self, *_):
@@ -811,7 +811,7 @@ class GameGui(ttk.Frame):
 
         except:
             assert False
-
+   
     def __entry_action_gui_protection(self, a, b, c):
         """
         If user interacts with action input, gui input process is interrupted
@@ -845,14 +845,14 @@ class GameGui(ttk.Frame):
                 if action_name[0:5] == self.__variable_action.get():
                     # keep actions with a second move
                     if len(action_name) > 5:
-                        self.__legal_gui_moves.append(action_name)
+                        self.__legal_gui_moves.append(action_name)            
 
 
     def __set_legal_hexagons(self):
         """
         Build the list of hexagons user can interact with
         """
-
+        
         self.__legal_hexagons.clear()
         self.__set_legal_gui_actions()
 
@@ -867,7 +867,7 @@ class GameGui(ttk.Frame):
         # Selection is done on second hexagon name in action names
         if self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
             self.__set_legal_hexagon_from_action_moves(3,5)
-
+        
         # If target hexagon is selected, second arrival hexagons are legal
         # Selection is done on third hexagon name in action names
         if self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
@@ -912,7 +912,7 @@ class GameGui(ttk.Frame):
                     hexagon.highlighted_for_source_selection = False
             if redraw:
                 self.__draw_state()
-
+                
     def __hexagon_has_stack(self, name):
         for action in self.__legal_gui_moves:
             if action[0:3] == name + "=":
@@ -927,10 +927,10 @@ class GameGui(ttk.Frame):
 
         if self.__gui_input_step is GuiInputStep.WAIT_SELECTION:
             self.__click_wait_selection_step(event)
-
+            
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_1:
             self.__click_step_1(event)
-
+            
         elif self.__gui_input_step is GuiInputStep.SELECTED_STEP_2:
             self.__click_step_2(event)
 
@@ -944,7 +944,7 @@ class GameGui(ttk.Frame):
         """
 
         hexagon_mouse_click = self.__position_to_hexagon(event)
-
+        
         if hexagon_mouse_click in self.__legal_hexagons:
             self.__selected_hexagon = hexagon_mouse_click
             # Give proper color (priority to stack)
@@ -958,10 +958,10 @@ class GameGui(ttk.Frame):
             self.__gui_input_step = GuiInputStep.SELECTED_STEP_1
             self.__hightlight_legal_hexagons()
             self.__variable_action.set(hexagon_mouse_click.name)
-
+            
         else:
             self.__reset_gui_process(event)
-
+            
         self.__draw_state()
 
 
@@ -1023,12 +1023,12 @@ class GameGui(ttk.Frame):
         If user clicks on a legal hexagon, next GUI step is invoked.
         Otherwise, current process is cancelled.
         """
-
+            
         hexagon_mouse_click = self.__position_to_hexagon(event)
         # Manage half move. If user clicks the first target hexagon, terminate the action
         if hexagon_mouse_click is self.__selected_hexagon:
             self.__terminate_gui_action()
-
+            
         elif hexagon_mouse_click in self.__legal_hexagons:
             actions = [a[0:8] for a in self.__legal_gui_moves if a[6:8] == hexagon_mouse_click.name]
             action_name = actions[0]
@@ -1037,10 +1037,10 @@ class GameGui(ttk.Frame):
             self.__pijersi_state_gui_input = action.state
             # The action is terminal by definition
             self.__terminate_gui_action()
-
+            
         else:
             self.__reset_gui_process(event)
-
+            
         self.__draw_state()
 
 
@@ -1076,20 +1076,20 @@ class GameGui(ttk.Frame):
         Reset gui input process and clean the drawing
         """
         self.__selected_hexagon = None
-
+        
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_for_destination_selection = False
             hexagon.highlighted_for_source_selection = False
             hexagon.highlighted_for_cube_selection = False
             hexagon.highlighted_for_stack_selection = False
-
+        
         self.__gui_input_step = back_to_gui_step
-
+        
         self.__set_legal_hexagons()
-
+        
         if event is not None:
             self.__mouse_over(event)
-
+        
         self.__pijersi_state_gui_input = None
         self.__draw_state()
 
@@ -1171,13 +1171,13 @@ class GameGui(ttk.Frame):
         if self.__game_started:
 
            self.__game = rules.Game()
-           self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-           self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+           self.__game.set_white_searcher(self.__searcher[rules.Player.WHITE])
+           self.__game.set_black_searcher(self.__searcher[rules.Player.BLACK])
            self.__game.start()
 
            self.__pijersi_state = self.__game.get_state()
            self.__legend = ""
-
+           
            self.__turn_states = list()
            self.__turn_states.append(self.__game.get_state())
            self.__turn_actions = list()
@@ -1229,8 +1229,8 @@ class GameGui(ttk.Frame):
                # interpet actions
                if validated_edited_actions:
 
-                    white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
-                    black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
+                    white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.WHITE].get_name())
+                    black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.BLACK].get_name())
 
                     self.__game.set_white_searcher(white_replayer)
                     self.__game.set_black_searcher(black_replayer)
@@ -1253,7 +1253,7 @@ class GameGui(ttk.Frame):
 
                         player = self.__pijersi_state.get_current_player()
 
-                        if player == rules.Player.T.WHITE:
+                        if player == rules.Player.WHITE:
                             white_replayer.set_action_simple_name(action)
                         else:
                             black_replayer.set_action_simple_name(action)
@@ -1277,8 +1277,8 @@ class GameGui(ttk.Frame):
                         self.__text_actions.see(tk.END)
                         self.__text_actions.config(state="disabled")
 
-                    self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-                    self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+                    self.__game.set_white_searcher(self.__searcher[rules.Player.WHITE])
+                    self.__game.set_black_searcher(self.__searcher[rules.Player.BLACK])
 
                     self.__pijersi_state = self.__game.get_state()
                     self.__legend = self.__game.get_last_action()
@@ -1374,7 +1374,7 @@ class GameGui(ttk.Frame):
                 self.__progressbar['value'] = 0.
                 if self.__gui_input_step == GuiInputStep.NONE:
                     self.__reset_gui_process()
-
+                
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
 
@@ -1479,10 +1479,10 @@ class GameGui(ttk.Frame):
 
                     left += self.__background_tk_photo_delta_x
                     right -= self.__background_tk_photo_delta_x
-
+                    
                     upper += int(0.01*h)
                     lower -= int(0.01*h)
-
+                    
                     left += int(0.01*w)
                     right -= int(0.01*w)
 
@@ -1513,7 +1513,7 @@ class GameGui(ttk.Frame):
                                    append_images=frames[1:],
                                    save_all=True,
                                    duration=self.__picture_gif_duration, loop=0)
-
+                    
                     print()
                     print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
 
@@ -1582,45 +1582,41 @@ class GameGui(ttk.Frame):
         if self.__pijersi_state_gui_input is not None:
             pijersi_state = self.__pijersi_state_gui_input
 
-        hex_states = pijersi_state.get_hexStates()
+        hexagon_top =  pijersi_state.get_hexagon_top()
+        hexagon_bottom =  pijersi_state.get_hexagon_bottom()
 
         for hexagon in rules.Hexagon.all:
 
-            hex_state = hex_states[hexagon.index]
+            top_index = hexagon_top[hexagon.index]
+            bottom_index = hexagon_bottom[hexagon.index]
 
-            if hex_state.is_empty:
-                # Hexagon is empty
-                pass
+            if top_index != rules.Null.CUBE and bottom_index != rules.Null.CUBE:
 
-            elif hex_state.has_stack:
-                # Hexagon with a stack
+                top = rules.Cube.all[top_index]
+                bottom = rules.Cube.all[bottom_index]
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.TOP,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.top,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
+                               cube_color=top.player, cube_sort=top.sort, cube_label=top.label)
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.BOTTOM,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.bottom,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
+                               cube_color=bottom.player, cube_sort=bottom.sort, cube_label=bottom.label)
 
-            elif hex_state.top is not None:
-                # Hexagon with a single cube at top
+            elif top_index != rules.Null.CUBE:
 
-                self.__draw_cube(name=hexagon.name, config=CubeLocation.MIDDLE,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.top,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
-
-            elif hex_state.bottom is not None:
-                # Hexagon with a single cube at bottom
+                top = rules.Cube.all[top_index]
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.MIDDLE,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.bottom,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
+                               cube_color=top.player, cube_sort=top.sort, cube_label=top.label)
 
+            elif bottom_index != rules.Null.CUBE:
+
+                bottom = rules.Cube.all[bottom_index]
+
+                self.__draw_cube(name=hexagon.name, config=CubeLocation.MIDDLE,
+                               cube_color=bottom.player, cube_sort=bottom.sort, cube_label=bottom.label)
+
+            else:
+                pass
 
 
     def __draw_all_hexagons(self):
@@ -1639,24 +1635,24 @@ class GameGui(ttk.Frame):
         if self.__use_background_photo:
             polygon_line_color = ''
             fill_color = ''
-
+            
         else:
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
-
-        # Respect priority order in lighting
+        
+        # Respect priority order in lighting 
         if hexagon.highlighted_for_destination_selection:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
-
+            
         if hexagon.highlighted_for_cube_selection:
             fill_color = HexagonColor.HIGHLIGHT_CUBE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
-
+            
         if hexagon.highlighted_for_stack_selection:
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
-
+            
         if hexagon.highlighted_for_source_selection:
             fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
@@ -1676,16 +1672,16 @@ class GameGui(ttk.Frame):
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
 
         hexagon = GraphicalHexagon.get(name)
-
+        
         shift_value = 0.20*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
         top_shift = 0
         bottom_shift = 0
-
+                
         if hexagon.highlighted_for_stack_selection:
             top_shift = shift_value
             bottom_shift = 1.25*shift_value
-
+                
         if hexagon.highlighted_for_cube_selection:
             top_shift = shift_value
 
@@ -1696,7 +1692,7 @@ class GameGui(ttk.Frame):
         for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
 
-            if  config == CubeLocation.BOTTOM or config == CubeLocation.MIDDLE:
+            if  config == CubeLocation.BOTTOM or config == CubeLocation.MIDDLE: 
                 cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
 
             elif config == CubeLocation.TOP:
@@ -1718,11 +1714,11 @@ class GameGui(ttk.Frame):
             cube_vertices.append(cube_vertex)
 
 
-        if cube_color == rules.Player.T.BLACK:
+        if cube_color == rules.Player.BLACK:
             fill_color = CubeColor.BLACK.value
             face_color = CubeColor.WHITE.value
 
-        elif cube_color == rules.Player.T.WHITE:
+        elif cube_color == rules.Player.WHITE:
             fill_color = CubeColor.WHITE.value
             face_color = CubeColor.BLACK.value
 

@@ -3,6 +3,39 @@
 
 """pijersi_rules.py implements the rules engine for the PIJERSI boardgame."""
 
+import array
+from collections import Counter
+from dataclasses import dataclass
+import enum
+import math
+import os
+import random
+import re
+from statistics import mean
+import sys
+import time
+import timeit
+from typing import Callable
+from typing import Iterable
+from typing import Mapping
+from typing import NewType
+from typing import Optional
+from typing import Sequence
+from typing import Set
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
+
+import cProfile
+from pstats import SortKey
+
+import mcts
+
+_package_home = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(_package_home)
+import old_pijersi_rules as old_code
+
+
 __version__ = "1.1.0-rc3"
 
 _COPYRIGHT_AND_LICENSE = """
@@ -17,159 +50,29 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
-
-import array
-import collections
-import copy
-import enum
-import itertools
-import math
-import os
-import random
-import re
-import time
-
-import mcts
-
-_do_debug = False
-
 OMEGA = 1_000.
 OMEGA_2 = OMEGA**2
 
-
-def chunks(sequence, chunk_count):
-    """ Yield chunck_count successive chunks from sequence"""
-    chunk_size = int(len(sequence) / chunk_count)
-    chunk_end = 0
-    for _ in range(0, chunk_count - 1):
-        chunk_start = chunk_end
-        chunk_end = chunk_start + chunk_size
-        yield sequence[chunk_start : chunk_end]
-    yield sequence[chunk_end:]
+# The most compact storage
+# >> Tests with all 32 signed bits or all 64 signed bits have not changed the profiling, neither the global time
+ARRAY_TYPE_BOOL = 'B'
+ARRAY_TYPE_COUNTER = 'B'
+ARRAY_TYPE_STATE_1 = 'B'
+ARRAY_TYPE_STATE_2 = 'H'
+ARRAY_TYPE_STATE_3 = 'L'
 
 
-def partition(predicate, iterable):
-    """Use a predicate to partition entries into false entries and true entries"""
-    (t1, t2) = itertools.tee(iterable)
-    return (itertools.filterfalse(predicate, t1), filter(predicate, t2))
+HexIndex = NewType('HexIndex', int)
+Sources = Iterable[HexIndex]
+Path = Sequence[HexIndex]
 
+CaptureCode = NewType('CaptureCode', int)
+HexCode = NewType('HexCode', int)
+MoveCode = NewType('MoveCode', int)
+PathCode = NewType('PathCode', int)
 
-def make_pair_iterator(data_iterator, sentinel=None):
-    """Make a pair iterator with a sentinel that identifies the stop data"""
-
-    data = next(data_iterator, sentinel)
-    next_data = next(data_iterator, sentinel)
-
-    while data is not sentinel:
-        yield (data, next_data)
-        (data, next_data) = (next_data, next(data_iterator, sentinel))
-
-
-def make_chunk_sort_iterator(data_iterator, chunk_size=None, key=None, reverse=False):
-    """Make an iterator that sorts data by chunks"""
-
-    assert chunk_size is None or chunk_size >= 0
-
-    if chunk_size == 0:
-        for data in data_iterator:
-            yield data
-
-    else:
-        chunk = list()
-        for data in data_iterator:
-            chunk.append(data)
-            if chunk_size is not None and len(chunk) == chunk_size:
-                chunk.sort(key=key, reverse=reverse)
-                for data in chunk:
-                    yield data
-                chunk = list()
-
-        chunk.sort(key=key, reverse=reverse)
-        for data in chunk:
-            yield data
-
-
-def hex_distance(position_uv_1, position_uv_2):
-    """reference: https://www.redblobgames.com/grids/hexagons/#distances"""
-    (u1, v1) = position_uv_1
-    (u2, v2) = position_uv_2
-    distance = (math.fabs(u1 - u2) + math.fabs(v1 - v2)+ math.fabs(u1 + v1 - u2 - v2))/2
-    return distance
-
-
-class PijersiMcts(mcts.mcts):
-
-    def __init__(self,*args, **kwargs):
-        super().__init__(*args,** kwargs)
-
-
-    def getBestActions(self):
-        bestActions = []
-        bestValue = -math.inf
-        node = self.root
-        currentPlayer = node.state.getCurrentPlayer()
-        for (action, child) in node.children.items():
-            childValue = currentPlayer*child.totalReward/child.numVisits
-            if childValue > bestValue:
-                bestValue = childValue
-                bestActions = [action]
-            elif childValue == bestValue:
-                bestActions.append(action)
-        return bestActions
-
-
-@enum.unique
-class Capture(enum.Enum):
-    NONE = enum.auto()
-    SOME_CUBE = enum.auto()
-    SOME_STACK = enum.auto()
-
-
-@enum.unique
-class CubeSort(enum.Enum):
-    PAPER = enum.auto()
-    ROCK = enum.auto()
-    SCISSORS = enum.auto()
-    WISE = enum.auto()
-
-
-@enum.unique
-class CubeStatus(enum.IntEnum):
-    ACTIVATED = -121
-    CAPTURED = -122
-    UNUSED = -124
-
-
-@enum.unique
-class HexagonDirection(enum.IntEnum):
-    PHI_090 = 0
-    PHI_150 = 1
-    PHI_210 = 2
-    PHI_270 = 3
-    PHI_330 = 4
-    PHI_030 = 5
-
-
-@enum.unique
-class Null(enum.IntEnum):
-    CUBE = -101
-    HEXAGON = -102
-
-
-class Player(enum.IntEnum):
-    WHITE = 0
-    BLACK = 1
-
-    @staticmethod
-    def name(player):
-        if player == Player.WHITE:
-            return "white"
-
-        elif player == Player.BLACK:
-            return "black"
-
-        else:
-            assert False
+BoardCodes = Sequence[HexCode]
+PathCodes = Sequence[HexCode]
 
 
 @enum.unique
@@ -183,171 +86,211 @@ class Reward(enum.IntEnum):
     assert LOSS + WIN == DRAW
 
 
-@enum.unique
-class TerminalCase(enum.Enum):
+class Player:
+    PlayerT = TypeVar("PlayerT", bound="Player.T")
 
-    BLACK_ARRIVED = enum.auto()
-    BLACK_BLOCKED = enum.auto()
+    @enum.unique
+    class T(enum.IntEnum):
+        WHITE = 0
+        BLACK = 1
+        assert WHITE < BLACK
 
-    WHITE_ARRIVED = enum.auto()
-    WHITE_BLOCKED = enum.auto()
 
-    ZERO_CREDIT = enum.auto()
+    def __init__(self):
+        assert False
+
+
+    @staticmethod
+    def to_name(player: PlayerT) -> str:
+        return "white" if player == Player.T.WHITE else "black"
 
 
 class Cube:
+    CubeT = TypeVar("CubeT", bound="Cube.T")
 
-    __slots__ = ('name', 'label', 'sort', 'player', 'index')
+    @enum.unique
+    class T(enum.IntEnum):
+        ROCK = 0
+        PAPER = 1
+        SCISSORS = 2
+        WISE = 3
+        assert ROCK < PAPER < SCISSORS < WISE
 
-    __all_sorted_cubes = []
-    __init_done = False
-    __name_to_cube = {}
-    __sort_and_player_to_label = {}
 
-    all = None # shortcut to Cube.get_all()
+    __TABLE_CUBE_FROM_NAME = {
+        'R':(Player.T.WHITE, T.ROCK),
+        'P':(Player.T.WHITE, T.PAPER),
+        'S':(Player.T.WHITE, T.SCISSORS),
+        'W':(Player.T.WHITE, T.WISE),
+
+        'r':(Player.T.BLACK, T.ROCK),
+        'p':(Player.T.BLACK, T.PAPER),
+        's':(Player.T.BLACK, T.SCISSORS),
+        'w':(Player.T.BLACK, T.WISE)}
+
+    __TABLE_CUBE_TO_NAME = {(player, cube):name for (name, (player, cube)) in __TABLE_CUBE_FROM_NAME.items()}
 
 
-    def __init__(self, name, label, sort, player):
-        """Create a cube and check its properties"""
+    @staticmethod
+    def beats(src: CubeT, dst: CubeT) -> bool:
+        assert src in Cube.T
+        assert dst in Cube.T
+        return (src, dst) in ((Cube.T.ROCK, Cube.T.SCISSORS),
+                              (Cube.T.SCISSORS, Cube.T.PAPER),
+                              (Cube.T.PAPER, Cube.T.ROCK))
 
-        assert name not in Cube.__name_to_cube
-        assert len(name) == 2
-        assert len(label) == 1
-        assert label == name[0]
+    @staticmethod
+    def from_name(name: str) -> CubeT:
+        return Cube.__TABLE_CUBE_FROM_NAME[name]
 
-        assert sort in CubeSort
-        assert player in Player
 
-        if player == Player.WHITE:
-            assert label == label.upper()
-        elif player == Player.BLACK:
-            assert label == label.lower()
+    @staticmethod
+    def to_name(player: Player.T, cube: CubeT) -> str:
+        return Cube.__TABLE_CUBE_TO_NAME[(player, cube)]
+
+
+class Notation:
+
+
+    @enum.unique
+    class SimpleCase(enum.Enum):
+
+        INVALID = 'invalid'
+
+        MOVE_CUBE = 'xx-xx'
+        MOVE_STACK = 'xx=xx'
+
+        MOVE_CUBE_MOVE_STACK = 'xx-xx=xx'
+        MOVE_STACK_MOVE_CUBE = 'xx=xx-xx'
+
+
+    def __init__(self):
+        assert False
+
+
+    @staticmethod
+    def simplify_notation(notation: str) -> str:
+        return notation.strip().replace(' ', '').replace('!', '')
+
+
+    @staticmethod
+    def classify_notation(notation: str) -> Tuple[SimpleCase, int]:
+        notation_simplified = Notation.simplify_notation(notation)
+        notation_case = Notation.classify_simple_notation(notation_simplified)
+
+        # guess number of capture
+        capture = 0
+        if re.match(r"^.*!.*$ ", notation):
+            capture += 1
+            if re.match(r"^.*![^!]+!.*$ ", notation):
+                capture += 1
+
+        return (notation_case, capture)
+
+
+    @staticmethod
+    def classify_simple_notation(notation: str) -> SimpleCase:
+        if re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
+            # move cube
+            return Notation.SimpleCase.MOVE_CUBE
+
+        if re.match(r'^[a-i][1-9]=[a-i][1-9]$', notation):
+            # move stack
+            return Notation.SimpleCase.MOVE_STACK
+
+        if re.match(r'^[a-i][1-9]-[a-i][1-9]=[a-i][1-9]$', notation):
+            # move cube move stack
+            return Notation.SimpleCase.MOVE_CUBE_MOVE_STACK
+
+        if re.match(r'^[a-i][1-9]=[a-i][1-9]-[a-i][1-9]$', notation):
+            # move stack move cube
+            return Notation.SimpleCase.MOVE_STACK_MOVE_CUBE
+
+        return Notation.SimpleCase.INVALID
+
+
+    @staticmethod
+    def validate_simple_notation(action_input: str, action_names: Sequence[str]) -> Tuple[bool, str]:
+
+        def split_actions(action_names: Sequence[str]) -> Mapping[Notation.SimpleCase, Set[str]]:
+            action_cases = {}
+
+            for this_name in action_names:
+                this_case = Notation.classify_simple_notation(this_name)
+                if this_case not in action_cases:
+                    action_cases[this_case] = set()
+                action_cases[this_case].add(this_name)
+
+            return action_cases
+
+
+        action_input_simplified = Notation.simplify_notation(action_input)
+
+        validated = action_input in action_names or action_input_simplified in action_names
+
+        if validated:
+            message = "validated action"
+
         else:
-            assert False
+            action_cases = split_actions(action_names)
+            action_input_case = Notation.classify_simple_notation(action_input_simplified)
 
-        if (sort, player) not in Cube.__sort_and_player_to_label:
-            Cube.__sort_and_player_to_label[(sort, player)] = label
-        else:
-            assert Cube.__sort_and_player_to_label[(sort, player)] == label
+            if action_input_case == Notation.SimpleCase.INVALID:
+                message = "invalid action syntax !"
 
-        self.name = name
-        self.label = label
-        self.sort = sort
-        self.player = player
-        self.index = None
-
-        Cube.__name_to_cube[self.name] = self
-
-
-    def __str__(self):
-        return f"Cube({self.name}, {self.label}, {self.sort}, {self.player}, {self.index})"
-
-
-    def beats(self, other):
-
-        if self.player == other.player:
-            does_beat = False
-
-        else:
-
-            if self.sort == CubeSort.WISE:
-                does_beat = False
-
-            elif self.sort == CubeSort.ROCK:
-                does_beat = other.sort == CubeSort.SCISSORS
-
-            elif self.sort == CubeSort.PAPER:
-                does_beat = other.sort == CubeSort.ROCK
-
-            elif self.sort == CubeSort.SCISSORS:
-                does_beat = other.sort == CubeSort.PAPER
+            elif action_input_case not in action_cases:
+                message = f"{action_input_case.value} : impossible action !"
 
             else:
-                assert False
+                message = "invalid action !"
 
-        return does_beat
+            # guess hints from each case of action
+            action_hints = []
+            for this_case in action_cases:
+                # find the longest match from the start
+                upper_length = min(len(action_input_simplified), len(this_case.value))
+                match_length = 0
 
+                for this_name in action_cases[this_case]:
+                    for end in range(match_length, upper_length + 1):
+                        if action_input_simplified[:end] == this_name[:end]:
+                            match_length = max(match_length, end)
+                        else:
+                            break
 
-    @staticmethod
-    def get(name):
-        return Cube.__name_to_cube[name]
+                action_hints.append(action_input_simplified[:match_length] + this_case.value[match_length:])
 
+            if len(action_hints) == 1:
+                message += " hint : " + action_hints[0]
+            else:
+                message += " hints : " + "  ".join(action_hints)
 
-    @staticmethod
-    def get_all():
-        return Cube.__all_sorted_cubes
-
-
-    @staticmethod
-    def init():
-        if not Cube.__init_done:
-            Cube.__create_cubes()
-            Cube.__create_all_sorted_cubes()
-            Cube.__init_done = True
-
-
-    @staticmethod
-    def show_all():
-        for cube in Cube.__all_sorted_cubes:
-            print(cube)
-
-
-    @staticmethod
-    def __create_all_sorted_cubes():
-        for name in sorted(Cube.__name_to_cube.keys()):
-            Cube.__all_sorted_cubes.append(Cube.__name_to_cube[name])
-
-        for (index, cube) in enumerate(Cube.__all_sorted_cubes):
-            cube.index = index
-
-        Cube.all = Cube.__all_sorted_cubes
-
-
-    @staticmethod
-    def __create_cubes():
-
-        Cube(name='W1', label='W', sort=CubeSort.WISE, player=Player.WHITE)
-        Cube(name='W2', label='W', sort=CubeSort.WISE, player=Player.WHITE)
-
-        Cube(name='R1', label='R', sort=CubeSort.ROCK, player=Player.WHITE)
-        Cube(name='R2', label='R', sort=CubeSort.ROCK, player=Player.WHITE)
-        Cube(name='R3', label='R', sort=CubeSort.ROCK, player=Player.WHITE)
-        Cube(name='R4', label='R', sort=CubeSort.ROCK, player=Player.WHITE)
-
-        Cube(name='P1', label='P', sort=CubeSort.PAPER, player=Player.WHITE)
-        Cube(name='P2', label='P', sort=CubeSort.PAPER, player=Player.WHITE)
-        Cube(name='P3', label='P', sort=CubeSort.PAPER, player=Player.WHITE)
-        Cube(name='P4', label='P', sort=CubeSort.PAPER, player=Player.WHITE)
-
-        Cube(name='S1', label='S', sort=CubeSort.SCISSORS, player=Player.WHITE)
-        Cube(name='S2', label='S', sort=CubeSort.SCISSORS, player=Player.WHITE)
-        Cube(name='S3', label='S', sort=CubeSort.SCISSORS, player=Player.WHITE)
-        Cube(name='S4', label='S', sort=CubeSort.SCISSORS, player=Player.WHITE)
-
-        Cube(name='w1', label='w', sort=CubeSort.WISE, player=Player.BLACK)
-        Cube(name='w2', label='w', sort=CubeSort.WISE, player=Player.BLACK)
-
-        Cube(name='r1', label='r', sort=CubeSort.ROCK, player=Player.BLACK)
-        Cube(name='r2', label='r', sort=CubeSort.ROCK, player=Player.BLACK)
-        Cube(name='r3', label='r', sort=CubeSort.ROCK, player=Player.BLACK)
-        Cube(name='r4', label='r', sort=CubeSort.ROCK, player=Player.BLACK)
-
-        Cube(name='p1', label='p', sort=CubeSort.PAPER, player=Player.BLACK)
-        Cube(name='p2', label='p', sort=CubeSort.PAPER, player=Player.BLACK)
-        Cube(name='p3', label='p', sort=CubeSort.PAPER, player=Player.BLACK)
-        Cube(name='p4', label='p', sort=CubeSort.PAPER, player=Player.BLACK)
-
-        Cube(name='s1', label='s', sort=CubeSort.SCISSORS, player=Player.BLACK)
-        Cube(name='s2', label='s', sort=CubeSort.SCISSORS, player=Player.BLACK)
-        Cube(name='s3', label='s', sort=CubeSort.SCISSORS, player=Player.BLACK)
-        Cube(name='s4', label='s', sort=CubeSort.SCISSORS, player=Player.BLACK)
+        return (validated, message)
 
 
 class Hexagon:
 
+    @enum.unique
+    class Direction(enum.IntEnum):
+        PHI_090 = 0
+        PHI_150 = 1
+        PHI_210 = 2
+        PHI_270 = 3
+        PHI_330 = 4
+        PHI_030 = 5
+        assert PHI_090 < PHI_150 < PHI_210 < PHI_270 < PHI_330 < PHI_030
+
+    HexagonDirection = TypeVar("HexagonDirection", bound="Hexagon.Direction")
+
+    # >> Optimizatoin of 'Hexagon.DIRECTION_ITERATOR = Hexagon.Direction' in expressions like 'for direction in Hexagon.DIRECTION_ITERATOR'
+    DIRECTION_ITERATOR = range(len(Direction))
+
+    Self = TypeVar("Self", bound="HexState")
+
+    NULL = 127 # >> Should be be representable as a byte
+
     __slots__ = ('name', 'position_uv', 'index')
 
-    __all_active_indices = []
     __all_indices = []
     __all_sorted_hexagons = []
     __init_done = False
@@ -358,13 +301,13 @@ class Hexagon:
     __next_snd_indices = []
     __position_uv_to_hexagon = {}
     __distance = {}
-    __distance_to_goal = None
+    __distance_to_goal = [[]]
 
 
     all = None # shortcut to Hexagon.get_all()
 
 
-    def __init__(self, name, position_uv):
+    def __init__(self, name: str, position_uv= Tuple[int, int]):
 
         assert name not in Hexagon.__name_to_hexagon
         assert len(position_uv) == 2
@@ -384,57 +327,56 @@ class Hexagon:
 
 
     @staticmethod
-    def get(name):
+    def distance(position_uv_1: Tuple[int, int], position_uv_2: Tuple[int, int]) -> float:
+        """reference: https://www.redblobgames.com/grids/hexagons/#distances"""
+        (u1, v1) = position_uv_1
+        (u2, v2) = position_uv_2
+        distance = (math.fabs(u1 - u2) + math.fabs(v1 - v2)+ math.fabs(u1 + v1 - u2 - v2))/2
+        return distance
+
+
+    @staticmethod
+    def get(name: str) ->Self:
         return Hexagon.__name_to_hexagon[name]
 
 
     @staticmethod
-    def get_all():
+    def get_all() -> Sequence[Self]:
         return Hexagon.__all_sorted_hexagons
 
 
     @staticmethod
-    def get_all_active_indices():
-        return Hexagon.__all_active_indices
-
-
-    @staticmethod
-    def get_all_indices():
+    def get_all_indices() -> Sequence[HexIndex]:
         return Hexagon.__all_indices
 
 
     @staticmethod
-    def get_goal_indices(player):
+    def get_goal_indices(player: Player.T) -> Sequence[HexIndex]:
         return Hexagon.__goal_indices[player]
 
 
     @staticmethod
-    def get_layout():
+    def get_layout() -> Sequence[Sequence[str]]:
         return Hexagon.__layout
 
 
     @staticmethod
-    def get_next_fst_active_indices(hexagon_index):
-        return [x for x in Hexagon.__next_fst_indices[hexagon_index] if x != Null.HEXAGON]
-
-
-    @staticmethod
-    def get_next_fst_indices(hexagon_index, hexagon_dir):
+    def get_next_fst_index(hexagon_index: HexIndex, hexagon_dir: HexagonDirection) -> HexIndex:
         return Hexagon.__next_fst_indices[hexagon_index][hexagon_dir]
 
 
     @staticmethod
-    def get_next_snd_indices(hexagon_index, hexagon_dir):
+    def get_next_snd_index(hexagon_index: HexIndex, hexagon_dir: HexagonDirection) -> HexIndex:
         return Hexagon.__next_snd_indices[hexagon_index][hexagon_dir]
 
 
     @staticmethod
-    def get_distance(hexagon_1_index, hexagon_2_index):
+    def get_distance(hexagon_1_index: HexIndex, hexagon_2_index: HexIndex) -> float:
         return Hexagon.__distance[(hexagon_1_index, hexagon_2_index)]
 
 
     @staticmethod
-    def get_distance_to_goal(hexagon_index, player):
+    def get_distance_to_goal(hexagon_index: HexIndex, player: Player.T) -> float:
         return Hexagon.__distance_to_goal[player][hexagon_index]
 
 
@@ -453,7 +395,7 @@ class Hexagon:
 
 
     @staticmethod
-    def show_all():
+    def print_hexagons():
         for hexagon in Hexagon.__all_sorted_hexagons:
             print(hexagon)
 
@@ -468,7 +410,6 @@ class Hexagon:
 
         for hexagon in Hexagon.__all_sorted_hexagons:
             Hexagon.__all_indices.append(hexagon.index)
-            Hexagon.__all_active_indices.append(hexagon.index)
 
         Hexagon.all = Hexagon.__all_sorted_hexagons
 
@@ -488,10 +429,10 @@ class Hexagon:
         white_goal_indices = array.array('b', map(lambda x: Hexagon.get(x).index, white_goal_hexagons))
         black_goal_indices = array.array('b', map(lambda x: Hexagon.get(x).index, black_goal_hexagons))
 
-        Hexagon.__goal_indices = [None for _ in Player]
+        Hexagon.__goal_indices = [None for _ in Player.T]
 
-        Hexagon.__goal_indices[Player.WHITE] = white_goal_indices
-        Hexagon.__goal_indices[Player.BLACK] = black_goal_indices
+        Hexagon.__goal_indices[Player.T.WHITE] = white_goal_indices
+        Hexagon.__goal_indices[Player.T.BLACK] = black_goal_indices
 
 
     @staticmethod
@@ -517,10 +458,10 @@ class Hexagon:
         for (hexagon_index, hexagon) in enumerate(Hexagon.__all_sorted_hexagons):
             (hexagon_u, hexagon_v) = hexagon.position_uv
 
-            Hexagon.__next_fst_indices[hexagon_index] = array.array('b', [Null.HEXAGON for _ in HexagonDirection])
-            Hexagon.__next_snd_indices[hexagon_index] = array.array('b', [Null.HEXAGON for _ in HexagonDirection])
+            Hexagon.__next_fst_indices[hexagon_index] = array.array('b', [Hexagon.NULL for _ in Hexagon.Direction])
+            Hexagon.__next_snd_indices[hexagon_index] = array.array('b', [Hexagon.NULL for _ in Hexagon.Direction])
 
-            for hexagon_dir in HexagonDirection:
+            for hexagon_dir in Hexagon.Direction:
                 hexagon_delta_u = Hexagon.__delta_u[hexagon_dir]
                 hexagon_delta_v = Hexagon.__delta_v[hexagon_dir]
 
@@ -543,16 +484,16 @@ class Hexagon:
     def __create_distance():
         for hexagon_1 in Hexagon.get_all():
             for hexagon_2 in Hexagon.get_all():
-                distance = hex_distance(hexagon_1.position_uv, hexagon_2.position_uv)
+                distance = Hexagon.distance(hexagon_1.position_uv, hexagon_2.position_uv)
                 Hexagon.__distance[(hexagon_1.index, hexagon_2.index)] = distance
 
 
     @staticmethod
     def __create_distance_to_goal():
 
-        Hexagon.__distance_to_goal = [ array.array('b',[ 0 for _ in Hexagon.get_all() ]) for _ in Player ]
+        Hexagon.__distance_to_goal = [array.array('b', [0 for _ in Hexagon.get_all()]) for _ in Player.T]
 
-        for player in Player:
+        for player in Player.T:
             for hexagon_cube in Hexagon.get_all():
                 for hexagon_goal_index in Hexagon.get_goal_indices(player):
                     distance = Hexagon.get_distance(hexagon_cube.index, hexagon_goal_index)
@@ -622,344 +563,860 @@ class Hexagon:
         Hexagon('g6', (1, 3))
 
 
-@enum.unique
-class SimpleNotationCase(enum.Enum):
+class HexState:
 
-    INVALID = 'invalid'
+    Self = TypeVar("Self", bound="HexState")
 
-    MOVE_CUBE = 'xx-xx'
-    MOVE_STACK = 'xx=xx'
+    CODE_BASE = HexCode((2*2*2)*(2*2*2)*2)
+    CODE_BASE_2 = CODE_BASE*CODE_BASE
+    CODE_BASE_3 = CODE_BASE_2*CODE_BASE
 
-    MOVE_CUBE_MOVE_STACK = 'xx-xx=xx'
-    MOVE_STACK_MOVE_CUBE = 'xx=xx-xx'
+    __slots__ = ('is_empty', 'has_stack', 'player', 'bottom', 'top', '__code')
 
+    def __init__(self,
+                 is_empty: bool=True,
+                 has_stack: bool=False,
+                 player: Optional[Player.T]=None,
+                 bottom: Optional[Cube.T]=None,
+                 top: Optional[Cube.T]=None):
 
-class Notation:
-
-    __slots__ = ()
-
-
-    def __init__(self):
-        assert False
-
-
-    @staticmethod
-    def move_cube(src_hexagon_name, dst_hexagon_name, capture, previous_action=None):
-        if previous_action is None:
-            notation = src_hexagon_name + "-" + dst_hexagon_name
+        if is_empty:
+            assert not has_stack
+            assert player is None
+            assert bottom is None
+            assert top is None
         else:
-            notation = previous_action.notation + "-" + dst_hexagon_name
+            assert player is not None
 
-        if capture == Capture.NONE:
-            pass
-
-        elif capture in (Capture.SOME_CUBE, Capture.SOME_STACK):
-            notation += "!"
-
-        else:
-            assert False
-
-        return notation
-
-
-    @staticmethod
-    def move_stack(src_hexagon_name, dst_hexagon_name, capture, previous_action=None):
-        if previous_action is None:
-            notation = src_hexagon_name + "=" + dst_hexagon_name
-        else:
-            notation = previous_action.notation + "=" + dst_hexagon_name
-
-        if capture == Capture.NONE:
-            pass
-
-        elif capture in (Capture.SOME_CUBE, Capture.SOME_STACK):
-            notation += "!"
-
-        else:
-            assert False
-
-        return notation
-
-
-    @staticmethod
-    def simplify_notation(notation):
-        return notation.strip().replace(' ', '').replace('!', '')
-
-
-    @staticmethod
-    def classify_notation(notation):
-        notation_simplified = Notation.simplify_notation(notation)
-        notation_case = Notation.classify_simple_notation(notation_simplified)
-
-        # guess number of capture
-        capture = 0
-        if re.match(r"^.*!.*$ ", notation):
-            capture += 1
-            if re.match(r"^.*![^!]+!.*$ ", notation):
-                capture += 1
-
-        return (notation_case, capture)
-
-
-    @staticmethod
-    def classify_simple_notation(notation):
-        if re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
-            # move cube
-            return SimpleNotationCase.MOVE_CUBE
-
-        elif re.match(r'^[a-i][1-9]=[a-i][1-9]$', notation):
-            # move stack
-            return SimpleNotationCase.MOVE_STACK
-
-        elif re.match(r'^[a-i][1-9]-[a-i][1-9]=[a-i][1-9]$', notation):
-            # move cube move stack
-            return SimpleNotationCase.MOVE_CUBE_MOVE_STACK
-
-        elif re.match(r'^[a-i][1-9]=[a-i][1-9]-[a-i][1-9]$', notation):
-            # move stack move cube
-            return SimpleNotationCase.MOVE_STACK_MOVE_CUBE
-
-        else:
-            return SimpleNotationCase.INVALID
-
-
-    @staticmethod
-    def validate_simple_notation(action_input, action_names):
-
-        def split_actions(action_names):
-            action_cases = {}
-
-            for this_name in action_names:
-                this_case = Notation.classify_simple_notation(this_name)
-                if this_case not in action_cases:
-                    action_cases[this_case] = set()
-                action_cases[this_case].add(this_name)
-
-            return action_cases
-
-
-        action_input_simplified = Notation.simplify_notation(action_input)
-
-        validated = action_input in action_names or action_input_simplified in action_names
-
-        if validated:
-            message = "validated action"
-
-        else:
-            action_cases = split_actions(action_names)
-            action_input_case = Notation.classify_simple_notation(action_input_simplified)
-
-            if action_input_case == SimpleNotationCase.INVALID:
-                message = "invalid action syntax !"
-
-            elif action_input_case not in action_cases:
-                message = f"{action_input_case.value} : impossible action !"
-
+            if has_stack:
+                assert bottom is not None and top is not None
+                if top == Cube.T.WISE:
+                    assert bottom == Cube.T.WISE
             else:
-                message = "invalid action !"
+                assert bottom is not None and top is None
 
-            # guess hints from each case of action
-            action_hints = []
-            for this_case in action_cases:
-                # find the longest match from the start
-                upper_length = min(len(action_input_simplified), len(this_case.value))
-                match_length = 0
-                for this_name in action_cases[this_case]:
-                    for end in range(match_length, upper_length + 1):
-                        if action_input_simplified[:end] == this_name[:end]:
-                            match_length = max(match_length, end)
-                        else:
-                            break
-
-                action_hints.append(action_input_simplified[:match_length] + this_case.value[match_length:])
-
-            if len(action_hints) == 1:
-                message += " hint : " + action_hints[0]
-            else:
-                message += " hints : " + "  ".join(action_hints)
-
-        return (validated, message)
+        self.is_empty = is_empty
+        self.has_stack = has_stack
+        self.player = player
+        self.bottom = bottom
+        self.top = top
+        self.__code = None
 
 
-class PijersiAction:
-
-    __slots__ = ('notation', 'state', 'some_captures')
-
-
-    def __init__(self, notation, state, capture=Capture.NONE, previous_action=None):
-        self.notation = notation
-        self.state = state
-        self.some_captures = set()
-
-        if previous_action is not None:
-            self.some_captures.update(previous_action.some_captures)
-
-        if capture in (Capture.SOME_CUBE, Capture.SOME_STACK):
-            self.some_captures.add(capture)
-
-        else:
-            assert capture == Capture.NONE
+    @staticmethod
+    def make_empty() -> Self:
+        return HexState()
 
 
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                id(self.state) == id(other.state) and
-                self.notation == other.notation)
+    @staticmethod
+    def make_single(player: Player.T, cube: Cube.T) -> Self:
+        return HexState(player=player, bottom=cube, is_empty=False)
 
 
-    def __hash__(self):
-        return hash((id(self.state), self.notation))
+    @staticmethod
+    def make_stack(player: Player.T, bottom: Cube.T, top: Cube.T) -> Self:
+        return HexState(player=player, bottom=bottom, top=top, is_empty=False, has_stack=True)
 
 
-    def __repr__(self):
+    def __str__(self: Self) -> str:
+        return ( f"HexState(is_empty={self.is_empty}" +
+                 f", has_stack={self.has_stack}" +
+                 f", player={self.player.name if self.player is not None else None}" +
+                 f", bottom={self.bottom.name if self.bottom is not None else None}" +
+                 f", top={self.top.name if self.top is not None else None})" )
+
+
+    def __repr__(self: Self) -> str:
         return str(self)
 
 
-    def __str__(self):
-        return self.notation
+    def __eq__(self, other: Self) -> bool:
+        return (self.is_empty == other.is_empty and
+                self.has_stack == other.has_stack and
+                self.player == other.player and
+                self.bottom == other.bottom and
+                self.top == other.top)
+
+
+    def encode(self) -> HexCode:
+        if self.__code is None:
+            code = 0
+            code +=   (0 if self.is_empty else 1)
+            code += 2*(1 if self.has_stack else 0)
+            code += 4*(self.player.value if self.player is not None else 0)
+            code += 8*(self.bottom.value if self.bottom is not None else 0)
+            code += 32*(self.top.value if self.top is not None else 0)
+
+            assert 0 <= code < HexState.CODE_BASE
+
+            if self.is_empty:
+                assert code == 0
+
+            self.__code = code
+
+        return self.__code
+
+
+    @staticmethod
+    def decode(code: HexCode) -> Self:
+
+        assert 0 <= code < HexState.CODE_BASE
+
+        is_empty = True
+        has_stack = False
+        player = None
+        bottom = None
+        top = None
+
+        rest = code
+
+        bit_empty = rest % 2
+        rest = rest // 2
+        is_empty = bit_empty == 0
+
+        if not is_empty:
+            bit_stack = rest % 2
+            rest = rest // 2
+            has_stack = bit_stack != 0
+
+            bit_player = rest % 2
+            rest = rest // 2
+            player = tuple(Player.T)[bit_player]
+
+            bits_bottom = rest % 4
+            rest = rest // 4
+            bottom = tuple(Cube.T)[bits_bottom]
+
+            if has_stack:
+                bits_top = rest % 4
+                rest = rest // 4
+                top = tuple(Cube.T)[bits_top]
+
+        assert rest == 0
+
+        return HexState(is_empty=is_empty, has_stack=has_stack, player=player, bottom=bottom, top=top)
+
+
+    @staticmethod
+    def iterate_hex_states() -> Iterable[Self]:
+
+        for is_empty in (True, False):
+
+            if is_empty:
+                has_stack = False
+                player = None
+                bottom = None
+                top = None
+                yield HexState(is_empty=is_empty,
+                               has_stack=has_stack,
+                               player=player,
+                               bottom=bottom,
+                               top=top)
+
+            else:
+                for player in Player.T:
+                    for bottom in Cube.T:
+                        for has_stack in (True, False):
+                            if has_stack:
+                                if bottom == Cube.T.WISE:
+                                    for top in Cube.T:
+                                        yield HexState(is_empty=is_empty,
+                                                       has_stack=has_stack,
+                                                       player=player,
+                                                       bottom=bottom,
+                                                       top=top)
+                                else:
+                                    for top in (Cube.T.ROCK, Cube.T.PAPER, Cube.T.SCISSORS):
+                                        yield HexState(is_empty=is_empty,
+                                                       has_stack=has_stack,
+                                                       player=player,
+                                                       bottom=bottom,
+                                                       top=top)
+                            else:
+                                top = None
+                                yield HexState(is_empty=is_empty,
+                                               has_stack=has_stack,
+                                               player=player,
+                                               bottom=bottom,
+                                               top=top)
+
+
+PathStates = Sequence[HexState]
+BoardStates = Sequence[HexState]
+
+
+@dataclass
+class PijersiAction:
+    Self = TypeVar("Self", bound="PijersiAction")
+
+    next_board_codes: Optional[(BoardCodes)] = None
+    path_vertices: Optional[Path] = None
+    capture_code: Optional[CaptureCode] = None
+    move_code: Optional[MoveCode] = None
+
+    __TABLE_MOVE_CODE_TO_NAMES = [None for _ in range(4)]
+    __TABLE_MOVE_CODE_TO_NAMES[0] = ['-', '']
+    __TABLE_MOVE_CODE_TO_NAMES[1] = ['=', '-']
+    __TABLE_MOVE_CODE_TO_NAMES[2] = ['-', '=']
+    __TABLE_MOVE_CODE_TO_NAMES[3] = ['=', '-']
+
+    __TABLE_CAPTURE_CODE_TO_NAMES = [None for _ in range(4)]
+    __TABLE_CAPTURE_CODE_TO_NAMES[0] = ['', '']
+    __TABLE_CAPTURE_CODE_TO_NAMES[1] = ['!', '']
+    __TABLE_CAPTURE_CODE_TO_NAMES[2] = ['', '!']
+    __TABLE_CAPTURE_CODE_TO_NAMES[3] = ['!', '!']
+
+
+    def __str__(self: Self) -> str:
+
+        hexagons = Hexagon.get_all()
+
+        hex_names = [hexagons[hex_index].name for hex_index in self.path_vertices]
+        move_names = PijersiAction.__TABLE_MOVE_CODE_TO_NAMES[self.move_code]
+        capture_names = PijersiAction.__TABLE_CAPTURE_CODE_TO_NAMES[self.capture_code]
+
+        action_name = hex_names[0]
+        for (move_name, hex_name, capture_name) in zip(move_names, hex_names[1:], capture_names):
+            action_name += move_name + hex_name + capture_name
+
+        return action_name
+
+
+    def __hash__(self):
+        return hash((*self.path_vertices, self.move_code))
 
 
 class PijersiState:
 
+    Self = TypeVar("Self", bound="PijersiState")
+
+    __init_done = False
     __max_credit = 20
-    __center_hexagon_indices = None
-    __use_random_find = False
-
-    __slots__ = ('__cube_status', '__hexagon_bottom', '__hexagon_top',
-                 '__credit', '__player', '__turn',
-                 '__actions', '__actions_by_simple_names', '__actions_by_names',
-                 '__taken', '__terminal_case', '__terminated', '__rewards')
+    __slots__ = ('__board_codes', '__player', '__credit', '__turn',
+                 '__actions', '__actions_by_names', '__actions_by_simple_names',
+                 '__is_terminal_cache', '__has_action_cache', '__player_is_arrived_cache')
 
 
-    def __init__(self):
+    __TABLE_HAS_CUBE = None
+    __TABLE_HAS_STACK = None
 
-        self.__cube_status = None
-        self.__hexagon_bottom = None
-        self.__hexagon_top = None
+    __TABLE_CUBE_COUNT = None
 
-        self.__credit = PijersiState.__max_credit
-        self.__player = Player.WHITE
-        self.__turn = 1
+    __TABLE_HAS_FIGHTER = None
+    __TABLE_FIGHTER_COUNT = None
 
+    __TABLE_CUBE_COUNT_BY_SORT = None
+
+    __TABLE_MAKE_PATH1 = None
+    __TABLE_MAKE_PATH2 = None
+
+    __TABLE_GOAL_INDICES = None
+    __TABLE_GOAL_DISTANCES = None
+
+    __TABLE_TRY_CUBE_PATH1_NEXT_CODE = None
+    __TABLE_TRY_CUBE_PATH1_CAPTURE_CODE = None
+
+    __TABLE_TRY_STACK_PATH1_NEXT_CODE = None
+    __TABLE_TRY_STACK_PATH1_CAPTURE_CODE = None
+
+    __TABLE_TRY_STACK_PATH2_NEXT_CODE = None
+    __TABLE_TRY_STACK_PATH2_CAPTURE_CODE = None
+
+
+    def __init__(self,
+                 board_codes: Optional[BoardCodes]=None,
+                 player: Player.T=Player.T.WHITE,
+                 credit: Optional[int]=None,
+                 turn: int=1):
+
+
+        self.__board_codes = board_codes if board_codes is not None else PijersiState.__make_default_board_codes()
+        self.__player = player
+        self.__credit = credit if credit is not None else PijersiState.__max_credit
+        self.__turn = turn
         self.__actions = None
-        self.__actions_by_simple_names = None
         self.__actions_by_names = None
-        self.__taken = False
-        self.__terminal_case = None
-        self.__terminated = None
-        self.__rewards = None
-
-        self.__init_hexagon_top_and_bottom()
-        self.__init_cube_status()
-        self.__init_center_hexagon_indices()
+        self.__actions_by_simple_names = None
+        self.__is_terminal_cache = None
+        self.__has_action_cache = None
+        self.__player_is_arrived_cache = None
 
 
-    def __fork(self):
-
-        state = copy.copy(self)
-
-        state.__cube_status = copy.deepcopy(state.__cube_status)
-        state.__hexagon_bottom = copy.deepcopy(state.__hexagon_bottom)
-        state.__hexagon_top = copy.deepcopy(state.__hexagon_top)
-
-        state.__actions = None
-        state.__actions_by_simple_names = None
-        state.__actions_by_names = None
-        state.__taken = False
-        state.__terminal_case = None
-        state.__terminated = None
-        state.__rewards = None
-
-        return state
+    @staticmethod
+    def init():
 
 
-    def __init_cube_status(self):
+        def create_table_has_cube() -> Sequence[Sequence[int]]:
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player.T]
 
-        self.__cube_status = array.array('b', [CubeStatus.ACTIVATED for _ in Cube.all])
+            for hex_state in HexState.iterate_hex_states():
 
-        for (cube_index, cube) in enumerate(Cube.all):
+                if not hex_state.is_empty:
+                    count = 1
+                    hex_code = hex_state.encode()
+                    table[hex_state.player][hex_code] = count
 
-            if not (cube_index in self.__hexagon_bottom or cube_index in self.__hexagon_top):
-                self.__cube_status[cube_index] = CubeStatus.UNUSED
-
-
-    def __init_hexagon_top_and_bottom(self):
-
-        self.__hexagon_top = array.array('b', [Null.CUBE for _ in Hexagon.all])
-        self.__hexagon_bottom = array.array('b', [Null.CUBE for _ in Hexagon.all])
-
-        # whites
-        self.__set_cube_at_hexagon_by_names('R1', 'a1')
-        self.__set_cube_at_hexagon_by_names('P1', 'a2')
-        self.__set_cube_at_hexagon_by_names('S1', 'a3')
-        self.__set_cube_at_hexagon_by_names('R2', 'a4')
-        self.__set_cube_at_hexagon_by_names('P2', 'a5')
-        self.__set_cube_at_hexagon_by_names('S2', 'a6')
-
-        self.__set_cube_at_hexagon_by_names('P3', 'b1')
-        self.__set_cube_at_hexagon_by_names('S3', 'b2')
-        self.__set_cube_at_hexagon_by_names('R3', 'b3')
-        self.__set_cube_at_hexagon_by_names('S4', 'b5')
-        self.__set_cube_at_hexagon_by_names('R4', 'b6')
-        self.__set_cube_at_hexagon_by_names('P4', 'b7')
-
-        self.__set_cube_at_hexagon_by_names('W1', 'b4')
-        self.__set_cube_at_hexagon_by_names('W2', 'b4')
+            return table
 
 
-        # blacks
-        self.__set_cube_at_hexagon_by_names('r1', 'g6')
-        self.__set_cube_at_hexagon_by_names('p1', 'g5')
-        self.__set_cube_at_hexagon_by_names('s1', 'g4')
-        self.__set_cube_at_hexagon_by_names('r2', 'g3')
-        self.__set_cube_at_hexagon_by_names('p2', 'g2')
-        self.__set_cube_at_hexagon_by_names('s2', 'g1')
+        def create_table_has_stack() -> Sequence[Sequence[int]]:
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player.T]
 
-        self.__set_cube_at_hexagon_by_names('p3', 'f7')
-        self.__set_cube_at_hexagon_by_names('s3', 'f6')
-        self.__set_cube_at_hexagon_by_names('r3', 'f5')
-        self.__set_cube_at_hexagon_by_names('s4', 'f3')
-        self.__set_cube_at_hexagon_by_names('r4', 'f2')
-        self.__set_cube_at_hexagon_by_names('p4', 'f1')
+            for hex_state in HexState.iterate_hex_states():
 
-        self.__set_cube_at_hexagon_by_names('w1', 'f4')
-        self.__set_cube_at_hexagon_by_names('w2', 'f4')
+                if not hex_state.is_empty and hex_state.has_stack:
+                    count = 1
+                    hex_code = hex_state.encode()
+                    table[hex_state.player][hex_code] = count
+
+            return table
 
 
-    def __init_center_hexagon_indices(self):
+        def create_table_cube_count() -> Sequence[Sequence[int]]:
+            table = [array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player.T]
 
-        if PijersiState.__center_hexagon_indices is None:
+            for hex_state in HexState.iterate_hex_states():
 
-            center_names = [ 'e3', 'e4',
-                            'd3', 'd4', 'd5',
-                            'c3', 'c4']
+                if not hex_state.is_empty:
 
-            PijersiState.__center_hexagon_indices = array.array('b',
-                                                         [Hexagon.get(name).index for name in center_names])
+                    if hex_state.has_stack:
+                        count = 2
+                    else:
+                        count = 1
+
+                    hex_code = hex_state.encode()
+                    table[hex_state.player][hex_code] = count
+
+            return table
 
 
-    def __set_cube_at_hexagon_by_names(self, cube_name, hexagon_name):
-        cube_index = Cube.get(cube_name).index
-        hexagon_index = Hexagon.get(hexagon_name).index
-        self.__set_cube_at_hexagon(cube_index, hexagon_index)
+        def create_table_has_fighter() -> Sequence[Sequence[int]]:
+            table = [array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player.T]
+
+            for hex_state in HexState.iterate_hex_states():
+
+                if not hex_state.is_empty:
+
+                    if hex_state.has_stack:
+                        count = 0
+                        count = max(count, 1 if hex_state.bottom != Cube.T.WISE else 0)
+                        count = max(count, 1 if hex_state.top != Cube.T.WISE else 0)
+                    else:
+                        count = 1 if hex_state.bottom != Cube.T.WISE else 0
+
+                    hex_code = hex_state.encode()
+                    table[hex_state.player][hex_code] = count
+
+            return table
 
 
-    def __set_cube_at_hexagon(self, cube_index, hexagon_index):
+        def create_table_fighter_count() -> Sequence[Sequence[int]]:
+            table = [array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)]) for _ in Player.T]
 
-        if self.__hexagon_bottom[hexagon_index] == Null.CUBE:
-            # hexagon has zero cube
-            self.__hexagon_bottom[hexagon_index] = cube_index
+            for hex_state in HexState.iterate_hex_states():
 
-        elif self.__hexagon_top[hexagon_index] == Null.CUBE:
-            # hexagon has one cube
-            self.__hexagon_top[hexagon_index] = cube_index
+                if not hex_state.is_empty:
+
+                    if hex_state.has_stack:
+                        count = 0
+                        count += 1 if hex_state.bottom != Cube.T.WISE else 0
+                        count += 1 if hex_state.top != Cube.T.WISE else 0
+                    else:
+                        count = 1 if hex_state.bottom != Cube.T.WISE else 0
+
+                    hex_code = hex_state.encode()
+                    table[hex_state.player][hex_code] = count
+
+            return table
+
+
+        def create_table_cube_count_by_sort() ->Sequence[Sequence[Sequence[int]]] :
+            table = [[array.array(ARRAY_TYPE_COUNTER, [0 for _ in range(HexState.CODE_BASE)])
+                       for _ in Cube.T] for _ in Player.T]
+
+            for hex_state in HexState.iterate_hex_states():
+
+                if not hex_state.is_empty:
+                    hex_code = hex_state.encode()
+
+                    if hex_state.has_stack:
+                        table[hex_state.player][hex_state.bottom][hex_code] += 1
+                        table[hex_state.player][hex_state.top][hex_code] += 1
+                    else:
+                        table[hex_state.player][hex_state.bottom][hex_code] += 1
+
+            return table
+
+
+        def create_table_make_path1() -> Sequence[Optional[Sequence[int]]]:
+
+            table = [[None for direction in Hexagon.Direction] for source in Hexagon.get_all_indices()]
+
+            for source in Hexagon.get_all_indices():
+                for direction in Hexagon.Direction:
+
+                    path= None
+                    next_fst_hex = Hexagon.get_next_fst_index(source, direction)
+                    if next_fst_hex != Hexagon.NULL:
+                        path = [source, next_fst_hex]
+
+                    table[source][direction] = path
+
+            return table
+
+
+        def create_table_make_path2() -> Sequence[Optional[Sequence[int]]]:
+
+            table = [[None for direction in Hexagon.Direction] for source in Hexagon.get_all_indices()]
+
+            for source in Hexagon.get_all_indices():
+                for direction in Hexagon.Direction:
+
+                    path = None
+                    next_fst_hex = Hexagon.get_next_fst_index(source, direction)
+                    if next_fst_hex != Hexagon.NULL:
+                        next_snd_hex = Hexagon.get_next_snd_index(source, direction)
+                        if next_snd_hex != Hexagon.NULL:
+                            path = [source, next_fst_hex, next_snd_hex]
+
+                    table[source][direction] = path
+
+            return table
+
+
+        def create_table_goal_indices() -> Sequence[Sequence[int]]:
+            return [Hexagon.get_goal_indices(player) for player in Player.T]
+
+
+        def create_table_goal_distances() -> Sequence[Sequence[int]]:
+            return [[Hexagon.get_distance_to_goal(hex_index, player)
+                      for hex_index in Hexagon.get_all_indices()] for player in Player.T]
+
+
+        def create_tables_try_cube_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
+            table_next_code = array.array(ARRAY_TYPE_STATE_2, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
+
+            for src_state in HexState.iterate_hex_states():
+                for dst_state in HexState.iterate_hex_states():
+                    code = PijersiState.encode_path_states([src_state, dst_state])
+
+                    next_code = 0
+                    capture_code = 0
+
+                    next_src_state = None
+                    next_dst_state = None
+
+                    if not src_state.is_empty:
+
+                        if dst_state.is_empty:
+                            #-- Just moves without stacking rules involved
+                            if src_state.has_stack:
+                                next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+                                next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.top)
+
+                            else:
+                                next_src_state = HexState.make_empty()
+                                next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+
+                        elif dst_state.player == src_state.player:
+                            # >> Stacking rules must be considered
+                            if not dst_state.has_stack:
+                                # == Destination has a single cube owned by the active player
+                                if src_state.has_stack:
+                                    if src_state.top != Cube.T.WISE or (src_state.top == Cube.T.WISE and dst_state.bottom == Cube.T.WISE):
+                                        next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+                                        next_dst_state = HexState.make_stack(player=src_state.player, bottom=dst_state.bottom, top=src_state.top)
+
+                                else:
+                                    if src_state.bottom != Cube.T.WISE or (src_state.bottom == Cube.T.WISE and dst_state.bottom == Cube.T.WISE):
+                                        next_src_state = HexState.make_empty()
+                                        next_dst_state = HexState.make_stack(player=src_state.player, bottom=dst_state.bottom, top=src_state.bottom)
+
+                        else:
+                            # >> Capturing rules must be considered
+                            if dst_state.has_stack:
+                                # == Destination has a stack owned by the non-active player
+
+                                if src_state.has_stack:
+                                    if Cube.beats(src_state.top, dst_state.top):
+                                        capture_code = 1
+                                        next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+                                        next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.top)
+
+                                else:
+                                    if Cube.beats(src_state.bottom, dst_state.top):
+                                        capture_code = 1
+                                        next_src_state = HexState.make_empty()
+                                        next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+
+                            else:
+                                # == Destination has a single cube owned by the non-active player
+
+                                if src_state.has_stack:
+                                    if Cube.beats(src_state.top, dst_state.bottom):
+                                        capture_code = 1
+                                        next_src_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+                                        next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.top)
+                                else:
+                                    if Cube.beats(src_state.bottom, dst_state.bottom):
+                                        capture_code = 1
+                                        next_src_state = HexState.make_empty()
+                                        next_dst_state = HexState.make_single(player=src_state.player, cube=src_state.bottom)
+
+                        if next_src_state is not None and next_dst_state is not None:
+                            next_code = PijersiState.encode_path_states([next_src_state, next_dst_state])
+
+                    table_next_code[code] = next_code
+                    table_has_capture[code] = capture_code
+
+            return (table_next_code, table_has_capture)
+
+
+        def create_tables_try_stack_path(table_next_code: Sequence[PathCode] ,
+                                       table_has_capture: Sequence[CaptureCode],
+                                       next_mid_state=Optional[HexState]) -> None:
+
+            for src_state in HexState.iterate_hex_states():
+                for dst_state in HexState.iterate_hex_states():
+                    code = PijersiState.encode_path_states([src_state, dst_state])
+
+                    next_code = 0
+                    capture_code = 0
+
+                    next_src_state = None
+                    next_dst_state = None
+
+                    if not src_state.is_empty and src_state.has_stack:
+
+                        if dst_state.is_empty:
+                            #-- Just moves without stacking rules involved
+                            next_src_state = HexState.make_empty()
+                            next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+
+                        elif dst_state.player != src_state.player:
+                            # >> Capturing rules must be considered
+
+                            if dst_state.has_stack:
+                                # == Destination has a stack owned by the non-active player
+                                if Cube.beats(src_state.top, dst_state.top):
+                                    capture_code = 1
+                                    next_src_state = HexState.make_empty()
+                                    next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+
+                            else:
+                                # == Destination has a single cube owned by the non-active player
+                                if Cube.beats(src_state.top, dst_state.bottom):
+                                    capture_code = 1
+                                    next_src_state = HexState.make_empty()
+                                    next_dst_state = HexState.make_stack(player=src_state.player, bottom=src_state.bottom, top=src_state.top)
+
+                        if next_src_state is not None and next_dst_state is not None:
+
+                            if next_mid_state is None:
+                                next_code = PijersiState.encode_path_states([next_src_state, next_dst_state])
+
+                            else:
+                                next_code = PijersiState.encode_path_states([next_src_state, next_mid_state, next_dst_state])
+
+                    table_next_code[code] = next_code
+                    table_has_capture[code] = capture_code
+
+            return (table_next_code, table_has_capture )
+
+
+        def create_tables_try_stack_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
+            table_next_code = array.array(ARRAY_TYPE_STATE_2, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
+
+            create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=None)
+
+            return (table_next_code, table_has_capture)
+
+
+        def create_tables_try_stack_path2() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
+            table_next_code = array.array(ARRAY_TYPE_STATE_3, [0 for _ in range(HexState.CODE_BASE_2)])
+            table_has_capture = array.array(ARRAY_TYPE_BOOL, [0 for _ in range(HexState.CODE_BASE_2)])
+
+            create_tables_try_stack_path(table_next_code, table_has_capture, next_mid_state=HexState.make_empty())
+
+            return (table_next_code, table_has_capture)
+
+
+        if not PijersiState.__init_done:
+
+            PijersiState.__TABLE_HAS_CUBE = create_table_has_cube()
+            PijersiState.__TABLE_HAS_STACK = create_table_has_stack()
+
+            PijersiState.__TABLE_CUBE_COUNT = create_table_cube_count()
+
+            PijersiState.__TABLE_HAS_FIGHTER = create_table_has_fighter()
+
+            PijersiState.__TABLE_FIGHTER_COUNT= create_table_fighter_count()
+
+            PijersiState.__TABLE_CUBE_COUNT_BY_SORT = create_table_cube_count_by_sort()
+
+            PijersiState.__TABLE_MAKE_PATH1 = create_table_make_path1()
+            PijersiState.__TABLE_MAKE_PATH2 = create_table_make_path2()
+
+            PijersiState.__TABLE_GOAL_INDICES = create_table_goal_indices()
+            PijersiState.__TABLE_GOAL_DISTANCES = create_table_goal_distances()
+
+            ( PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE,
+              PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE ) =  create_tables_try_cube_path1()
+
+            ( PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE,
+              PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE ) = create_tables_try_stack_path1()
+
+            ( PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE,
+              PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE ) = create_tables_try_stack_path2()
+
+            PijersiState.__init_done = True
+
+
+    @staticmethod
+    def print_tables():
+
+
+        def print_table_has_cube():
+            print()
+            print("-- print_table_has_cube --")
+            print(PijersiState.__TABLE_HAS_CUBE)
+
+
+        def print_table_has_stack():
+            print()
+            print("-- print_table_has_stack --")
+            print(PijersiState.__TABLE_HAS_STACK)
+
+
+        def print_table_cube_count():
+            print()
+            print("-- print_table_cube_count --")
+            print(PijersiState.__TABLE_CUBE_COUNT)
+
+
+        def print_table_has_fighter():
+            print()
+            print("-- print_table_has_fighter --")
+            print(PijersiState.__TABLE_HAS_FIGHTER)
+
+
+        def print_table_fighter_count():
+            print()
+            print("-- print_table_fighter_count --")
+            print(PijersiState.__TABLE_FIGHTER_COUNT)
+
+
+        def print_table_cube_count_by_sort():
+            print()
+            print("-- print_table_cube_count_by_sort --")
+            print(PijersiState.__TABLE_CUBE_COUNT_BY_SORT)
+
+
+        def print_table_make_path1():
+            print()
+            print("-- print_table_make_path1 --")
+            print(PijersiState.__TABLE_MAKE_PATH1)
+
+
+        def print_table_make_path2():
+            print()
+            print("-- print_table_make_path2 --")
+            print(PijersiState.__TABLE_MAKE_PATH2)
+
+
+        def print_table_goal_indices():
+            print()
+            print("-- print_table_goal_indices --")
+            print(PijersiState.__TABLE_GOAL_INDICES)
+
+
+        def print_table_goal_distances():
+            print()
+            print("-- print_table_goal_distances --")
+            print(PijersiState.__TABLE_GOAL_DISTANCES)
+
+
+        def print_tables_try_cube_path1():
+            print()
+            print("-- print_tables_try_cube_path1 --")
+            print(PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE)
+            print(PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE)
+
+
+        def print_tables_try_stack_path1():
+            print()
+            print("-- print_tables_try_stack_path1 --")
+            print(PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE)
+            print(PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE)
+
+
+        def print_tables_try_stack_path2():
+            print()
+            print("-- print_tables_try_stack_path2 --")
+            print(PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE)
+            print(PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
+
+
+        print_table_cube_count()
+        print_table_cube_count_by_sort()
+        print_table_has_cube()
+        print_table_has_stack()
+        print_table_fighter_count()
+        print_table_has_fighter()
+
+        print_table_make_path1()
+        print_table_make_path2()
+
+        print_table_goal_indices()
+        print_table_goal_distances()
+
+        print_tables_try_cube_path1()
+        print_tables_try_stack_path1()
+        print_tables_try_stack_path2()
+
+
+    @staticmethod
+    def get_max_credit() -> int:
+        return PijersiState.__max_credit
+
+
+    @staticmethod
+    def set_max_credit(max_credit: int):
+        assert max_credit > 0
+        PijersiState.__max_credit = max_credit
+
+
+    def get_credit(self) -> int:
+        return self.__credit
+
+
+    def get_current_player(self) -> Player.T:
+        return self.__player
+
+
+    def get_other_player(self) -> Player.T:
+        return Player.T.BLACK if self.__player == Player.T.WHITE else Player.T.WHITE
+
+
+    def get_turn(self) -> int:
+        return self.__turn
+
+
+    def is_terminal(self, use_cache: bool=True) -> bool:
+        if not use_cache or self.__is_terminal_cache is None:
+            self.__is_terminal_cache = (self.__player_is_arrived(Player.T.WHITE, use_cache) or
+                                        self.__player_is_arrived(Player.T.BLACK, use_cache) or
+                                        self.__credit == 0 or
+                                        not self.__has_action(use_cache))
+        return self.__is_terminal_cache
+
+
+    def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
+
+        rewards = [None for player in Player.T]
+
+        if self.__player_is_arrived(Player.T.WHITE):
+            rewards[Player.T.WHITE] = Reward.WIN
+            rewards[Player.T.BLACK] = Reward.LOSS
+
+        elif self.__player_is_arrived(Player.T.BLACK):
+            rewards[Player.T.BLACK] = Reward.WIN
+            rewards[Player.T.WHITE] = Reward.LOSS
+
+        elif self.__credit == 0:
+            rewards[Player.T.WHITE] = Reward.DRAW
+            rewards[Player.T.BLACK] = Reward.DRAW
+
+        elif not self.__has_action():
+
+            if self.__player == Player.T.WHITE:
+                rewards[Player.T.BLACK] = Reward.WIN
+                rewards[Player.T.WHITE] = Reward.LOSS
+
+            elif self.__player == Player.T.BLACK:
+                rewards[Player.T.WHITE] = Reward.WIN
+                rewards[Player.T.BLACK] = Reward.LOSS
 
         else:
-            # hexagon is expected with either zero or one cube
-            assert False
+            rewards = None
+
+        return rewards
 
 
-    def get_show_text(self):
+    def get_actions(self, use_cache: bool=True) -> Sequence[PijersiAction]:
+
+        if not use_cache or self.__actions is None:
+            self.__actions = self.__find_all_actions()
+        return self.__actions
+
+
+    def get_action_names(self) -> Sequence[str]:
+
+        if self.__actions_by_names is None:
+            self.__actions_by_names = {str(action):action for action in self.get_actions()}
+        return self.__actions_by_names.keys()
+
+
+    def get_action_simple_names(self) -> Sequence[str]:
+
+        if self.__actions_by_simple_names is None:
+            self.__actions_by_simple_names = {str(action).replace('!', ''):action for action in self.get_actions()}
+        return self.__actions_by_simple_names.keys()
+
+
+    def get_action_by_name(self, action_name: str) -> PijersiAction:
+        _ = self.get_action_names()
+        return self.__actions_by_names[action_name]
+
+
+    def get_action_by_simple_name(self, action_name: str) -> PijersiAction:
+        _ = self.get_action_simple_names()
+        return self.__actions_by_simple_names[action_name]
+
+
+    def take_action(self, action: PijersiAction) -> Self:
+
+        return PijersiState(board_codes=action.next_board_codes,
+                            player=self.get_other_player(),
+                            credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
+                            turn=self.__turn + 1)
+
+
+    def take_action_by_name(self, action_name: str) -> Self:
+        action = self.get_action_names()[action_name.replace('!', '')]
+        return self.take_action(action)
+
+
+    def take_action_by_simple_name(self, action_name: str) -> Self:
+        return self.take_action_by_name(action_name)
+
+
+    def get_fighter_counts(self)-> Sequence[int]:
+        return [sum((PijersiState.__TABLE_FIGHTER_COUNT[player][hex_code] for hex_code in self.__board_codes)) for player in Player.T]
+
+
+    def get_cube_counts(self)-> Sequence[int]:
+        return [sum((PijersiState.__TABLE_CUBE_COUNT[player][hex_code] for hex_code in self.__board_codes)) for player in Player.T]
+
+
+    def get_distances_to_goal(self) -> Sequence[Sequence[int]]:
+        """White and black distances to goal"""
+
+        distances_to_goal = []
+
+        for player in Player.T:
+            has_fighter = PijersiState.__TABLE_HAS_FIGHTER[player]
+            goal_distances = PijersiState.__TABLE_GOAL_DISTANCES[player]
+
+            distances_to_goal.append([goal_distances[hex_index]
+                                         for (hex_index, hex_code) in enumerate(self.__board_codes)
+                                         if has_fighter[hex_code] != 0])
+        return distances_to_goal
+
+
+    def get_show_text(self) -> str:
 
         show_text = ""
 
@@ -975,29 +1432,28 @@ class PijersiState:
                 hexagon = Hexagon.get(hexagon_name)
                 hexagon_index = hexagon.index
 
-                top_index = self.__hexagon_top[hexagon_index]
-                bottom_index = self.__hexagon_bottom[hexagon_index]
+                hex_state = HexState.decode(self.__board_codes[hexagon_index])
 
-                if bottom_index == Null.CUBE:
+                if hex_state.is_empty:
                     row_text += ".."
 
-                elif top_index == Null.CUBE:
-                    bottom_label = Cube.all[bottom_index].label
+                elif not hex_state.has_stack:
+                    bottom_label = Cube.to_name(hex_state.player, hex_state.bottom)
                     row_text += "." + bottom_label
 
-                elif top_index != Null.CUBE:
-                    top_label = Cube.all[top_index].label
-                    bottom_label = Cube.all[bottom_index].label
+                elif hex_state.has_stack:
+                    bottom_label = Cube.to_name(hex_state.player, hex_state.bottom)
+                    top_label = Cube.to_name(hex_state.player, hex_state.top)
                     row_text += top_label + bottom_label
 
-                else:
-                    assert False
-
                 row_text += shift
-
             show_text += row_text + "\n"
 
         return show_text
+
+
+    def get_hexStates(self) -> Sequence[HexState]:
+        return [HexState.decode(code) for code in self.__board_codes]
 
 
     def show(self):
@@ -1007,769 +1463,537 @@ class PijersiState:
         print(self.get_summary())
 
 
-    def get_center_hexagon_indices(self):
-        return PijersiState.__center_hexagon_indices
+    def get_summary(self) -> str:
 
+        counters = Counter()
 
-    def get_capture_counts(self):
-        counts = [0 for _ in Player]
+        for player in Player.T:
+            player_codes = [self.__board_codes[hex_index] for hex_index in PijersiState.__find_cube_sources(self.__board_codes, player)]
 
-        for (cube_index, cube_status) in enumerate(self.__cube_status):
-
-            if cube_status == CubeStatus.CAPTURED:
-                cube = Cube.all[cube_index]
-                counts[cube.player] += 1
-
-        return counts
-
-
-    def get_fighter_counts(self):
-        counts = [0 for _ in Player]
-
-        for (cube_index, cube_status) in enumerate(self.__cube_status):
-
-            if cube_status == CubeStatus.ACTIVATED:
-                cube = Cube.all[cube_index]
-                if cube.sort in (CubeSort.PAPER, CubeSort.ROCK, CubeSort.SCISSORS):
-                    counts[cube.player] += 1
-
-        return counts
-
-
-    def get_distances_to_goal(self):
-        """White and black distances to goal"""
-
-        distances_to_goal = [[] for _ in Player]
-
-        for (cube_index, cube_status) in enumerate(self.__cube_status):
-
-            if cube_status == CubeStatus.ACTIVATED:
-                cube = Cube.all[cube_index]
-
-                if cube.sort != CubeSort.WISE:
-
-                    if cube_index in self.__hexagon_bottom:
-                        cube_hexagon_index = self.__hexagon_bottom.index(cube_index)
-
-                    else:
-                        cube_hexagon_index = self.__hexagon_top.index(cube_index)
-
-                    distance = Hexagon.get_distance_to_goal(cube_hexagon_index, cube.player)
-
-                    distances_to_goal[cube.player].append(distance)
-
-        return distances_to_goal
-
-
-    def get_summary(self):
-
-        counters = collections.Counter()
-
-        for cube in Cube.all:
-            counters[cube.label] = 0
-
-        for (cube_index, cube_status) in enumerate(self.__cube_status):
-            cube = Cube.all[cube_index]
-
-            if cube_status == CubeStatus.ACTIVATED:
-                counters[cube.label] += 1
+            for cube in Cube.T:
+                player_cube_table = PijersiState.__TABLE_CUBE_COUNT_BY_SORT[player][cube]
+                counters[Cube.to_name(player, cube)] = sum((player_cube_table[hex_code] for hex_code in player_codes))
 
         summary = (
-            f"turn {self.__turn} / player {Player.name(self.__player)} / credit {self.__credit} / " +
-             "alive %s" % " ".join([f"{label}:{count}" for (label, count) in sorted(counters.items())]))
+            f"turn {self.__turn} / player {Player.to_name(self.__player)} / credit {self.__credit} / " +
+             "alive " + " ".join([f"{cube_name}:{cube_count}" for (cube_name, cube_count) in sorted(counters.items())]))
 
         return summary
 
 
-    def get_credit(self):
-        return self.__credit
+    @staticmethod
+    def decode_path_code(code: PathCode, path_length: int) -> PathCodes:
+
+        assert code >= 0
+        assert path_length >= 0
+
+        path_codes = []
+
+        rest = code
+        for _ in range(path_length):
+            hex_code = rest % HexState.CODE_BASE
+            rest = rest // HexState.CODE_BASE
+            path_codes.append(hex_code)
+
+        assert rest == 0
+
+        return path_codes
 
 
     @staticmethod
-    def get_max_credit():
-        return PijersiState.__max_credit
+    def encode_path_states(path_states: PathStates) -> PathCode:
+        return PijersiState.encode_path_codes([hex_state.encode() for hex_state in path_states])
 
 
     @staticmethod
-    def set_max_credit(max_credit):
-        assert max_credit > 0
-        PijersiState.__max_credit = max_credit
+    def encode_path_codes(path_codes: PathCodes) -> PathCode:
+
+        code = 0
+        shift = 1
+        code_base = HexState.CODE_BASE
+        for hex_code in path_codes:
+            code += shift*hex_code
+            shift *= code_base
+
+        return code
 
 
-    def get_current_player(self):
-        return self.__player
+    @staticmethod
+    def decode_path_codes(path_codes: PathCodes) -> PathStates:
+        return [HexState.decode(code) for code in path_codes]
 
 
-    def get_hexagon_bottom(self):
-        return self.__hexagon_bottom
+    @staticmethod
+    def __make_empty_board_codes() -> BoardCodes :
+        board_codes = bytearray([0 for _ in Hexagon.get_all()])
+        return board_codes
 
 
-    def get_hexagon_top(self):
-        return self.__hexagon_top
+    @staticmethod
+    def __copy_board_codes(board_codes: BoardCodes) -> BoardCodes :
+        return bytearray(board_codes)
 
 
-    def get_other_player(self):
+    @staticmethod
+    def __make_default_board_codes() -> BoardCodes :
+        board_codes = PijersiState.__make_empty_board_codes()
 
-        if self.__player == Player.WHITE:
-            return Player.BLACK
+        #-- Whites
 
-        elif self.__player == Player.BLACK:
-            return Player.WHITE
+        PijersiState.__set_stack_from_names(board_codes, 'b4', bottom_name='W', top_name='W')
+
+        PijersiState.__set_cube_from_names(board_codes, 'a1', 'R')
+        PijersiState.__set_cube_from_names(board_codes, 'a2', 'P')
+        PijersiState.__set_cube_from_names(board_codes, 'a3', 'S')
+        PijersiState.__set_cube_from_names(board_codes, 'a4', 'R')
+        PijersiState.__set_cube_from_names(board_codes, 'a5', 'P')
+        PijersiState.__set_cube_from_names(board_codes, 'a6', 'S')
+
+        PijersiState.__set_cube_from_names(board_codes, 'b1', 'P')
+        PijersiState.__set_cube_from_names(board_codes, 'b2', 'S')
+        PijersiState.__set_cube_from_names(board_codes, 'b3', 'R')
+
+        PijersiState.__set_cube_from_names(board_codes, 'b5', 'S')
+        PijersiState.__set_cube_from_names(board_codes, 'b6', 'R')
+        PijersiState.__set_cube_from_names(board_codes, 'b7', 'P')
+
+        #-- Blacks
+
+        PijersiState.__set_stack_from_names(board_codes, 'f4', bottom_name='w', top_name='w')
+
+        PijersiState.__set_cube_from_names(board_codes, 'g6', 'r')
+        PijersiState.__set_cube_from_names(board_codes, 'g5', 'p')
+        PijersiState.__set_cube_from_names(board_codes, 'g4', 's')
+        PijersiState.__set_cube_from_names(board_codes, 'g3', 'r')
+        PijersiState.__set_cube_from_names(board_codes, 'g2', 'p')
+        PijersiState.__set_cube_from_names(board_codes, 'g1', 's')
+
+        PijersiState.__set_cube_from_names(board_codes, 'f7', 'p')
+        PijersiState.__set_cube_from_names(board_codes, 'f6', 's')
+        PijersiState.__set_cube_from_names(board_codes, 'f5', 'r')
+
+        PijersiState.__set_cube_from_names(board_codes, 'f3', 's')
+        PijersiState.__set_cube_from_names(board_codes, 'f2', 'r')
+        PijersiState.__set_cube_from_names(board_codes, 'f1', 'p')
+
+        return board_codes
+
+
+    @staticmethod
+    def __set_cube_from_names(board_codes: BoardCodes, hex_name: str, cube_name: str):
+        hex_index = Hexagon.get(hex_name).index
+        (player, cube) = Cube.from_name(cube_name)
+        PijersiState.__set_cube(board_codes, hex_index, player, cube)
+
+
+    @staticmethod
+    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: str, top_name: str):
+        hex_index = Hexagon.get(hex_name).index
+        (player, bottom) = Cube.from_name(bottom_name)
+        (top_player, top) = Cube.from_name(top_name)
+        assert top_player == player
+        PijersiState.__set_stack(board_codes, hex_index, player, bottom, top)
+
+
+    @staticmethod
+    def __set_cube(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, cube: Cube.T):
+        hex_state = HexState.decode(board_codes[hex_index])
+
+        assert hex_state.is_empty
+
+        hex_state.is_empty = False
+        hex_state.player = player
+        hex_state.bottom = cube
+        board_codes[hex_index] = hex_state.encode()
+
+
+    @staticmethod
+    def __set_stack(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, bottom: Cube.T, top: Cube.T):
+        hex_state = HexState.decode(board_codes[hex_index])
+
+        assert hex_state.is_empty
+
+        hex_state.is_empty = False
+        hex_state.has_stack = True
+        hex_state.player = player
+        hex_state.bottom = bottom
+        hex_state.top = top
+        board_codes[hex_index] = hex_state.encode()
+
+
+    def __player_is_arrived(self, player: Player.T, use_cache: bool=True) -> bool:
+
+        if not use_cache or self.__player_is_arrived_cache is None:
+            self.__player_is_arrived_cache = [None for _ in Player.T]
+
+            for cache_player in Player.T:
+
+                goal_indices = PijersiState.__TABLE_GOAL_INDICES[cache_player]
+                has_fighter = PijersiState.__TABLE_HAS_FIGHTER[cache_player]
+
+                self.__player_is_arrived_cache[cache_player] = sum((has_fighter[self.__board_codes[hex_index]] for hex_index in goal_indices)) != 0
+
+        return self.__player_is_arrived_cache[player]
+
+
+    def __has_action(self, use_cache: bool=True) -> bool:
+
+        if not use_cache or self.__has_action_cache is None:
+
+            self.__has_action_cache = False
+
+            for cube_source in PijersiState.__find_cube_sources(self.__board_codes, self.__player):
+                for cube_direction in Hexagon.DIRECTION_ITERATOR:
+                    if PijersiState.__try_cube_path1_action(self.__board_codes, cube_source, cube_direction) is not None:
+                        self.__has_action_cache = True
+                        break
+
+        return self.__has_action_cache
+
+
+    @staticmethod
+    def __find_cube_sources(board_codes: BoardCodes, player: Player.T) -> Sources:
+        table_code = PijersiState.__TABLE_HAS_CUBE[player]
+        return (hex_index for (hex_index, hex_code) in enumerate(board_codes) if table_code[hex_code] != 0)
+
+
+    def __find_all_actions(self) -> Sequence[PijersiAction]:
+
+        actions = []
+
+        for cube_source_1 in PijersiState.__find_cube_sources(self.__board_codes, self.__player):
+
+            for cube_direction_1 in Hexagon.DIRECTION_ITERATOR:
+
+                #-- all first moves using a cube
+                action1 = PijersiState.__try_cube_path1_action(self.__board_codes, cube_source_1, cube_direction_1)
+                if action1 is not None:
+                    actions.append(action1)
+
+                    board_codes_1 = action1.next_board_codes
+                    stack_source_1 = action1.path_vertices[-1]
+                    if PijersiState.__TABLE_HAS_STACK[self.__player][board_codes_1[stack_source_1]] != 0:
+                        for stack_direction_1 in Hexagon.DIRECTION_ITERATOR:
+                            action21 = PijersiState.__try_stack_path1_action(board_codes_1, stack_source_1, stack_direction_1)
+                            if action21 is not None:
+                                action21 = PijersiAction(next_board_codes=action21.next_board_codes,
+                                                  path_vertices=action1.path_vertices + [action21.path_vertices[-1]],
+                                                  capture_code=action1.capture_code + 2*action21.capture_code,
+                                                  move_code=action1.move_code + 2*action21.move_code)
+                                actions.append(action21)
+
+                                action22 = PijersiState.__try_stack_path2_action(board_codes_1, stack_source_1, stack_direction_1)
+                                if action22 is not None:
+                                    action22 = PijersiAction(next_board_codes=action22.next_board_codes,
+                                                      path_vertices=action1.path_vertices + [action22.path_vertices[-1]],
+                                                      capture_code=action1.capture_code + 2*action22.capture_code,
+                                                      move_code=action1.move_code + 2*action22.move_code)
+                                    actions.append(action22)
+
+                    #-- all first moves using a stack
+                    stack_source_2 = cube_source_1
+                    stack_direction_2 = cube_direction_1
+
+                    if PijersiState.__TABLE_HAS_STACK[self.__player][self.__board_codes[stack_source_2]] != 0:
+                        action11 = PijersiState.__try_stack_path1_action(self.__board_codes, stack_source_2, stack_direction_2)
+                        if action11 is not None:
+                            actions.append(action11)
+
+                            board_codes_11 = action11.next_board_codes
+                            cube_source_2 = action11.path_vertices[-1]
+                            for cube_direction_2 in Hexagon.DIRECTION_ITERATOR:
+                                action12 = PijersiState.__try_cube_path1_action(board_codes_11, cube_source_2, cube_direction_2)
+                                if action12 is not None:
+                                    action12 = PijersiAction(next_board_codes=action12.next_board_codes,
+                                                     path_vertices=action11.path_vertices + [action12.path_vertices[-1]],
+                                                     capture_code=action11.capture_code + 2*action12.capture_code,
+                                                     move_code=action11.move_code + 2*action12.move_code)
+                                    actions.append(action12)
+
+                            action21 = PijersiState.__try_stack_path2_action(self.__board_codes, stack_source_2, stack_direction_2)
+                            if action21 is not None:
+                                actions.append(action21)
+
+                                board_codes_21 = action21.next_board_codes
+                                cube_source_2 = action21.path_vertices[-1]
+                                for cube_direction_2 in Hexagon.DIRECTION_ITERATOR:
+                                    action22 = PijersiState.__try_cube_path1_action(board_codes_21, cube_source_2, cube_direction_2)
+                                    if action22 is not None:
+                                        action22 = PijersiAction(next_board_codes=action22.next_board_codes,
+                                                         path_vertices=action21.path_vertices + [action22.path_vertices[-1]],
+                                                         capture_code=action21.capture_code + 2*action22.capture_code,
+                                                         move_code=action21.move_code + 2*action22.move_code )
+                                        actions.append(action22)
+
+        return actions
+
+
+    @staticmethod
+    def __encode_path2_codes(path_codes: PathCodes) -> PathCode:
+        # >> optimization of 'encode_path_codes' for path2
+        return path_codes[0] + path_codes[1]*HexState.CODE_BASE
+
+
+    @staticmethod
+    def __decode_path2_code(code: PathCode) -> PathCodes:
+        # >> optimization of 'decode_path_code' for path2
+        return (code % HexState.CODE_BASE,
+                (code // HexState.CODE_BASE) % HexState.CODE_BASE)
+
+
+    @staticmethod
+    def __decode_path3_code(code: PathCode) -> PathCodes:
+        # >> optimization of 'decode_path_code' for path2
+        return(code % HexState.CODE_BASE,
+               (code // HexState.CODE_BASE) % HexState.CODE_BASE,
+               (code // HexState.CODE_BASE_2) % HexState.CODE_BASE)
+
+
+    @staticmethod
+    def __try_path1(path_codes: PathCodes,
+                  table_next_code: Sequence[HexCode],
+                  table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
+
+        code = PijersiState.__encode_path2_codes(path_codes)
+        next_code = table_next_code[code]
+
+        if next_code != 0:
+            next_path_codes = PijersiState.__decode_path2_code(next_code)
+            capture_code = table_has_capture[code]
 
         else:
-            assert False
+            next_path_codes = None
+            capture_code = False
+
+        return (next_path_codes, capture_code)
 
 
-    def get_rewards(self):
-        assert self.is_terminal()
-        return self.__rewards
+    @staticmethod
+    def __try_path2(path_codes: PathCodes,
+                  table_next_code: Sequence[HexCode],
+                  table_has_capture: Sequence[bool]) -> Tuple[Optional[PathCodes], bool]:
+
+        next_path_codes = None
+        capture_code = False
+
+        # >> Optimization: if the intermediate hexagon is not empty then the stack cannot cross it
+        # >> Such optimization is reducing the size of the index domain of table_next_code and table_has_capture
+        if path_codes[1] == 0:
+            code = PijersiState.__encode_path2_codes([path_codes[0], path_codes[2]])
+            next_code = table_next_code[code]
+
+            if next_code != 0:
+                # >> next_code is encoding a three hexagons path state
+                next_path_codes = PijersiState.__decode_path3_code(next_code)
+                capture_code = table_has_capture[code]
+
+        return (next_path_codes, capture_code)
 
 
-    def get_terminal_case(self):
-        return self.__terminal_case
+    @staticmethod
+    def __try_cube_path1(path_codes: PathCodes) -> Tuple[Optional[PathCodes], bool]:
+        return PijersiState.__try_path1(path_codes, PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE, PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE)
 
 
-    def get_turn(self):
-        return self.__turn
+    @staticmethod
+    def __try_stack_path1(path_codes: PathCodes) -> Tuple[Optional[PathCodes], bool]:
+        return PijersiState.__try_path1(path_codes, PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE, PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE)
 
 
-    def take_action(self, action):
-
-        state = action.state
-
-        if state.__taken == False:
-            state.__taken = True
-            state.__player = state.get_other_player()
-            state.__turn += 1
-            state.__credit = max(0, state.__credit - 1)
-
-            if len(action.some_captures) != 0:
-                state.__credit = PijersiState.__max_credit
-
-        return state
+    @staticmethod
+    def __try_stack_path2(path_codes: PathCodes) -> Tuple[PathCodes, bool]:
+        return PijersiState.__try_path2(path_codes, PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE, PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
 
 
-    def take_action_by_simple_name(self, action_name):
-       assert action_name in self.get_action_simple_names()
-       action = self.__actions_by_simple_names[action_name]
-       return self.take_action(action)
+    @staticmethod
+    def __apply_path2_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
+        next_board_codes = PijersiState.__copy_board_codes(board_codes)
+
+        next_board_codes[path[0]] = path_codes[0]
+        next_board_codes[path[1]] = path_codes[1]
+        return next_board_codes
 
 
-    def take_action_by_name(self, action_name):
-       assert action_name in self.get_action_names()
-       action = self.__actions_by_names[action_name]
-       self.take_action(action)
+    @staticmethod
+    def __apply_path3_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
+        next_board_codes = PijersiState.__copy_board_codes(board_codes)
+        next_board_codes[path[0]] = path_codes[0]
+        next_board_codes[path[1]] = path_codes[1]
+        next_board_codes[path[2]] = path_codes[2]
+        return next_board_codes
 
 
-    def is_terminal(self, use_cache=True):
+    @staticmethod
+    def __try_cube_path1_action(board_codes: BoardCodes, source: HexIndex, direction: Hexagon.Direction) -> Optional[PijersiAction]:
 
-        if not use_cache or self.__terminated is None:
-
-            self.__terminated = False
-
-            white_arrived = False
-            black_arrived = False
-
-            for (cube_index, cube_status) in enumerate(self.__cube_status):
-
-                if cube_status == CubeStatus.ACTIVATED:
-                    cube = Cube.all[cube_index]
-                    if cube.sort in (CubeSort.ROCK, CubeSort.PAPER, CubeSort.SCISSORS):
-
-                        if cube_index in self.__hexagon_bottom:
-                            hexagon_index = self.__hexagon_bottom.index(cube_index)
-
-                            if not white_arrived and cube.player == Player.WHITE:
-                                white_arrived = hexagon_index in Hexagon.get_goal_indices(Player.WHITE)
-
-                            if not black_arrived and cube.player == Player.BLACK:
-                                black_arrived = hexagon_index in Hexagon.get_goal_indices(Player.BLACK)
-
-                        elif cube_index in self.__hexagon_top:
-                            hexagon_index = self.__hexagon_top.index(cube_index)
-
-                            if not white_arrived and cube.player == Player.WHITE:
-                                white_arrived = hexagon_index in Hexagon.get_goal_indices(Player.WHITE)
-
-                            if not black_arrived and cube.player == Player.BLACK:
-                                black_arrived = hexagon_index in Hexagon.get_goal_indices(Player.BLACK)
-
-                        else:
-                            assert False
-
-            if white_arrived:
-                # white arrived at goal ==> white wins
-                self.__terminated = True
-                self.__terminal_case = TerminalCase.WHITE_ARRIVED
-                self.__rewards = [Reward.DRAW for _ in Player]
-                self.__rewards[Player.WHITE] = Reward.WIN
-                self.__rewards[Player.BLACK] = Reward.LOSS
-
-            elif black_arrived:
-                # black arrived at goal ==> black wins
-                self.__terminated = True
-                self.__terminal_case = TerminalCase.BLACK_ARRIVED
-                self.__rewards = [Reward.DRAW for _ in Player]
-                self.__rewards[Player.BLACK] = Reward.WIN
-                self.__rewards[Player.WHITE] = Reward.LOSS
-
-            elif self.__credit == 0:
-                # credit is exhausted ==> nobody wins
-                self.__terminated = True
-                self.__terminal_case = TerminalCase.ZERO_CREDIT
-                self.__rewards = [Reward.DRAW for _ in Player]
-
-            elif not self.has_action():
-                # the current player looses and the other player wins
-                self.__terminated = True
-                self.__rewards = [Reward.DRAW for _ in Player]
-
-                if self.__player == Player.WHITE:
-                    self.__terminal_case = TerminalCase.WHITE_BLOCKED
-                    self.__rewards[Player.WHITE] = Reward.LOSS
-                    self.__rewards[Player.BLACK] = Reward.WIN
-                else:
-                    self.__terminal_case = TerminalCase.BLACK_BLOCKED
-                    self.__rewards[Player.BLACK] = Reward.LOSS
-                    self.__rewards[Player.WHITE] = Reward.WIN
-
-        return self.__terminated
-
-
-    def get_actions(self, use_cache=True):
-        if not use_cache or self.__actions is None:
-            self.__actions = list(self.__find_moves())
-
-        return self.__actions
-
-
-    def iterate_actions(self):
-        if self.__actions is None:
-            for action in self.__find_moves():
-                yield action
-
+        path = PijersiState.__TABLE_MAKE_PATH1[source][direction]
+        if path is not None:
+            path_codes = [board_codes[path[0]],  board_codes[path[1]]]
+            (next_path_codes, capture_code) = PijersiState.__try_cube_path1(path_codes)
+            if next_path_codes is not None:
+                action = PijersiAction(next_board_codes=PijersiState.__apply_path2_codes(board_codes, path, next_path_codes),
+                                path_vertices=[source, path[-1]],
+                                capture_code=capture_code,
+                                move_code=0)
+            else:
+                action = None
         else:
-            for action in self.__actions:
-                yield action
-
-
-    def has_action(self):
-
-        moves = list(self.__find_cube_first_moves(find_one=True))
-        return len(moves) != 0
-
-
-    def __create_action_by_names(self):
-        self.__actions_by_names = {}
-        self.__actions_by_simple_names = {}
-
-        for action in self.get_actions():
-            self.__actions_by_names[action.notation] = action
-
-            action_name = Notation.simplify_notation(action.notation)
-            self.__actions_by_simple_names[action_name] = action
-
-
-    def get_action_names(self):
-        if self.__actions_by_names is None:
-            self.__create_action_by_names()
-        return list(sorted(self.__actions_by_names.keys()))
-
-
-    def get_action_simple_names(self):
-        if self.__actions_by_simple_names is None:
-            self.__create_action_by_names()
-        return list(sorted(self.__actions_by_simple_names.keys()))
-
-
-    def get_action_by_name(self, action_name):
-       assert action_name in self.get_action_names()
-       action = self.__actions_by_names[action_name]
-       return action
-
-
-    def get_action_by_simple_name(self, action_name):
-       assert action_name in self.get_action_simple_names()
-       action = self.__actions_by_simple_names[action_name]
-       return action
-
-
-    ### Action finders
-
-    def __find_moves(self):
-
-        if not self.__use_random_find or random.choice((True, False)):
-
-            for action in self.__find_stack_first_moves():
-                yield action
-
-            for action in self.__find_cube_first_moves():
-                yield action
-
-        else:
-            for action in self.__find_cube_first_moves():
-                yield action
-
-            for action in self.__find_stack_first_moves():
-                yield action
-
-
-    def __find_cube_first_moves(self, find_one=False):
-        found_one = False
-
-        sources_1 = self.__find_hexagons_with_movable_cube()
-        if self.__use_random_find:
-            random.shuffle(sources_1)
-
-        for source_1 in sources_1:
-
-            if find_one and found_one:
-                break
-
-            directions_1 = [direction_1 for direction_1 in HexagonDirection]
-            if self.__use_random_find:
-                random.shuffle(directions_1)
-
-            for direction_1 in directions_1:
-                destination_1 = Hexagon.get_next_fst_indices(source_1, direction_1)
-                if destination_1 != Null.HEXAGON:
-                    action_1 = self.__try_move_cube(source_1, destination_1)
-                    if action_1 is not None:
-                        yield action_1
-                        if find_one:
-                            found_one = True
-                            break
-
-                        state_1 = action_1.state.__fork()
-                        if state_1.__is_hexagon_with_movable_stack(destination_1):
-
-                            directions_2 = [direction_2 for direction_2 in HexagonDirection]
-                            if self.__use_random_find:
-                                random.shuffle(directions_2)
-
-                            for direction_2 in directions_2:
-                                destination_21 = Hexagon.get_next_fst_indices(destination_1, direction_2)
-                                if destination_21 != Null.HEXAGON:
-                                    action_21 = state_1.__try_move_stack(destination_1, destination_21, previous_action=action_1)
-                                    if action_21 is not None:
-                                        yield action_21
-
-                                    if state_1.__hexagon_bottom[destination_21] == Null.CUBE:
-                                        # stack can cross destination_21 with zero cube
-                                        destination_22 = Hexagon.get_next_snd_indices(destination_1, direction_2)
-                                        if destination_22 != Null.HEXAGON:
-                                            action_22 = state_1.__try_move_stack(destination_1, destination_22, previous_action=action_1)
-                                            if action_22 is not None:
-                                                yield action_22
-
-
-    def __find_stack_first_moves(self, find_one=False):
-
-        found_one = False
-
-        sources_1 = self.__find_hexagons_with_movable_stack()
-        if self.__use_random_find:
-            random.shuffle(sources_1)
-
-        for source_1 in sources_1:
-
-            if find_one and found_one:
-                break
-
-            directions_1 = [direction_1 for direction_1 in HexagonDirection]
-            if self.__use_random_find:
-                random.shuffle(directions_1)
-
-            for direction_1 in directions_1:
-                destination_11 = Hexagon.get_next_fst_indices(source_1, direction_1)
-                if destination_11 != Null.HEXAGON:
-                    action_11 = self.__try_move_stack(source_1, destination_11)
-                    if action_11 is not None:
-                        yield action_11
-                        if find_one:
-                            found_one = True
-                            break
-
-                        state_11 = action_11.state.__fork()
-
-                        directions_21 = [direction_21 for direction_21 in HexagonDirection]
-                        if self.__use_random_find:
-                            random.shuffle(directions_21)
-
-                        for direction_21 in directions_21:
-                            destination_21 = Hexagon.get_next_fst_indices(destination_11, direction_21)
-                            if destination_21 != Null.HEXAGON:
-                                action_21 = state_11.__try_move_cube(destination_11, destination_21, previous_action=action_11)
-                                if action_21 is not None:
-                                    yield action_21
-
-                    if self.__hexagon_bottom[destination_11] == Null.CUBE:
-                        # stack can cross destination_11 with zero cube
-                        destination_12 = Hexagon.get_next_snd_indices(source_1, direction_1)
-                        if destination_12 != Null.HEXAGON:
-                            action_12 = self.__try_move_stack(source_1, destination_12)
-                            if action_12 is not None:
-                                yield action_12
-
-                                state_12 = action_12.state.__fork()
-
-                                directions_22 = [direction_22 for direction_22 in HexagonDirection]
-                                if self.__use_random_find:
-                                    random.shuffle(directions_22)
-
-                                for direction_22 in directions_22:
-                                    destination_22 = Hexagon.get_next_fst_indices(destination_12, direction_22)
-                                    if destination_22 != Null.HEXAGON:
-                                        action_22 = state_12.__try_move_cube(destination_12, destination_22, previous_action=action_12)
-                                        if action_22 is not None:
-                                            yield action_22
-
-    ### Cubes and hexagons finders
-
-
-    def __find_hexagons_with_movable_cube(self):
-         return [x for x in Hexagon.get_all_active_indices() if self.__is_hexagon_with_movable_cube(x)]
-
-
-    def __find_hexagons_with_movable_stack(self):
-        return [x for x in Hexagon.get_all_active_indices() if self.__is_hexagon_with_movable_stack(x)]
-
-    ### Hexagon predicates
-
-    def __is_hexagon_with_movable_cube(self, hexagon_index):
-        to_be_returned = False
-
-        if self.__hexagon_top[hexagon_index] != Null.CUBE:
-            cube_index = self.__hexagon_top[hexagon_index]
-            cube = Cube.all[cube_index]
-            if cube.player == self.__player:
-                to_be_returned = True
-
-        elif self.__hexagon_bottom[hexagon_index] != Null.CUBE:
-            cube_index = self.__hexagon_bottom[hexagon_index]
-            cube = Cube.all[cube_index]
-            if cube.player == self.__player:
-                to_be_returned = True
-
-        return to_be_returned
-
-
-    def __is_hexagon_with_movable_stack(self, hexagon_index):
-        to_be_returned = False
-
-        top_index = self.__hexagon_top[hexagon_index]
-        bottom_index = self.__hexagon_bottom[hexagon_index]
-
-        if top_index != Null.CUBE and bottom_index != Null.CUBE:
-
-            top = Cube.all[top_index]
-            bottom = Cube.all[bottom_index]
-
-            if top.player == self.__player and bottom.player == self.__player:
-                to_be_returned = True
-
-        return to_be_returned
-
-    ### Action triers
-
-    def __try_move_cube(self, src_hexagon_index, dst_hexagon_index, previous_action=None):
-
-        src_hexagon_name = Hexagon.all[src_hexagon_index].name
-        dst_hexagon_name = Hexagon.all[dst_hexagon_index].name
-
-        if not self.__is_hexagon_with_movable_cube(src_hexagon_index):
             action = None
-
-        elif self.__hexagon_bottom[dst_hexagon_index] == Null.CUBE:
-            # destination hexagon has zero cube
-
-            state = self.__fork()
-
-            if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                src_cube_index = state.__hexagon_top[src_hexagon_index]
-                state.__hexagon_top[src_hexagon_index] = Null.CUBE
-            else:
-                src_cube_index = state.__hexagon_bottom[src_hexagon_index]
-                state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-            state.__hexagon_bottom[dst_hexagon_index] = src_cube_index
-
-            notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=Capture.NONE, previous_action=previous_action)
-            action = PijersiAction(notation, state, previous_action=previous_action)
-
-        elif self.__hexagon_top[dst_hexagon_index] == Null.CUBE:
-            # destination hexagon has one cube
-
-            dst_bottom_index = self.__hexagon_bottom[dst_hexagon_index]
-            dst_bottom = Cube.all[dst_bottom_index]
-
-            if self.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                src_cube_index = self.__hexagon_top[src_hexagon_index]
-            else:
-                src_cube_index = self.__hexagon_bottom[src_hexagon_index]
-            src_cube = Cube.all[src_cube_index]
-
-            if dst_bottom.player != self.__player:
-
-                if src_cube.beats(dst_bottom):
-                    # Capture the bottom cube
-
-                    state = self.__fork()
-
-                    state.__hexagon_bottom[dst_hexagon_index] = Null.CUBE
-                    state.__cube_status[dst_bottom_index] = CubeStatus.CAPTURED
-
-                    capture = Capture.SOME_CUBE
-
-                    if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                        state.__hexagon_top[src_hexagon_index] = Null.CUBE
-                    else:
-                        state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                    state.__hexagon_bottom[dst_hexagon_index] = src_cube_index
-
-                    notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=capture, previous_action=previous_action)
-                    action = PijersiAction(notation, state, capture=capture, previous_action=previous_action)
-                else:
-                    action = None
-
-            else:
-                if src_cube.sort == CubeSort.WISE and dst_bottom.sort != CubeSort.WISE:
-                    action = None
-
-                else:
-                    state = self.__fork()
-
-                    if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                        state.__hexagon_top[src_hexagon_index] = Null.CUBE
-                    else:
-                        state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                    state.__hexagon_top[dst_hexagon_index] = src_cube_index
-
-                    notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=Capture.NONE, previous_action=previous_action)
-                    action = PijersiAction(notation, state, previous_action=previous_action)
-
-        else:
-            # destination hexagon has two cubes
-            dst_top_index = self.__hexagon_top[dst_hexagon_index]
-            dst_bottom_index = self.__hexagon_bottom[dst_hexagon_index]
-
-            dst_top = Cube.all[dst_top_index]
-            dst_bottom = Cube.all[dst_bottom_index]
-
-            if self.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                src_cube_index = self.__hexagon_top[src_hexagon_index]
-            else:
-                src_cube_index = self.__hexagon_bottom[src_hexagon_index]
-            src_cube = Cube.all[src_cube_index]
-
-            if dst_top.player == self.__player:
-                action = None
-
-            elif src_cube.beats(dst_top):
-                # Capture the stack
-                state = self.__fork()
-
-                state.__hexagon_top[dst_hexagon_index] = Null.CUBE
-                state.__hexagon_bottom[dst_hexagon_index] = Null.CUBE
-
-                state.__cube_status[dst_top_index] = CubeStatus.CAPTURED
-                state.__cube_status[dst_bottom_index] = CubeStatus.CAPTURED
-
-                capture = Capture.SOME_STACK
-
-                if state.__hexagon_top[src_hexagon_index] != Null.CUBE:
-                    state.__hexagon_top[src_hexagon_index] = Null.CUBE
-                else:
-                    state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                state.__hexagon_bottom[dst_hexagon_index] = src_cube_index
-
-                notation = Notation.move_cube(src_hexagon_name, dst_hexagon_name, capture=capture, previous_action=previous_action)
-                action = PijersiAction(notation, state, capture=capture, previous_action=previous_action)
-
-            else:
-                action = None
 
         return action
 
 
-    def __try_move_stack(self, src_hexagon_index, dst_hexagon_index, previous_action=None):
+    @staticmethod
+    def __try_stack_path1_action(board_codes: BoardCodes, source: HexIndex, direction: Hexagon.Direction) -> Optional[PijersiAction]:
 
-        src_hexagon_name = Hexagon.all[src_hexagon_index].name
-        dst_hexagon_name = Hexagon.all[dst_hexagon_index].name
-
-        if not self.__is_hexagon_with_movable_cube(src_hexagon_index):
+        path = PijersiState.__TABLE_MAKE_PATH1[source][direction]
+        if path is not None:
+            path_codes = [board_codes[path[0]],  board_codes[path[1]]]
+            (next_path_codes, capture_code) = PijersiState.__try_stack_path1(path_codes)
+            if next_path_codes is not None:
+                action = PijersiAction(next_board_codes=PijersiState.__apply_path2_codes(board_codes, path, next_path_codes),
+                                path_vertices=[source, path[-1]],
+                                capture_code=capture_code,
+                                move_code=1)
+            else:
+                action = None
+        else:
             action = None
 
-        elif self.__hexagon_bottom[dst_hexagon_index] == Null.CUBE:
-            # destination hexagon has zero cube
+        return action
 
-            state = self.__fork()
+    @staticmethod
+    def __try_stack_path2_action(board_codes: BoardCodes, source: HexIndex, direction: Hexagon.Direction) -> Optional[PijersiAction]:
 
-            src_bottom_index = state.__hexagon_bottom[src_hexagon_index]
-            src_top_index = state.__hexagon_top[src_hexagon_index]
-
-            state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-            state.__hexagon_top[src_hexagon_index] = Null.CUBE
-
-            state.__hexagon_bottom[dst_hexagon_index] = src_bottom_index
-            state.__hexagon_top[dst_hexagon_index] = src_top_index
-
-            notation = Notation.move_stack(src_hexagon_name, dst_hexagon_name, capture=Capture.NONE, previous_action=previous_action)
-            action = PijersiAction(notation, state, previous_action=previous_action)
-
-        elif self.__hexagon_top[dst_hexagon_index] == Null.CUBE:
-            # destination hexagon has one cube
-
-            src_bottom_index = self.__hexagon_bottom[src_hexagon_index]
-            src_top_index = self.__hexagon_top[src_hexagon_index]
-
-            src_top = Cube.all[src_top_index]
-
-            dst_bottom_index = self.__hexagon_bottom[dst_hexagon_index]
-            dst_bottom = Cube.all[dst_bottom_index]
-
-            if src_top.player == dst_bottom.player:
-                action = None
-
-            elif src_top.beats(dst_bottom):
-                # capture the bottom cube
-                state = self.__fork()
-
-                state.__hexagon_bottom[dst_hexagon_index] = Null.CUBE
-                state.__cube_status[dst_bottom_index] = CubeStatus.CAPTURED
-
-                capture = Capture.SOME_CUBE
-
-                state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                state.__hexagon_top[src_hexagon_index] = Null.CUBE
-
-                state.__hexagon_bottom[dst_hexagon_index] = src_bottom_index
-                state.__hexagon_top[dst_hexagon_index] = src_top_index
-
-                notation = Notation.move_stack(src_hexagon_name, dst_hexagon_name, capture=capture, previous_action=previous_action)
-                action = PijersiAction(notation, state, capture=capture, previous_action=previous_action)
-
+        path = PijersiState.__TABLE_MAKE_PATH2[source][direction]
+        if path is not None:
+            path_codes= [board_codes[path[0]],  board_codes[path[1]], board_codes[path[2]]]
+            (next_path_codes, capture_code) = PijersiState.__try_stack_path2(path_codes)
+            if next_path_codes is not None:
+                action = PijersiAction(next_board_codes=PijersiState.__apply_path3_codes(board_codes, path, next_path_codes),
+                                path_vertices=[source, path[-1]],
+                                capture_code=capture_code,
+                                move_code=1)
             else:
                 action = None
-
         else:
-            # destination hexagon has two cubes
-
-            src_top_index = self.__hexagon_top[src_hexagon_index]
-            src_top = Cube.all[src_top_index]
-
-            src_bottom_index = self.__hexagon_bottom[src_hexagon_index]
-
-            dst_top_index = self.__hexagon_top[dst_hexagon_index]
-            dst_top = Cube.all[dst_top_index]
-
-            dst_bottom_index = self.__hexagon_bottom[dst_hexagon_index]
-            dst_bottom = Cube.all[dst_bottom_index]
-
-            if src_top.player == dst_top.player:
-                action = None
-
-            elif src_top.beats(dst_top):
-                # capture the stack
-                state = self.__fork()
-
-                state.__hexagon_bottom[dst_hexagon_index] = Null.CUBE
-                state.__hexagon_top[dst_hexagon_index] = Null.CUBE
-
-                state.__cube_status[dst_bottom_index] = CubeStatus.CAPTURED
-                state.__cube_status[dst_top_index] = CubeStatus.CAPTURED
-
-                capture = Capture.SOME_STACK
-
-                state.__hexagon_bottom[src_hexagon_index] = Null.CUBE
-                state.__hexagon_top[src_hexagon_index] = Null.CUBE
-
-                state.__hexagon_bottom[dst_hexagon_index] = src_bottom_index
-                state.__hexagon_top[dst_hexagon_index] = src_top_index
-
-                notation = Notation.move_stack(src_hexagon_name, dst_hexagon_name, capture=capture, previous_action=previous_action)
-                action = PijersiAction(notation, state, capture=capture, previous_action=previous_action)
-
-            else:
-                action = None
+            action = None
 
         return action
 
 
-class MctsState:
-    """Adaptater to mcts.StateInterface for PijersiState"""
+class Searcher():
 
-    __slots__ = ('__pijersi_state', '__maximizer_player')
-
-
-    def __init__(self, pijersi_state, maximizer_player):
-        self.__pijersi_state = pijersi_state
-        self.__maximizer_player = maximizer_player
+    __slots__ = ('__name',)
 
 
-    def get_pijersi_state(self):
-        return self.__pijersi_state
+    def __init__(self, name):
+        self.__name = name
 
 
-    def getCurrentPlayer(self):
-       """ Returns 1 if it is the maximizer player's turn to choose an action,
-       or -1 for the minimiser player"""
-       return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
+    def get_name(self) -> str:
+        return self.__name
 
 
-    def isTerminal(self):
-        return self.__pijersi_state.is_terminal()
+    def is_interactive(self) -> bool:
+        return False
 
 
-    def getReward(self):
-        """Returns the reward for this state: 0 for a draw,
-        positive for a win by maximizer player or negative for a win by the minimizer player.
-        Only needed for terminal states."""
-
-        pijersi_rewards = self.__pijersi_state.get_rewards()
-
-        if pijersi_rewards[self.__maximizer_player] == Reward.DRAW:
-            mcts_reward = 0
-
-        elif pijersi_rewards[self.__maximizer_player] == Reward.WIN:
-            mcts_reward = 1
-
-        else:
-            mcts_reward = -1
-
-        return mcts_reward
+    def search(self, state: PijersiState) -> PijersiAction:
+        actions = state.get_actions()
+        action = actions[0]
+        return action
 
 
-    def getPossibleActions(self):
-        return self.__pijersi_state.get_actions()
+class RandomSearcher(Searcher):
 
 
-    def takeAction(self, action):
-        return MctsState(self.__pijersi_state.take_action(action), self.__maximizer_player)
+    def search(self, state: PijersiState) -> PijersiAction:
+        actions = state.get_actions()
+        # >> sorting help for testing against other implementations if random generators are identical
+        actions.sort(key=str)
+        action = random.choice(actions)
+        return action
+
+
+class HumanSearcher(Searcher):
+
+    __slots__ = ('__action_simple_name', '__use_command_line')
+
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.__action_simple_name = None
+        self.__use_command_line = False
+
+
+    def is_interactive(self) -> bool:
+        return True
+
+
+    def use_command_line(self, condition: bool):
+        assert condition in (True, False)
+        self.__use_command_line = condition
+
+
+    def set_action_simple_name(self, action_name: str):
+        assert not self.__use_command_line
+        self.__action_simple_name = action_name
+
+
+    def search(self, state: PijersiState) -> PijersiAction:
+
+        if self.__use_command_line:
+            return self.__search_using_command_line(state)
+
+        action = state.get_action_by_simple_name(self.__action_simple_name)
+        self.__action_simple_name = None
+        return action
+
+
+    def __search_using_command_line(self, state: PijersiState) -> PijersiAction:
+        assert self.__use_command_line
+
+        action_names = state.get_action_simple_names()
+
+        action_validated = False
+        while not action_validated:
+            action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
+            (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
+            print(validation_message)
+
+        action = state.get_action_by_simple_name(action_input)
+
+        print(f"HumanSearcher: action {action} has been selected")
+
+        return action
 
 
 class MinimaxState:
 
+    Self = TypeVar("Self", bound="MinimaxState")
+
     __slots__ = ('__pijersi_state', '__maximizer_player')
 
 
-    def __init__(self, pijersi_state, maximizer_player):
+    def __init__(self, pijersi_state: PijersiState, maximizer_player: Player.T):
         self.__pijersi_state = pijersi_state
         self.__maximizer_player = maximizer_player
 
 
-    def get_pijersi_state(self):
+    def get_pijersi_state(self) -> PijersiState:
         return self.__pijersi_state
 
 
-    def get_current_maximizer_player(self):
+    def get_current_maximizer_player(self) -> Player.T:
         return self.__maximizer_player
 
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         return self.__pijersi_state.is_terminal()
 
 
-    def get_reward(self):
+    def get_reward(self) -> int:
         """Returns the reward for this state: 0 for a draw,
         positive for a win by maximizer player or negative for a win by the minimizer player.
         Only needed for terminal states."""
@@ -1788,338 +2012,161 @@ class MinimaxState:
         return minimax_reward
 
 
-    def get_actions(self):
+    def get_actions(self) -> Sequence[PijersiAction]:
         return self.__pijersi_state.get_actions()
 
 
-    def iterate_actions(self):
-        return self.__pijersi_state.iterate_actions()
-
-
-    def take_action(self, action):
+    def take_action(self, action: Sequence[PijersiAction]) -> Self:
         return MinimaxState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-def extractStatistics(mcts_searcher, action):
-    statistics = {}
-    statistics['rootNumVisits'] = mcts_searcher.root.numVisits
-    statistics['rootTotalReward'] = mcts_searcher.root.totalReward
-    statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
-    statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
-    return statistics
+class MinimaxSearcher(Searcher):
 
+    __slots__ = ('__max_depth',
+                 '__cube_weight', '__fighter_weight',
+                 '__dmin_weight', '__dave_weight', '__credit_weight',
+                 '__debug', '__debug_level', '__alpha_cuts', '__beta_cuts')
 
-def pijersiSelectAction(action_names):
-
-
-    def score_move_name(move_name):
-
-        catpures = re.sub(r"[^!]", "",move_name)
-        catpures = re.sub(r"!+", "100",catpures)
-
-        stacks = re.sub(r"[^=]", "",move_name).replace("=", "10")
-
-        cubes = re.sub(r"[^-]", "",move_name).replace("-", "1")
-
-        move_score = 0
-
-        if catpures != "":
-            move_score += float(catpures)
-
-        if stacks != "":
-            move_score += float(stacks)
-
-        if cubes != "":
-            move_score += float(cubes)
-
-        return move_score
-
-
-    assert len(action_names) != 0
-    action_name = random.choice(action_names)
-
-    return action_name
-
-
-def pijersiRandomPolicy(state):
-    while not state.isTerminal():
-        try:
-            pijersi_state = state.get_pijersi_state()
-
-            action_names = pijersi_state.get_action_names()
-            action_name = pijersiSelectAction(action_names)
-            action = pijersi_state.get_action_by_name(action_name)
-
-        except IndexError:
-            raise Exception("Non-terminal state has no possible actions: " + str(state))
-        state = state.takeAction(action)
-    return state.getReward()
-
-
-class HumanSearcher():
-
-    __slots__ = ('__name', '__action_simple_name', '__use_command_line')
-
-
-    def __init__(self, name):
-        self.__name = name
-        self.__action_simple_name = None
-        self.__use_command_line = False
-
-
-    def get_name(self):
-        return self.__name
-
-
-    def is_interactive(self):
-        return True
-
-
-    def use_command_line(self, condition):
-        assert condition in (True, False)
-        self.__use_command_line = condition
-
-
-    def set_action_simple_name(self, action_name):
-        assert not self.__use_command_line
-        self.__action_simple_name = action_name
-
-
-    def search(self, state):
-
-        if self.__use_command_line:
-            return self.__search_using_command_line(state)
-
-        else:
-            action = state.get_action_by_simple_name(self.__action_simple_name)
-            self.__action_simple_name = None
-            return action
-
-
-    def __search_using_command_line(self, state):
-        assert self.__use_command_line
-
-        action_names = state.get_action_simple_names()
-
-        action_validated = False
-        while not action_validated:
-            action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
-            (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
-            print(validation_message)
-
-        action = state.get_action_by_simple_name(action_input)
-
-        print(f"HumanSearcher: action {action} has been selected")
-
-        return action
-
-
-class RandomSearcher():
-
-    __slots__ = ('__name')
-
-
-    def __init__(self, name):
-        self.__name = name
-
-
-    def get_name(self):
-        return self.__name
-
-
-    def is_interactive(self):
-        return False
-
-
-    def search(self, state):
-        actions = state.get_actions()
-        # >> sorting help for testing against other implementations if random generations are identical
-        actions.sort(key=str)
-        action = random.choice(actions)
-        return action
-
-
-class MinimaxSearcher():
-
-    __slots__ = ('__name', '__max_depth', '__max_children',
-                 '__distance_weight', '__capture_weight',
-                 '__fighter_weight', '__dmin_weight', '__dave_weight',
-                 '__center_weight', '__credit_weight',
-                 '__debug', '__alpha_cut_count', '__beta_cut_count')
-
-    default_weights_by_depth = dict()
+    default_weights_by_depth = {}
 
     default_weights_by_depth[1] = {'dmin_weight':16,
                                    'fighter_weight':8,
-                                   'capture_weight':4,
+                                   'cube_weight':4,
                                    'dave_weight':2,
-                                   'credit_weight':1,
-                                   'center_weight':0}
+                                   'credit_weight':1}
 
     default_weights_by_depth[2] = {'dmin_weight':16,
                                    'fighter_weight':8,
-                                   'capture_weight':4,
+                                   'cube_weight':4,
                                    'dave_weight':2,
-                                   'credit_weight':1,
-                                   'center_weight':0}
+                                   'credit_weight':1}
 
 
-    def __init__(self, name, max_depth=1, max_children=None,
-                  distance_weight=None, capture_weight=None,
-                  fighter_weight=None, dmin_weight=None, dave_weight=None,
-                  center_weight=None, credit_weight=None):
+    def __init__(self, name: str, max_depth: int=1,
+                  cube_weight: Optional[float]=None,
+                  fighter_weight: Optional[float]=None,
+                  dmin_weight: Optional[float]=None,
+                  dave_weight: Optional[float]=None,
+                  credit_weight: Optional[int]=None):
+
+        super().__init__(name)
 
         self.__debug = False
+        self.__debug_level = 1
 
         assert max_depth >= 1
 
         if max_depth in MinimaxSearcher.default_weights_by_depth:
-            default_weights = MinimaxSearcher.default_weights_by_depth[max_depth]
+            weights = MinimaxSearcher.default_weights_by_depth[max_depth]
         else:
-            default_weights = MinimaxSearcher.default_weights_by_depth[2]
+            weights = MinimaxSearcher.default_weights_by_depth[2]
 
-
-        self.__name = name
         self.__max_depth = max_depth
-        self.__max_children = max_children
+
+        self.__dmin_weight = dmin_weight if dmin_weight is not None else weights['dmin_weight']
+        self.__dave_weight = dave_weight if dave_weight is not None else weights['dave_weight']
+        self.__cube_weight = cube_weight if cube_weight is not None else weights['cube_weight']
+        self.__fighter_weight = fighter_weight if fighter_weight is not None else weights['fighter_weight']
+        self.__credit_weight = credit_weight if credit_weight is not None else weights['credit_weight']
+
+        self.__alpha_cuts = []
+        self.__beta_cuts = []
 
 
-        if dmin_weight is not None:
-            self.__dmin_weight = dmin_weight
-        else:
-            self.__dmin_weight = default_weights['dmin_weight']
-
-
-        if dave_weight is not None:
-            self.__dave_weight = dave_weight
-        else:
-            self.__dave_weight = default_weights['dave_weight']
-
-
-        if capture_weight is not None:
-            self.__capture_weight = capture_weight
-        else:
-            self.__capture_weight = default_weights['capture_weight']
-
-
-        if center_weight is not None:
-            self.__center_weight = center_weight
-        else:
-            self.__center_weight = default_weights['center_weight']
-
-
-        if fighter_weight is not None:
-            self.__fighter_weight = fighter_weight
-        else:
-            self.__fighter_weight = default_weights['fighter_weight']
-
-
-        if credit_weight is not None:
-            self.__credit_weight = credit_weight
-        else:
-            self.__credit_weight = default_weights['credit_weight']
-
-
-    def get_name(self):
-        return self.__name
-
-
-    def is_interactive(self):
+    def is_interactive(self) -> bool:
         return False
 
 
-    def search(self, state):
+    def search(self, state: PijersiState) -> PijersiAction:
+
         do_check = False
 
         initial_state = MinimaxState(state, state.get_current_player())
 
-        self.__alpha_cut_count = list()
-        self.__beta_cut_count = list()
+        if self.__debug:
+            self.__alpha_cuts = []
+            self.__beta_cuts = []
 
-        (best_value, action_values) = self.alphabeta(state=initial_state,
+        (best_value, action_to_values) = self.alphabeta(state=initial_state,
                                                     player=1,
-                                                    return_action_values=True)
+                                                    return_action_to_values=True)
 
-        if False:
-            if len(self.__alpha_cut_count) > 0:
-                alpha_cut_mean = sum(self.__alpha_cut_count)/len(self.__alpha_cut_count)
-                self.__alpha_cut_count.sort()
-                alpha_cut_q95 = self.__alpha_cut_count[int(0.95*len(self.__alpha_cut_count))]
+        if self.__debug:
+            if self.__alpha_cuts:
+                alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
+                self.__alpha_cuts.sort()
+                alpha_cut_q95 = self.__alpha_cuts[int(0.95*len(self.__alpha_cuts))]
             else:
                 alpha_cut_mean = 0
                 alpha_cut_q95 = 0
 
-            if len(self.__beta_cut_count) > 0:
-                beta_cut_mean = sum(self.__beta_cut_count)/len(self.__beta_cut_count)
-                self.__beta_cut_count.sort()
-                beta_cut_q95 = self.__beta_cut_count[int(0.95*len(self.__beta_cut_count))]
+            if self.__beta_cuts:
+                beta_cut_mean = sum(self.__beta_cuts)/len(self.__beta_cuts)
+                self.__beta_cuts.sort()
+                beta_cut_q95 = self.__beta_cuts[int(0.95*len(self.__beta_cuts))]
             else:
                 beta_cut_mean = 0
                 beta_cut_q95 = 0
 
-            print( f"alpha_cut #{len(self.__alpha_cut_count)} actions mean={alpha_cut_mean:.1f} q95={alpha_cut_q95:.1f}" + " / " +
-                   f"beta_cut #{len(self.__beta_cut_count)} actions mean={beta_cut_mean:.1f} q95={beta_cut_q95:.1f}")
+            print( f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
+                   f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
         if do_check:
-            self.check(initial_state, best_value, action_values)
+            self.check(initial_state, best_value, action_to_values)
 
         if self.__debug:
             print()
 
-        best_actions = list()
-        for (action, action_value) in action_values.items():
+        best_actions = []
+        for (action, action_value) in action_to_values.items():
             if action_value == best_value:
                 best_actions.append(action)
                 if self.__debug:
-                    print("MinimaxSearcher.search: best (action, value)=",(action, action_value))
+                    print(f"MinimaxSearcher.search: best (action, value)=({action}, {action_value:.1f})")
 
         print()
-        print("%d best_actions with best value %.1f" % (len(best_actions), best_value))
+        print(f"{len(best_actions)} best_actions with best value {best_value:.1f}")
 
         action = random.choice(best_actions)
 
         return action
 
 
-    def check(self, initial_state, best_value, action_values):
+    def check(self, initial_state: PijersiState, best_value: float, action_to_values: Mapping[PijersiAction, float]):
 
         (best_value_ref, action_values_ref) = self.minimax(state=initial_state,
                                                     player=1,
-                                                    return_action_values=True)
+                                                    return_action_to_values=True)
 
         if self.__debug:
             print()
-            print("MinimaxSearcher.check: best_value_ref=",best_value_ref)
-            print("MinimaxSearcher.check: best_value=",best_value)
-
-        if self.__debug:
+            print(f"MinimaxSearcher.check: best_value_ref={best_value_ref:.1f}")
+            print(f"MinimaxSearcher.check: best_value={best_value:.1f}")
             print()
 
-        best_actions_ref = list()
+        best_actions_ref = []
         for (action_ref, action_value_ref) in action_values_ref.items():
             if action_value_ref == best_value_ref:
                 best_actions_ref.append(action_ref)
                 if self.__debug:
-                    print("MinimaxSearcher.check: best (action_ref, action_value_ref)=",
-                          (action_ref, action_value_ref))
+                    print(f"MinimaxSearcher.check: best (action_ref, action_value_ref)= ({action_ref}, {action_value_ref:.1f})")
 
         if self.__debug:
             print()
-            print("%d best_actions_ref with best value %.1f" % (len(best_actions_ref), best_value_ref))
+            print(f"{len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.1f}")
 
-        best_actions = list()
-        for (action, action_value) in action_values.items():
+        best_actions = []
+        for (action, action_value) in action_to_values.items():
             if action_value == best_value:
                 best_actions.append(action)
                 if self.__debug:
-                    print("MinimaxSearcher.check: best (action, action_value)=",
-                          (action, action_value))
+                    print(f"MinimaxSearcher.check: best (action, action_value)= ({action}, {action_value:.1f})")
 
         if self.__debug:
             print()
 
         action_names_ref = set(map(str, action_values_ref.keys()))
-        action_names = set(map(str, action_values.keys()))
+        action_names = set(map(str, action_to_values.keys()))
 
         best_names_ref = set(best_actions_ref)
         best_names = set(best_actions)
@@ -2133,20 +2180,13 @@ class MinimaxSearcher():
         assert len(best_names - best_names_ref) == 0
 
 
-    def evaluate_state_value(self, state, depth):
+    def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
         # evaluate favorability for pijersi_maximizer_player
-
-        from statistics import mean
 
         assert depth >= 0
 
-        # evaluate as if pijersi_maximizer_player == Player.WHITE and use minimax_maximizer_sign
-        pijersi_maximizer_player = state.get_current_maximizer_player()
-
-        if pijersi_maximizer_player == Player.WHITE:
-            minimax_maximizer_sign = 1
-        else:
-            minimax_maximizer_sign = -1
+        # evaluate as if pijersi_maximizer_player == Player.T.WHITE and use minimax_maximizer_sign
+        minimax_maximizer_sign = 1 if state.get_current_maximizer_player() == Player.T.WHITE else -1
 
         value = 0
 
@@ -2155,7 +2195,7 @@ class MinimaxSearcher():
         if pijersi_state.is_terminal():
             # >> amplify terminal value using the depth (rationale: winning faster is safer)
 
-            white_reward = pijersi_state.get_rewards()[Player.WHITE]
+            white_reward = pijersi_state.get_rewards()[Player.T.WHITE]
 
             if white_reward == Reward.WIN:
                 value = minimax_maximizer_sign*OMEGA_2*(depth + 1)
@@ -2171,132 +2211,102 @@ class MinimaxSearcher():
 
             dmin_norm = 8
             dave_norm = dmin_norm
-            capture_norm = 14
+            cube_norm = 14
             fighter_norm = 12
-            center_norm = 14
             credit_norm = PijersiState.get_max_credit()
 
             # white and black distances to goal
             distances = pijersi_state.get_distances_to_goal()
 
-            if len(distances[Player.WHITE]) == 0:
-                distances[Player.WHITE] = [dmin_norm]
+            if not distances[Player.T.WHITE]:
+                distances[Player.T.WHITE] = [dmin_norm]
 
-            if len(distances[Player.BLACK]) == 0:
-                distances[Player.BLACK] = [dmin_norm]
+            if not distances[Player.T.BLACK]:
+                distances[Player.T.BLACK] = [dmin_norm]
 
-            white_min_distance = min(distances[Player.WHITE])
-            black_min_distance = min(distances[Player.BLACK])
+            white_min_distance = min(distances[Player.T.WHITE])
+            black_min_distance = min(distances[Player.T.BLACK])
 
-            white_ave_distance = mean(distances[Player.WHITE])
-            black_ave_distance = mean(distances[Player.BLACK])
+            white_ave_distance = mean(distances[Player.T.WHITE])
+            black_ave_distance = mean(distances[Player.T.BLACK])
 
             dmin_difference = minimax_maximizer_sign*(black_min_distance - white_min_distance)
             dave_difference = minimax_maximizer_sign*(black_ave_distance - white_ave_distance)
 
 
-            # white and black with captured status
-            capture_counts = pijersi_state.get_capture_counts()
-            capture_difference = minimax_maximizer_sign*(capture_counts[Player.BLACK] - capture_counts[Player.WHITE])
+            # white and black with alive cubes
+            cube_counts = pijersi_state.get_cube_counts()
+            cube_difference = minimax_maximizer_sign*(cube_counts[Player.T.WHITE] - cube_counts[Player.T.BLACK])
 
-            # white and black with active fighters status
+            # white and black with alive fighters
             fighter_counts = pijersi_state.get_fighter_counts()
-            fighter_difference = minimax_maximizer_sign*(fighter_counts[Player.WHITE] - fighter_counts[Player.BLACK])
-
-            # white and black fighter cubes in the central zone
-            white_center_count = 0
-            black_center_count = 0
-
-            cell_bottom = pijersi_state.get_hexagon_bottom()
-            cell_top= pijersi_state.get_hexagon_top()
-
-            for cell_index in pijersi_state.get_center_hexagon_indices():
-                for cube_index in [cell_bottom[cell_index], cell_top[cell_index]]:
-                    if cube_index != Null.CUBE:
-                        cube = Cube.all[cube_index]
-
-                        if cube.sort in (CubeSort.PAPER, CubeSort.ROCK, CubeSort.SCISSORS):
-                            if cube.player == Player.WHITE:
-                                white_center_count += 1
-
-                            elif cube.player == Player.BLACK:
-                                black_center_count += 1
-                    else:
-                        break
-
-            center_difference = minimax_maximizer_sign*(white_center_count - black_center_count)
-
+            fighter_difference = minimax_maximizer_sign*(fighter_counts[Player.T.WHITE] - fighter_counts[Player.T.BLACK])
 
             # credit acts symmetrically for white and black
             credit = pijersi_state.get_credit()
 
-
             # normalize each feature in the intervall [-1, +1]
 
-            assert dmin_difference <= dmin_norm
-            assert -dmin_difference <= dmin_norm
+            if self.__debug:
+                assert dmin_difference <= dmin_norm
+                assert -dmin_difference <= dmin_norm
 
-            assert dave_difference <= dave_norm
-            assert -dave_difference <= dave_norm
+                assert dave_difference <= dave_norm
+                assert -dave_difference <= dave_norm
 
-            assert capture_difference <= capture_norm
-            assert -capture_difference <= capture_norm
+                assert cube_difference <= cube_norm
+                assert -cube_difference <= cube_norm
 
-            assert fighter_difference <= fighter_norm
-            assert -fighter_difference <= fighter_norm
+                assert fighter_difference <= fighter_norm
+                assert -fighter_difference <= fighter_norm
 
-            assert center_difference <= center_norm
-            assert -center_difference <= center_norm
-
-            assert credit <= credit_norm
-            assert -credit <= credit_norm
+                assert credit <= credit_norm
+                assert -credit <= credit_norm
 
             dmin_difference = dmin_difference/dmin_norm
             dave_difference = dave_difference/dave_norm
-            capture_difference = capture_difference/capture_norm
+            cube_difference = cube_difference/cube_norm
             fighter_difference = fighter_difference/fighter_norm
-            center_difference = center_difference/center_norm
-            credit = credit/center_norm
+            credit = credit/credit_norm
 
             # synthesis
 
             value += self.__dmin_weight*dmin_difference
             value += self.__dave_weight*dave_difference
-            value += self.__capture_weight*capture_difference
+            value += self.__cube_weight*cube_difference
             value += self.__fighter_weight*fighter_difference
-            value += self.__center_weight*center_difference
             value += self.__credit_weight*credit
 
         return value
 
 
-    def minimax(self, state, player, depth=None, return_action_values=False):
+    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None,
+                return_action_to_values: bool=False) -> Union[float, Mapping[PijersiAction, float]]:
 
         if depth is None:
-            depth =self.__max_depth
+            depth = self.__max_depth
 
 
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
 
-            if self.__debug:
+            if self.__debug and self.__debug_level >= 3:
                 print()
-                print("minimax at depth %d evaluates leaf state %d with value %f" %
-                      (depth, id(state),  state_value))
+                print(f"minimax at depth {depth} evaluates leaf state {id(state)} with value {state_value:.1f}")
 
             return state_value
 
-        if self.__debug:
+        if self.__debug and self.__debug_level >= 3:
             print()
-            print("minimax at depth %d evaluates state %d ..." % (depth, id(state)))
+            print(f"minimax at depth {depth} evaluates state {id(state)} ...")
 
-        assert player == -1 or player == 1
+        assert player in (-1, 1)
 
         if player == -1:
-            assert not return_action_values
+            assert not return_action_to_values
 
-        if return_action_values:
-            action_values = dict()
+        if return_action_to_values:
+            action_to_values = {}
 
         actions = state.get_actions()
 
@@ -2309,8 +2319,8 @@ class MinimaxSearcher():
 
                 child_value = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if return_action_values:
-                    action_values[action] = child_value
+                if return_action_to_values:
+                    action_to_values[action] = child_value
 
                 state_value = max(state_value, child_value)
 
@@ -2325,25 +2335,22 @@ class MinimaxSearcher():
 
                 state_value = min(state_value, child_value)
 
-        if self.__debug:
+        if self.__debug and self.__debug_level >= 3:
             print()
-            print("minimax at depth %d evaluates state %d with value %f" % (depth, id(state), state_value))
+            print(f"minimax at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
 
-        if return_action_values:
-            return (state_value, action_values)
-        else:
-            return state_value
+        if return_action_to_values:
+            return (state_value, action_to_values)
+
+        return state_value
 
 
-    def alphabeta(self, state, player, depth=None, alpha=None, beta=None, return_action_values=False):
+    def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
+                  return_action_to_values=False) -> Union[float, Mapping[PijersiAction, float]]:
 
 
         def score_action(action):
-            action_str = str(action)
-            captures = re.sub(r"[^!]", "", action_str)
-            stacks = re.sub(r"[^=]", "", action_str)
-            score = 4*len(captures) + 2*len(stacks)
-            return score
+            return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
 
 
         if alpha is None:
@@ -2361,29 +2368,29 @@ class MinimaxSearcher():
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
 
-            if self.__debug:
+            if self.__debug and self.__debug_level >= 3:
                 print()
-                print("alphabeta at depth %d evaluates leaf state %d with value %f" %
-                      (depth, id(state),  state_value))
+                print(f"alphabeta at depth {depth} evaluates leaf state {id(state)} with value {state_value:.1f}")
 
             return state_value
 
-        if return_action_values:
-            action_values = dict()
+        if return_action_to_values:
+            action_to_values = {}
 
-        if self.__debug:
+        if self.__debug and self.__debug_level >= 3:
             print()
-            print("alphabeta at depth %d evaluates state %d ..." % (depth, id(state)))
+            print(f"alphabeta at depth {depth} evaluates state {id(state)} ...")
 
-        assert player == -1 or player == 1
+        assert player in(-1, 1)
 
         if player == -1:
-            assert not return_action_values
+            assert not return_action_to_values
 
-        if return_action_values:
-            action_values = dict()
+        if return_action_to_values:
+            action_to_values = {}
 
-        actions = make_chunk_sort_iterator(state.iterate_actions(), chunk_size=None, key=score_action, reverse=True)
+        actions = state.get_actions()
+        actions.sort(key=score_action, reverse=True)
 
         if player == 1:
 
@@ -2398,17 +2405,18 @@ class MinimaxSearcher():
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
-                if return_action_values:
-                    assert action not in action_values
-                    action_values[action] = child_value
+                if return_action_to_values:
+                    assert action not in action_to_values
+                    action_to_values[action] = child_value
 
                 state_value = max(state_value, child_value)
 
                 if state_value >= beta:
-                    self.__beta_cut_count.append(action_count)
 
                     if self.__debug:
-                        print("--- beta cut-off")
+                        self.__beta_cuts.append(action_count/len(actions))
+                        if self.__debug_level >= 2:
+                            print("--- beta cut-off")
                     break
 
                 alpha = max(alpha, state_value)
@@ -2419,7 +2427,7 @@ class MinimaxSearcher():
 
             action_count = 0
 
-            for (action, next_action) in make_pair_iterator(actions):
+            for (action, next_action) in zip(actions, actions[1:] + [None]):
                 action_count += 1
 
                 child_state = state.take_action(action)
@@ -2429,10 +2437,11 @@ class MinimaxSearcher():
                 state_value = min(state_value, child_value)
 
                 if state_value <= alpha:
-                    self.__alpha_cut_count.append(action_count)
 
                     if self.__debug:
-                        print("--- alpha cut-off")
+                        self.__alpha_cuts.append(action_count/len(actions))
+                        if self.__debug_level >= 2:
+                            print("--- alpha cut-off")
 
                     if depth == (self.__max_depth - 1):
                         if state_value == alpha and (next_action is not None):
@@ -2440,30 +2449,108 @@ class MinimaxSearcher():
                             # >> rationale: without cut-off it could be that state_value < alpha
                             state_value -= 1/OMEGA
                             assert state_value < alpha
-                            if self.__debug:
+                            if self.__debug and self.__debug_level >= 2:
                                 print("--- force state_value < alpha")
 
                     break
 
                 beta = min(beta, state_value)
 
-        if self.__debug:
+        if self.__debug and self.__debug_level >= 3:
             print()
-            print("alphabeta at depth %d evaluates state %d with value %f" % (depth, id(state), state_value))
+            print(f"alphabeta at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
 
-        if return_action_values:
-            return (state_value, action_values)
+        if return_action_to_values:
+            return (state_value, action_to_values)
+
+        return state_value
+
+
+class PijersiMcts(mcts.mcts):
+    """My adaptation of mcts.mcts"""
+
+
+    def getBestActions(self) -> Mapping[PijersiAction, float]:
+        bestActions = []
+        bestValue = -math.inf
+        node = self.root
+        currentPlayer = node.state.getCurrentPlayer()
+        for (action, child) in node.children.items():
+            childValue = currentPlayer*child.totalReward/child.numVisits
+            if childValue > bestValue:
+                bestValue = childValue
+                bestActions = [action]
+            elif childValue == bestValue:
+                bestActions.append(action)
+        return bestActions
+
+
+class MctsState:
+    """Adaptater to mcts.StateInterface for PijersiState"""
+
+    Self = TypeVar("Self", bound="MctsState")
+
+    __slots__ = ('__pijersi_state', '__maximizer_player')
+
+
+    def __init__(self, pijersi_state: PijersiState, maximizer_player: Player.T):
+        self.__pijersi_state = pijersi_state
+        self.__maximizer_player = maximizer_player
+
+
+    def get_pijersi_state(self) -> PijersiState:
+        return self.__pijersi_state
+
+
+    def getCurrentPlayer(self) -> int:
+        """ Returns 1 if it is the maximizer player's turn to choose an action,
+        or -1 for the minimiser player"""
+        return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
+
+
+    def isTerminal(self) -> bool:
+        return self.__pijersi_state.is_terminal()
+
+
+    def getReward(self) -> float:
+        """Returns the reward for this state: 0 for a draw,
+        positive for a win by maximizer player or negative for a win by the minimizer player.
+        Only needed for terminal states."""
+
+        pijersi_rewards = self.__pijersi_state.get_rewards()
+
+        if pijersi_rewards[self.__maximizer_player] == Reward.DRAW:
+            mcts_reward = 0
+
+        elif pijersi_rewards[self.__maximizer_player] == Reward.WIN:
+            mcts_reward = 1
+
         else:
-            return state_value
+            mcts_reward = -1
+
+        return mcts_reward
 
 
-class MctsSearcher():
+    def getPossibleActions(self) -> Sequence[PijersiAction]:
+        return self.__pijersi_state.get_actions()
 
-    __slots__ = ('__name', '__time_limit', '__iteration_limit', '__capture_weight', '__searcher')
+
+    def takeAction(self, action: PijersiAction) -> Self:
+        return MctsState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-    def __init__(self, name, time_limit=None, iteration_limit=None, rolloutPolicy=mcts.randomPolicy):
-        self.__name = name
+class MctsSearcher(Searcher):
+
+    __slots__ = ('__time_limit', '__iteration_limit', '__capture_weight', '__searcher', '__debug')
+
+
+    def __init__(self, name: str,
+                 time_limit: Optional[int]=None,
+                 iteration_limit: Optional[int]=None,
+                 rolloutPolicy: Callable[[MctsState], float]=mcts.randomPolicy):
+
+        super().__init__(name)
+        self.__debug = False
 
         default_time_limit = 1_000
 
@@ -2485,15 +2572,11 @@ class MctsSearcher():
             self.__searcher = PijersiMcts(iterationLimit=self.__iteration_limit, rolloutPolicy=rolloutPolicy)
 
 
-    def get_name(self):
-        return self.__name
-
-
-    def is_interactive(self):
+    def is_interactive(self) -> bool:
         return False
 
 
-    def search(self, state):
+    def search(self, state: MctsState) -> PijersiAction:
 
         # >> when search is done, ignore the automatically selected action
         _ = self.__searcher.search(initialState=MctsState(state, state.get_current_player()))
@@ -2501,18 +2584,61 @@ class MctsSearcher():
         best_actions = self.__searcher.getBestActions()
         action = random.choice(best_actions)
 
-        statistics = extractStatistics(self.__searcher, action)
+        statistics = MctsSearcher.extractStatistics(self.__searcher, action)
         print("mcts statitics:" +
               f" chosen action= {statistics['actionTotalReward']} total reward" +
               f" over {statistics['actionNumVisits']} visits /"
               f" all explored actions= {statistics['rootTotalReward']} total reward" +
               f" over {statistics['rootNumVisits']} visits")
 
-        if _do_debug:
+        if self.__debug:
             for (child_action, child) in self.__searcher.root.children.items():
                 print(f"    action {child_action} numVisits={child.numVisits} totalReward={child.totalReward}")
 
         return action
+
+    @staticmethod
+    def extractStatistics(mcts_searcher: PijersiMcts, action: PijersiAction) -> Mapping[str, Union[int, float]]:
+        statistics = {}
+        statistics['rootNumVisits'] = mcts_searcher.root.numVisits
+        statistics['rootTotalReward'] = mcts_searcher.root.totalReward
+        statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
+        statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
+        return statistics
+
+
+def pijersiRandomPolicy(state: MctsState) -> float:
+
+
+    def score_action(action: PijersiAction) -> int:
+        return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
+
+
+    def make_action_classes(actions: Sequence[PijersiAction]) -> Mapping[int, Sequence[PijersiAction]]:
+        action_classes = {}
+        for action in actions:
+            score = score_action(action)
+            if score not in action_classes:
+                action_classes[score] = [action]
+            else:
+                action_classes[score].append(action)
+        return action_classes
+
+
+    while not state.isTerminal():
+        pijersi_state = state.get_pijersi_state()
+
+        actions = pijersi_state.get_actions()
+
+        # >> Insight: selecting first the class of action by its score
+        # >> better balance actions with high score
+        # >> rather than selecting direcly the action
+        action_classes = make_action_classes(actions)
+        score = random.choice(list(action_classes.keys()))
+        action = random.choice(action_classes[score])
+
+        state = state.takeAction(action)
+    return state.getReward()
 
 
 class SearcherCatalog:
@@ -2524,17 +2650,17 @@ class SearcherCatalog:
         self.__catalog = {}
 
 
-    def add(self, searcher):
+    def add(self, searcher: Searcher):
         searcher_name = searcher.get_name()
         assert searcher_name not in self.__catalog
         self.__catalog[searcher_name] = searcher
 
 
-    def get_names(self):
+    def get_names(self) -> Sequence[str]:
         return list(sorted(self.__catalog.keys()))
 
 
-    def get(self, name):
+    def get(self, name: str) -> Searcher:
         assert name in self.__catalog
         return self.__catalog[name]
 
@@ -2550,9 +2676,7 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
 
 SEARCHER_CATALOG.add( MctsSearcher("mcts-90s-jrp", time_limit=90_000, rolloutPolicy=pijersiRandomPolicy) )
-SEARCHER_CATALOG.add( MctsSearcher("mcts-300i-rnd", iteration_limit=300, rolloutPolicy=mcts.randomPolicy) )
-
-
+SEARCHER_CATALOG.add( MctsSearcher("mcts-2300i-rnd", iteration_limit=2_300, rolloutPolicy=mcts.randomPolicy) )
 
 
 class Game:
@@ -2568,7 +2692,7 @@ class Game:
         self.__log = ""
         self.__turn = None
         self.__last_action = None
-        self.__turn_duration = {Player.WHITE:[], Player.BLACK:[]}
+        self.__turn_duration = {Player.T.WHITE:[], Player.T.BLACK:[]}
 
 
     def enable_log(self, condition: bool):
@@ -2577,18 +2701,18 @@ class Game:
             self.__log = ""
 
 
-    def set_white_searcher(self, searcher):
-        self.__searcher[Player.WHITE] = searcher
+    def set_white_searcher(self, searcher: Searcher):
+        self.__searcher[Player.T.WHITE] = searcher
 
 
-    def set_black_searcher(self, searcher):
-        self.__searcher[Player.BLACK] = searcher
+    def set_black_searcher(self, searcher: Searcher):
+        self.__searcher[Player.T.BLACK] = searcher
 
 
     def start(self):
 
-        assert self.__searcher[Player.WHITE] is not None
-        assert self.__searcher[Player.BLACK] is not None
+        assert self.__searcher[Player.T.WHITE] is not None
+        assert self.__searcher[Player.T.BLACK] is not None
 
         self.__pijersi_state = PijersiState()
 
@@ -2622,7 +2746,7 @@ class Game:
         self.__pijersi_state = state
 
 
-    def get_rewards(self):
+    def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
         return self.__pijersi_state.get_rewards()
 
 
@@ -2638,7 +2762,7 @@ class Game:
             player = self.__pijersi_state.get_current_player()
 
             if self.__enabled_log:
-                player_name = f"{Player.name(player)}-{self.__searcher[player].get_name()}"
+                player_name = f"{Player.to_name(player)}-{self.__searcher[player].get_name()}"
                 print()
                 print(f"{player_name} is thinking ...")
                 turn_start = time.time()
@@ -2673,16 +2797,16 @@ class Game:
                 print()
                 print("-"*40)
 
-                white_time = sum(self.__turn_duration[Player.WHITE])
-                black_time = sum(self.__turn_duration[Player.BLACK])
+                white_time = sum(self.__turn_duration[Player.T.WHITE])
+                black_time = sum(self.__turn_duration[Player.T.BLACK])
 
-                white_player = f"{Player.name(Player.WHITE)}-{self.__searcher[Player.WHITE].get_name()}"
-                black_player = f"{Player.name(Player.BLACK)}-{self.__searcher[Player.BLACK].get_name()}"
+                white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
+                black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
 
-                if rewards[Player.WHITE] == rewards[Player.BLACK]:
+                if rewards[Player.T.WHITE] == rewards[Player.T.BLACK]:
                     self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
 
-                elif rewards[Player.WHITE] > rewards[Player.BLACK]:
+                elif rewards[Player.T.WHITE] > rewards[Player.T.BLACK]:
                     self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
 
                 else:
@@ -2691,172 +2815,301 @@ class Game:
                 print(self.__log)
 
 
-def test_game_between_random_players():
-
-    print("=====================================")
-    print(" test_game_between_random_players ...")
-    print("=====================================")
-
-    default_max_credit = PijersiState.get_max_credit()
-    PijersiState.set_max_credit(10_000)
-
-    game = Game()
-
-    game.set_white_searcher(RandomSearcher("random"))
-    game.set_black_searcher(RandomSearcher("random"))
-
-    game.start()
-
-    while game.has_next_turn():
-        game.next_turn()
-
-    PijersiState.set_max_credit(default_max_credit)
-
-    print("=====================================")
-    print("test_game_between_random_players done")
-    print("=====================================")
+def test():
 
 
-def test_game_between_mcts_players():
+    def generate_random_hex_state(is_empty: Optional[bool]=None,
+                                  has_stack: Optional[bool]=None,
+                                  player: Optional[Player.T]=None,
+                                  bottom: Optional[Cube.T]=None,
+                                  top: Optional[Cube.T]=None) -> HexState:
 
-    print("==================================")
-    print("test_game_between_mcts_players ...")
-    print("==================================")
+        is_empty = random.choice((True, False)) if is_empty is None else is_empty
+        if not is_empty:
+            player = random.choice(tuple(Player.T)) if player is None else player
+            bottom = random.choice(tuple(Cube.T)) if bottom is None else bottom
+            has_stack = random.choice((True, False)) if has_stack is None else has_stack
+            if has_stack:
+                if bottom == Cube.T.WISE:
+                    top = random.choice(tuple(Cube.T)) if top is None else top
+                else:
+                    top = random.choice((Cube.T.ROCK, Cube.T.PAPER, Cube.T.SCISSORS)) if top is None else top
 
-    default_max_credit = PijersiState.get_max_credit()
-    PijersiState.set_max_credit(10)
+        else:
+            has_stack = False
+            player = None
+            bottom = None
+            top = None
 
-    game = Game()
-
-    game.set_white_searcher(MctsSearcher("mcts-10s", time_limit=10_000))
-    game.set_black_searcher(MctsSearcher("mcts-10i", iteration_limit=10))
-
-    game.start()
-
-    while game.has_next_turn():
-        game.next_turn()
-
-    PijersiState.set_max_credit(default_max_credit)
-
-    print("===================================")
-    print("test_game_between_mcts_players done")
-    print("===================================")
-
-
-def test_game_between_random_and_human_players():
-
-    print("==============================================")
-    print("test_game_between_random_and_human_players ...")
-    print("==============================================")
-
-    default_max_credit = PijersiState.get_max_credit()
-    PijersiState.set_max_credit(10)
-
-    game = Game()
-
-    human_searcher = HumanSearcher("human")
-    human_searcher.use_command_line(True)
-    game.set_white_searcher(human_searcher)
-
-    game.set_black_searcher(RandomSearcher("random"))
-
-    game.start()
-
-    while game.has_next_turn():
-        game.next_turn()
-
-    PijersiState.set_max_credit(default_max_credit)
-
-    print("===============================================")
-    print("test_game_between_random_and_human_players done")
-    print("===============================================")
+        return HexState(is_empty=is_empty, has_stack=has_stack, player=player, bottom=bottom, top=top)
 
 
-def test_game_between_minimax_players():
-
-    print("=====================================")
-    print(" test_game_between_minimax_players ...")
-    print("=====================================")
-
-
-    searcher_dict = dict()
-    searcher_dict["random"] = RandomSearcher("random")
-
-    max_depth_list = [1, 2, 3]
-
-    for max_depth in max_depth_list:
-        searcher_name = "minimax%d" % max_depth
-        searcher = MinimaxSearcher(searcher_name, max_depth=max_depth)
-        assert searcher_name not in searcher_dict
-        searcher_dict[searcher_name] = searcher
-
-    searcher_points = collections.Counter()
-
-    game_count = 5
-
-    for x_searcher in searcher_dict.values():
-        for y_searcher in searcher_dict.values():
-            if x_searcher is y_searcher:
-                continue
-
-            x_points = 0
-            y_points = 0
-
-            for game_index in range(game_count):
-
-                game = Game()
-                game.set_white_searcher(x_searcher)
-                game.set_black_searcher(y_searcher)
-                x_player = Player.WHITE
-                y_player = Player.BLACK
-
-                game.start()
-                while game.has_next_turn():
-                    print("--> " + x_searcher.get_name() + " versus " +
-                                   y_searcher.get_name() +  " game_index: %d" % game_index)
-                    game.next_turn()
-
-                rewards = game.get_rewards()
-
-                if rewards[x_player] == Reward.WIN:
-                    x_points += 2
-
-                elif rewards[x_player] == Reward.DRAW:
-                    x_points += 1
-
-                if rewards[y_player] == Reward.WIN:
-                    y_points += 2
-
-                elif rewards[y_player] == Reward.DRAW:
-                    y_points += 1
+    def generate_random_path_state(path_length: int) -> PathStates:
+        assert path_length >= 0
+        path_state = [generate_random_hex_state() for _ in range(path_length)]
+        return path_state
 
 
-            print("game_count:", game_count, "/ x_points:", x_points, "/ y_points:", y_points)
+    def test_iterate_hex_states() -> None:
 
-            searcher_points[x_searcher.get_name()] += x_points
-            searcher_points[y_searcher.get_name()] += y_points
+        print()
+        print("-- test_iterate_hex_states --")
 
-    print()
-    for (searcher_name, points) in sorted(searcher_points.items()):
-        print("searcher %s has %d points" %(searcher_name, points))
+        hex_codes = set()
 
-    print()
-    searcher_count = len(searcher_dict)
-    searcher_game_count = 2*(searcher_count - 1)*game_count
-    print("number of searchers:", searcher_count)
-    print("number of games per searcher:", searcher_game_count)
-    print()
-    for (searcher_name, points) in sorted(searcher_points.items()):
-        print("searcher %s has %.3f average points per game" %(searcher_name, points/searcher_game_count))
+        for hex_state in HexState.iterate_hex_states():
+            hex_code = hex_state.encode()
+            print(f"hex_state = {hex_state} ; hex_code={hex_code}")
+            assert hex_code not in hex_codes
+            hex_codes.add(hex_code)
 
-    print("=====================================")
-    print("test_game_between_minimax_players done")
-    print("=====================================")
+        print(f"len(hex_codes) = {len(hex_codes)} ; min(hex_codes) = {min(hex_codes)} ; max(hex_codes) = {max(hex_codes)}")
+        assert len(hex_codes) <= HexState.CODE_BASE
+        assert min(hex_codes) == 0
+        assert max(hex_codes) <= HexState.CODE_BASE
 
 
-def main():
-    print(f"Hello from {os.path.basename(__file__)} version {__version__}")
-    print(_COPYRIGHT_AND_LICENSE)
+    def test_encode_and_decode_hex_state():
+
+        print()
+        print("-- test_encode_and_decode_hex_state --")
+
+        hex_state_count = 100
+
+        for _ in range(hex_state_count):
+
+            hex_state = generate_random_hex_state()
+            print()
+            print(f"hex_state = {hex_state}")
+
+            hex_state_code = hex_state.encode()
+            print(f"hex_state_code = {hex_state_code}")
+
+            hex_decoded_state = HexState.decode(hex_state_code)
+            print(f"hex_decoded_state = {hex_decoded_state}")
+            assert hex_decoded_state == hex_state
+
+        hex_state_count = 100
+
+        for _ in range(hex_state_count):
+
+            hex_state = generate_random_hex_state(is_empty=False, has_stack=True, bottom=Cube.T.WISE)
+            print()
+            print(f"hex_state = {hex_state}")
+
+            hex_state_code = hex_state.encode()
+            print(f"hex_state_code = {hex_state_code}")
+
+            hex_decoded_state = HexState.decode(hex_state_code)
+            print(f"hex_decoded_state = {hex_decoded_state}")
+            assert hex_decoded_state == hex_state
+
+
+    def test_encode_and_decode_path_states() -> None:
+
+        print()
+        print("-- test_encode_and_decode_path_states --")
+
+        path_state_count = 100
+        path_length = 3
+
+        for _ in range(path_state_count):
+            path_state = generate_random_path_state(path_length)
+            print()
+            print(f"path_state = {path_state}")
+
+            path_code = PijersiState.encode_path_states(path_state)
+            print(f"path_code = {path_code}")
+
+            path_codes = PijersiState.decode_path_code(path_code, path_length)
+            print(f"path_codes = {path_codes}")
+
+            path_decoded_state = PijersiState.decode_path_codes(path_codes)
+            print(f"path_decoded_state = {path_decoded_state}")
+            assert path_decoded_state == path_state
+
+
+    def test_first_get_summary():
+
+        print()
+        print("-- test_first_get_summary --")
+
+        new_state = PijersiState()
+        summary = new_state.get_summary()
+        print()
+        print(f"summary = {summary}")
+        assert summary == "turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
+
+
+    def test_game_between_random_players():
+
+        print("=====================================")
+        print(" test_game_between_random_players ...")
+        print("=====================================")
+
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10_000)
+
+        game = Game()
+
+        game.set_white_searcher(RandomSearcher("random"))
+        game.set_black_searcher(RandomSearcher("random"))
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        PijersiState.set_max_credit(default_max_credit)
+
+        print("=====================================")
+        print("test_game_between_random_players done")
+        print("=====================================")
+
+
+    def test_game_between_mcts_players():
+
+        print("==================================")
+        print("test_game_between_mcts_players ...")
+        print("==================================")
+
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(20)
+
+        game = Game()
+
+        game.set_white_searcher(MctsSearcher("mcts-500ms", time_limit=500, rolloutPolicy=pijersiRandomPolicy))
+        game.set_black_searcher(MctsSearcher("mcts-15i", iteration_limit=15))
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        PijersiState.set_max_credit(default_max_credit)
+
+        print("===================================")
+        print("test_game_between_mcts_players done")
+        print("===================================")
+
+
+    def test_game_between_random_and_human_players():
+
+        print("==============================================")
+        print("test_game_between_random_and_human_players ...")
+        print("==============================================")
+
+        default_max_credit = PijersiState.get_max_credit()
+        PijersiState.set_max_credit(10)
+
+        game = Game()
+
+        human_searcher = HumanSearcher("human")
+        human_searcher.use_command_line(True)
+        game.set_white_searcher(human_searcher)
+
+        game.set_black_searcher(RandomSearcher("random"))
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        PijersiState.set_max_credit(default_max_credit)
+
+        print("===============================================")
+        print("test_game_between_random_and_human_players done")
+        print("===============================================")
+
+
+    def test_game_between_minimax_players(max_depth: int=3, game_count: int=5, use_random_searcher: bool=True):
+
+        print("=====================================")
+        print(" test_game_between_minimax_players ...")
+        print("=====================================")
+
+        searcher_dict = {}
+
+        if use_random_searcher:
+            searcher_dict["random"] = RandomSearcher("random")
+
+        minimax_depth_list = list(range(1, max_depth + 1))
+
+        for minimax_depth in minimax_depth_list:
+            searcher_name = f"minimax{minimax_depth}"
+            searcher = MinimaxSearcher(searcher_name, max_depth=minimax_depth)
+            assert searcher_name not in searcher_dict
+            searcher_dict[searcher_name] = searcher
+
+        searcher_points = Counter()
+
+
+        for x_searcher in searcher_dict.values():
+            for y_searcher in searcher_dict.values():
+                if x_searcher is y_searcher:
+                    continue
+
+                x_points = 0
+                y_points = 0
+
+                for game_index in range(game_count):
+
+                    game = Game()
+                    game.set_white_searcher(x_searcher)
+                    game.set_black_searcher(y_searcher)
+                    x_player = Player.T.WHITE
+                    y_player = Player.T.BLACK
+
+                    game.start()
+                    while game.has_next_turn():
+                        print("--> " + x_searcher.get_name() + " versus " +
+                                       y_searcher.get_name() +  f" game_index: {game_index}")
+                        game.next_turn()
+
+                    rewards = game.get_rewards()
+
+                    if rewards[x_player] == Reward.WIN:
+                        x_points += 2
+
+                    elif rewards[x_player] == Reward.DRAW:
+                        x_points += 1
+
+                    if rewards[y_player] == Reward.WIN:
+                        y_points += 2
+
+                    elif rewards[y_player] == Reward.DRAW:
+                        y_points += 1
+
+
+                print("game_count:", game_count, "/ x_points:", x_points, "/ y_points:", y_points)
+
+                searcher_points[x_searcher.get_name()] += x_points
+                searcher_points[y_searcher.get_name()] += y_points
+
+        print()
+        for (searcher_name, points) in sorted(searcher_points.items()):
+            print(f"searcher {searcher_name} has {points} points")
+
+        print()
+        searcher_count = len(searcher_dict)
+        searcher_game_count = 2*(searcher_count - 1)*game_count
+        print("number of searchers:", searcher_count)
+        print("number of games per searcher:", searcher_game_count)
+        print()
+        for (searcher_name, points) in sorted(searcher_points.items()):
+            print(f"searcher {searcher_name} has {points/searcher_game_count:.3f} average points per game")
+
+        print("=====================================")
+        print("test_game_between_minimax_players done")
+        print("=====================================")
+
+
+    if True:
+        test_encode_and_decode_hex_state()
+        test_encode_and_decode_path_states()
+        test_iterate_hex_states()
+        PijersiState.print_tables()
+        test_first_get_summary()
 
     if True:
         test_game_between_random_players()
@@ -2868,18 +3121,368 @@ def main():
         test_game_between_random_and_human_players()
 
     if True:
-        test_game_between_minimax_players()
+        test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
+
+    if False:
+        test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
+
+
+def profile():
+
+
+    def profile_get_actions():
+
+        print()
+        print("-- profile_get_actions --")
+
+        profile_data['pijersi_state'] = PijersiState()
+
+        cProfile.run('profile_fun_get_actions()', sort=SortKey.TIME)
+
+
+    def profile_is_terminal():
+
+        print()
+        print("-- profile_is_terminal --")
+
+        profile_data['pijersi_state'] = PijersiState()
+
+        cProfile.run('profile_fun_is_terminal()', sort=SortKey.TIME)
+
+    profile_is_terminal()
+    profile_get_actions()
+
+
+profile_data = {}
+
+
+def profile_fun_get_actions():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+
+    pijersi_state = profile_data['pijersi_state']
+
+    for _ in range(100):
+        actions = pijersi_state.get_actions(use_cache=False)
+        assert actions is not None
+
+
+def profile_fun_is_terminal():
+    #>> Defined at the uper scope of the module because of "cProfile.run"
+
+    pijersi_state = profile_data['pijersi_state']
+
+    for _ in range(1_000):
+        assert not pijersi_state.is_terminal(use_cache=False)
+
+
+def benchmark():
+
+
+    def benchmark_first_get_actions():
+
+        print()
+        print("-- benchmark_first_get_actions --")
+
+        new_state = PijersiState()
+        new_actions = new_state.get_actions()
+        new_actions_id = id(new_actions)
+
+        old_state = old_code.PijersiState()
+        old_actions = old_state.get_actions()
+        old_actions_id = id(old_actions)
+
+        assert len(new_actions) == len(old_actions)
+        assert new_actions_id != old_actions_id
+
+
+        def do_new():
+            new_actions = new_state.get_actions(use_cache=False)
+            assert id(new_actions) != new_actions_id
+
+
+        def do_old():
+            old_actions = old_state.get_actions(use_cache=False)
+            assert id(old_actions) != old_actions_id
+
+
+        time_new = timeit.timeit(do_new, number=100)
+        time_old = timeit.timeit(do_old, number=100)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
+    def benchmark_first_is_terminal():
+
+        print()
+        print("-- benchmark_first_is_terminal --")
+
+        new_state = PijersiState()
+        old_state = old_code.PijersiState()
+
+
+        def do_new():
+            assert not new_state.is_terminal(use_cache=False)
+
+
+        def do_old():
+            assert not old_state.is_terminal(use_cache=False)
+
+
+        time_new = timeit.timeit(do_new, number=100)
+        time_old = timeit.timeit(do_old, number=100)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
+    def benchmark_game_between_random_players():
+
+        print()
+        print("-- benchmark_game_between_random_players --")
+
+        test_seed = random.randint(1, 1_000)
+        test_max_credit_limits = (20, 1_000)
+        game_count = 10
+        game_enabled_log = False
+
+        def do_new():
+            random.seed(a=test_seed)
+
+            for _ in range(game_count):
+
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+
+                default_max_credit = PijersiState.get_max_credit()
+                PijersiState.set_max_credit(test_max_credit)
+
+                new_game = Game()
+                new_game.enable_log(game_enabled_log)
+
+                new_game.set_white_searcher(RandomSearcher("random"))
+                new_game.set_black_searcher(RandomSearcher("random"))
+
+                new_game.start()
+
+                while new_game.has_next_turn():
+                    new_game.next_turn()
+
+                PijersiState.set_max_credit(default_max_credit)
+
+
+        def do_old():
+            random.seed(a=test_seed)
+
+            for _ in range(game_count):
+
+                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
+
+                default_max_credit = old_code.PijersiState.get_max_credit()
+                old_code.PijersiState.set_max_credit(test_max_credit)
+
+                old_game = old_code.Game()
+                old_game.enable_log(game_enabled_log)
+
+                old_game.set_white_searcher(RandomSearcher("random"))
+                old_game.set_black_searcher(RandomSearcher("random"))
+
+                old_game.start()
+
+                while old_game.has_next_turn():
+                    old_game.next_turn()
+
+                old_code.PijersiState.set_max_credit(default_max_credit)
+
+
+        time_new = timeit.timeit(do_new, number=1)
+        time_old = timeit.timeit(do_old, number=1)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+
+    benchmark_first_get_actions()
+    benchmark_first_is_terminal()
+    benchmark_game_between_random_players()
+
+
+def verify():
+
+
+    def verify_first_get_show_text():
+
+        print()
+        print("-- verify_first_get_show_text --")
+
+        new_state = PijersiState()
+        new_show_text = new_state.get_show_text()
+
+        old_state = old_code.PijersiState()
+        old_show_text = old_state.get_show_text()
+
+        print()
+        print(f"new_show_text = \n {new_show_text}")
+
+        print()
+        print(f"old_show_text = \n {old_show_text}")
+        assert new_show_text == old_show_text
+
+
+    def verify_first_get_actions():
+
+        print()
+        print("-- verify_first_get_actions --")
+
+        new_state = PijersiState()
+
+        new_action_names = new_state.get_action_names()
+        new_action_name_set = set(new_action_names)
+
+        old_state = old_code.PijersiState()
+        old_action_names = old_state.get_action_names()
+        old_action_name_set = set(old_action_names)
+
+        print(f"len(new_action_name_set) = {len(new_action_name_set)} ; len(old_action_name_set) = {len(old_action_name_set)}")
+        assert len(new_action_name_set) == len(old_action_name_set)
+        assert new_action_name_set == old_action_name_set
+
+
+    def verify_game_between_random_players():
+
+        print()
+        print("-- verify_game_between_random_players --")
+
+        game_count = 10
+        game_enabled_log = False
+
+        for game_index in range(game_count):
+
+            test_seed = random.randint(1, 1_000)
+            test_max_credit = random.randint(10, 100)
+
+            #-- Run new games
+
+            default_max_credit = PijersiState.get_max_credit()
+            PijersiState.set_max_credit(test_max_credit)
+
+            random.seed(a=test_seed)
+            new_show_texts = []
+            new_action_sets = []
+            new_summaries = []
+            new_game = Game()
+            new_game.enable_log(game_enabled_log)
+
+            new_game.set_white_searcher(RandomSearcher("random"))
+            new_game.set_black_searcher(RandomSearcher("random"))
+
+            new_game.start()
+            new_show_texts.append(new_game.get_state().get_show_text())
+            new_action_sets.append(set(new_game.get_state().get_action_names()))
+            new_summaries.append(new_game.get_state().get_summary())
+
+            while new_game.has_next_turn():
+                new_game.next_turn()
+                new_show_texts.append(new_game.get_state().get_show_text())
+                new_action_sets.append(set(new_game.get_state().get_action_names()))
+                new_summaries.append(new_game.get_state().get_summary())
+
+            new_rewards = new_game.get_state().get_rewards()
+
+            PijersiState.set_max_credit(default_max_credit)
+
+            #-- Run old games
+
+            default_max_credit = old_code.PijersiState.get_max_credit()
+            old_code.PijersiState.set_max_credit(test_max_credit)
+
+            random.seed(a=test_seed)
+            old_show_texts = []
+            old_action_sets = []
+            old_summaries = []
+            old_game = old_code.Game()
+            old_game.enable_log(game_enabled_log)
+
+            old_game.set_white_searcher(RandomSearcher("random"))
+            old_game.set_black_searcher(RandomSearcher("random"))
+
+            old_game.start()
+            old_show_texts.append(old_game.get_state().get_show_text())
+            old_action_sets.append(set(old_game.get_state().get_action_names()))
+            old_summaries.append(old_game.get_state().get_summary())
+
+            while old_game.has_next_turn():
+                old_game.next_turn()
+                old_show_texts.append(old_game.get_state().get_show_text())
+                old_action_sets.append(set(old_game.get_state().get_action_names()))
+                old_summaries.append(old_game.get_state().get_summary())
+
+            old_rewards = old_game.get_state().get_rewards()
+
+            old_code.PijersiState.set_max_credit(default_max_credit)
+
+            #-- Compare new games to old games
+
+            print()
+
+            print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
+            assert len(new_show_texts) == len(old_show_texts)
+            for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
+                assert new_show_text == old_show_text
+
+            print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
+            assert len(new_action_sets) == len(old_action_sets)
+            for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
+                assert new_action_set == old_action_set
+
+            print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
+            assert len(new_summaries) == len(old_summaries)
+            for (new_summary, old_summary) in zip(new_summaries, old_summaries):
+                assert new_summary == old_summary
+
+            print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
+            assert new_rewards == old_rewards
+
+            print(f"game {game_index} from {list(range(game_count))} OK")
+
+
+    verify_first_get_show_text()
+    verify_first_get_actions()
+    verify_game_between_random_players()
+
+
+def main():
+
+    if True:
+        test()
+
+    if True:
+        profile()
+
+    if True:
+        benchmark() # against old implementation
+
+    if True:
+        verify() # against old implementation
+
+
+Hexagon.init()
+PijersiState.init()
+
+
+if __name__ == "__main__":
+    print()
+    print("Hello")
+    print()
+    print(f"Python sys.version = {sys.version}")
+
+    main()
+
+    print()
+    print("Bye")
 
     if True:
         print()
         _ = input("main: done ; press enter to terminate")
-
-    print(f"Bye from {os.path.basename(__file__)} version {__version__}")
-
-
-Cube.init()
-Hexagon.init()
-
-
-if __name__ == "__main__":
-    main()
