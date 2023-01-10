@@ -3354,13 +3354,11 @@ def benchmark():
               ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
               ', time_old/time_new = ', time_old/time_new)
 
-    if False:
-        benchmark_first_get_actions()
-        benchmark_first_is_terminal()
-        benchmark_game_between_random_players()
+    benchmark_first_get_actions()
+    benchmark_first_is_terminal()
+    benchmark_game_between_random_players()
+    benchmark_game_between_minimax2_players()
 
-    if True:
-        benchmark_game_between_minimax2_players()
 
 def verify():
 
