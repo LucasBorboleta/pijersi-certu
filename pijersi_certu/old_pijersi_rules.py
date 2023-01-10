@@ -1055,7 +1055,6 @@ class PijersiState:
                         cube_hexagon_index = self.__hexagon_top.index(cube_index)
 
                     distance = Hexagon.get_distance_to_goal(cube_hexagon_index, cube.player)
-
                     distances_to_goal[cube.player].append(distance)
 
         return distances_to_goal
@@ -1298,7 +1297,7 @@ class PijersiState:
 
     def __find_moves(self):
 
-        if not self.__use_random_find or random.choice((True, False)):
+        if not self.__use_random_find:
 
             for action in self.__find_stack_first_moves():
                 yield action
@@ -1307,11 +1306,19 @@ class PijersiState:
                 yield action
 
         else:
-            for action in self.__find_cube_first_moves():
-                yield action
+            if random.choice((True, False)):
+                for action in self.__find_stack_first_moves():
+                    yield action
 
-            for action in self.__find_stack_first_moves():
-                yield action
+                for action in self.__find_cube_first_moves():
+                    yield action
+
+            else:
+                for action in self.__find_cube_first_moves():
+                    yield action
+
+                for action in self.__find_stack_first_moves():
+                    yield action
 
 
     def __find_cube_first_moves(self, find_one=False):
@@ -1942,7 +1949,7 @@ class RandomSearcher():
 class MinimaxSearcher():
 
     __slots__ = ('__name', '__max_depth', '__max_children',
-                 '__distance_weight', '__capture_weight',
+                 '__distance_weight', '__cube_weight',
                  '__fighter_weight', '__dmin_weight', '__dave_weight',
                  '__center_weight', '__credit_weight',
                  '__debug', '__alpha_cut_count', '__beta_cut_count')
@@ -1951,21 +1958,21 @@ class MinimaxSearcher():
 
     default_weights_by_depth[1] = {'dmin_weight':16,
                                    'fighter_weight':8,
-                                   'capture_weight':4,
+                                   'cube_weight':4,
                                    'dave_weight':2,
                                    'credit_weight':1,
                                    'center_weight':0}
 
     default_weights_by_depth[2] = {'dmin_weight':16,
                                    'fighter_weight':8,
-                                   'capture_weight':4,
+                                   'cube_weight':4,
                                    'dave_weight':2,
                                    'credit_weight':1,
                                    'center_weight':0}
 
 
     def __init__(self, name, max_depth=1, max_children=None,
-                  distance_weight=None, capture_weight=None,
+                  distance_weight=None, cube_weight=None,
                   fighter_weight=None, dmin_weight=None, dave_weight=None,
                   center_weight=None, credit_weight=None):
 
@@ -1996,10 +2003,10 @@ class MinimaxSearcher():
             self.__dave_weight = default_weights['dave_weight']
 
 
-        if capture_weight is not None:
-            self.__capture_weight = capture_weight
+        if cube_weight is not None:
+            self.__cube_weight = cube_weight
         else:
-            self.__capture_weight = default_weights['capture_weight']
+            self.__cube_weight = default_weights['cube_weight']
 
 
         if center_weight is not None:
@@ -2171,7 +2178,7 @@ class MinimaxSearcher():
 
             dmin_norm = 8
             dave_norm = dmin_norm
-            capture_norm = 14
+            cube_norm = 14
             fighter_norm = 12
             center_norm = 14
             credit_norm = PijersiState.get_max_credit()
@@ -2197,7 +2204,7 @@ class MinimaxSearcher():
 
             # white and black with captured status
             capture_counts = pijersi_state.get_capture_counts()
-            capture_difference = minimax_maximizer_sign*(capture_counts[Player.BLACK] - capture_counts[Player.WHITE])
+            cube_difference = minimax_maximizer_sign*((14 - capture_counts[Player.WHITE]) - (14 - capture_counts[Player.BLACK]))
 
             # white and black with active fighters status
             fighter_counts = pijersi_state.get_fighter_counts()
@@ -2226,7 +2233,6 @@ class MinimaxSearcher():
 
             center_difference = minimax_maximizer_sign*(white_center_count - black_center_count)
 
-
             # credit acts symmetrically for white and black
             credit = pijersi_state.get_credit()
 
@@ -2239,8 +2245,8 @@ class MinimaxSearcher():
             assert dave_difference <= dave_norm
             assert -dave_difference <= dave_norm
 
-            assert capture_difference <= capture_norm
-            assert -capture_difference <= capture_norm
+            assert cube_difference <= cube_norm
+            assert -cube_difference <= cube_norm
 
             assert fighter_difference <= fighter_norm
             assert -fighter_difference <= fighter_norm
@@ -2253,16 +2259,16 @@ class MinimaxSearcher():
 
             dmin_difference = dmin_difference/dmin_norm
             dave_difference = dave_difference/dave_norm
-            capture_difference = capture_difference/capture_norm
+            cube_difference = cube_difference/cube_norm
             fighter_difference = fighter_difference/fighter_norm
             center_difference = center_difference/center_norm
-            credit = credit/center_norm
+            credit = credit/credit_norm
 
             # synthesis
 
             value += self.__dmin_weight*dmin_difference
             value += self.__dave_weight*dave_difference
-            value += self.__capture_weight*capture_difference
+            value += self.__cube_weight*cube_difference
             value += self.__fighter_weight*fighter_difference
             value += self.__center_weight*center_difference
             value += self.__credit_weight*credit
@@ -2405,10 +2411,10 @@ class MinimaxSearcher():
                 state_value = max(state_value, child_value)
 
                 if state_value >= beta:
-                    self.__beta_cut_count.append(action_count)
-
                     if self.__debug:
+                        self.__beta_cut_count.append(action_count)
                         print("--- beta cut-off")
+
                     break
 
                 alpha = max(alpha, state_value)
@@ -2429,9 +2435,8 @@ class MinimaxSearcher():
                 state_value = min(state_value, child_value)
 
                 if state_value <= alpha:
-                    self.__alpha_cut_count.append(action_count)
-
                     if self.__debug:
+                        self.__alpha_cut_count.append(action_count)
                         print("--- alpha cut-off")
 
                     if depth == (self.__max_depth - 1):
@@ -2459,7 +2464,7 @@ class MinimaxSearcher():
 
 class MctsSearcher():
 
-    __slots__ = ('__name', '__time_limit', '__iteration_limit', '__capture_weight', '__searcher')
+    __slots__ = ('__name', '__time_limit', '__iteration_limit', '__cube_weight', '__searcher')
 
 
     def __init__(self, name, time_limit=None, iteration_limit=None, rolloutPolicy=mcts.randomPolicy):

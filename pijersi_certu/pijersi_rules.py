@@ -1404,15 +1404,16 @@ class PijersiState:
     def get_distances_to_goal(self) -> Sequence[Sequence[int]]:
         """White and black distances to goal"""
 
-        distances_to_goal = []
+        distances_to_goal = [[] for player in Player.T]
 
         for player in Player.T:
-            has_fighter = PijersiState.__TABLE_HAS_FIGHTER[player]
+            fighter_count = PijersiState.__TABLE_FIGHTER_COUNT[player]
             goal_distances = PijersiState.__TABLE_GOAL_DISTANCES[player]
 
-            distances_to_goal.append([goal_distances[hex_index]
-                                         for (hex_index, hex_code) in enumerate(self.__board_codes)
-                                         if has_fighter[hex_code] != 0])
+            for (hex_index, hex_code) in enumerate(self.__board_codes):
+                for _ in range(fighter_count[hex_code]):
+                    distances_to_goal[player].append(goal_distances[hex_index])
+
         return distances_to_goal
 
 
@@ -2412,7 +2413,6 @@ class MinimaxSearcher(Searcher):
                 state_value = max(state_value, child_value)
 
                 if state_value >= beta:
-
                     if self.__debug:
                         self.__beta_cuts.append(action_count/len(actions))
                         if self.__debug_level >= 2:
@@ -2675,8 +2675,8 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
 
-SEARCHER_CATALOG.add( MctsSearcher("mcts-90s-jrp", time_limit=90_000, rolloutPolicy=pijersiRandomPolicy) )
-SEARCHER_CATALOG.add( MctsSearcher("mcts-2300i-rnd", iteration_limit=2_300, rolloutPolicy=mcts.randomPolicy) )
+SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp", time_limit=5*60*1_000, rolloutPolicy=pijersiRandomPolicy) )
+SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd", iteration_limit=8_000, rolloutPolicy=mcts.randomPolicy) )
 
 
 class Game:
@@ -3304,10 +3304,63 @@ def benchmark():
               ', time_old/time_new = ', time_old/time_new)
 
 
-    benchmark_first_get_actions()
-    benchmark_first_is_terminal()
-    benchmark_game_between_random_players()
+    def benchmark_game_between_minimax2_players():
 
+        print()
+        print("-- benchmark_game_between_minimax2_players --")
+
+        test_seed = random.randint(1, 1_000)
+        game_count = 1
+        game_enabled_log = False
+
+        def do_new():
+            random.seed(a=test_seed)
+
+            for _ in range(game_count):
+
+                new_game = Game()
+                new_game.enable_log(game_enabled_log)
+
+                new_game.set_white_searcher(MinimaxSearcher("white-minimax2", max_depth=2))
+                new_game.set_black_searcher(MinimaxSearcher("black-minimax2", max_depth=2))
+
+                new_game.start()
+
+                while new_game.has_next_turn():
+                    new_game.next_turn()
+
+
+        def do_old():
+            random.seed(a=test_seed)
+
+            for _ in range(game_count):
+
+                old_game = old_code.Game()
+                old_game.enable_log(game_enabled_log)
+
+                old_game.set_white_searcher(old_code.MinimaxSearcher("white-minimax2", max_depth=2))
+                old_game.set_black_searcher(old_code.MinimaxSearcher("black-minimax2", max_depth=2))
+
+                old_game.start()
+
+                while old_game.has_next_turn():
+                    old_game.next_turn()
+
+
+        time_new = timeit.timeit(do_new, number=1)
+        time_old = timeit.timeit(do_old, number=1)
+        print("do_new() => ", time_new)
+        print("do_old() => ", time_old,
+              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
+              ', time_old/time_new = ', time_old/time_new)
+
+    if False:
+        benchmark_first_get_actions()
+        benchmark_first_is_terminal()
+        benchmark_game_between_random_players()
+
+    if True:
+        benchmark_game_between_minimax2_players()
 
 def verify():
 
@@ -3448,9 +3501,125 @@ def verify():
             print(f"game {game_index} from {list(range(game_count))} OK")
 
 
+    def verify_game_between_minimax_players(minimax_depth: int, turn_max: Optional[int]=None, game_count: int=1):
+
+        print()
+        print(f"-- verify_game_between_minimax_players  minimax_depth={minimax_depth} --")
+
+        game_enabled_log = True
+
+        for game_index in range(game_count):
+
+            test_seed = random.randint(1, 1_000)
+
+            #-- Run new games
+
+            random.seed(a=test_seed)
+            new_show_texts = []
+            new_action_sets = []
+            new_summaries = []
+            new_distances = []
+            new_game = Game()
+            new_game.enable_log(game_enabled_log)
+
+            new_game.set_white_searcher(MinimaxSearcher(f"new-white-minimax{minimax_depth}", max_depth=minimax_depth))
+            new_game.set_black_searcher(MinimaxSearcher(f"new-black-minimax{minimax_depth}", max_depth=minimax_depth))
+
+            new_game.start()
+            new_show_texts.append(new_game.get_state().get_show_text())
+            new_action_sets.append(set(new_game.get_state().get_action_names()))
+            new_summaries.append(new_game.get_state().get_summary())
+
+            while new_game.has_next_turn():
+                new_game.next_turn()
+                new_show_texts.append(new_game.get_state().get_show_text())
+                new_action_sets.append(set(new_game.get_state().get_action_names()))
+                new_summaries.append(new_game.get_state().get_summary())
+                new_distances.append(new_game.get_state().get_distances_to_goal())
+                if turn_max is not None and new_game.get_turn() >= turn_max:
+                    break
+
+            new_rewards = new_game.get_state().get_rewards() if turn_max is None else None
+
+
+            #-- Run old games
+
+            random.seed(a=test_seed)
+            old_show_texts = []
+            old_action_sets = []
+            old_summaries = []
+            old_distances = []
+            old_game = old_code.Game()
+            old_game.enable_log(game_enabled_log)
+
+            old_game.set_white_searcher(old_code.MinimaxSearcher(f"old-white-minimax{minimax_depth}", max_depth=minimax_depth))
+            old_game.set_black_searcher(old_code.MinimaxSearcher(f"old-black-minimax{minimax_depth}", max_depth=minimax_depth))
+
+            old_game.start()
+            old_show_texts.append(old_game.get_state().get_show_text())
+            old_action_sets.append(set(old_game.get_state().get_action_names()))
+            old_summaries.append(old_game.get_state().get_summary())
+
+            while old_game.has_next_turn():
+                old_game.next_turn()
+                old_show_texts.append(old_game.get_state().get_show_text())
+                old_action_sets.append(set(old_game.get_state().get_action_names()))
+                old_summaries.append(old_game.get_state().get_summary())
+                old_distances.append(old_game.get_state().get_distances_to_goal())
+                if turn_max is not None and old_game.get_turn() >= turn_max:
+                    break
+
+            old_rewards = old_game.get_state().get_rewards() if turn_max is None else None
+
+            #-- Compare new games to old games
+
+            print()
+
+            print(f"len(new_distances) = {len(new_distances)} / len(old_distances) = {len(old_distances)}")
+            assert len(new_distances) == len(old_distances)
+            for (new_distance, old_distance) in zip(new_distances, old_distances):
+                for x in new_distance:
+                    x.sort()
+                for x in old_distance:
+                    x.sort()
+                assert new_distance == old_distance
+
+            print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
+            assert len(new_show_texts) == len(old_show_texts)
+            for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
+                if new_show_text != old_show_text:
+                    print()
+                    print("new_show_text:")
+                    print(new_show_text)
+                    print()
+                    print("old_show_text:")
+                    print(old_show_text)
+                assert new_show_text == old_show_text
+
+            print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
+            assert len(new_action_sets) == len(old_action_sets)
+            for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
+                assert new_action_set == old_action_set
+
+            print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
+            assert len(new_summaries) == len(old_summaries)
+            for (new_summary, old_summary) in zip(new_summaries, old_summaries):
+                assert new_summary == old_summary
+
+            print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
+            assert new_rewards == old_rewards
+
+            print(f"game {game_index} from {list(range(game_count))} OK")
+
+
     verify_first_get_show_text()
     verify_first_get_actions()
+
     verify_game_between_random_players()
+
+    verify_game_between_minimax_players(minimax_depth=1, game_count=3)
+    verify_game_between_minimax_players(minimax_depth=2, game_count=1)
+    verify_game_between_minimax_players(minimax_depth=3, turn_max=1, game_count=1)
 
 
 def main():
@@ -3458,13 +3627,13 @@ def main():
     if True:
         test()
 
-    if True:
+    if False:
         profile()
 
-    if True:
+    if False:
         benchmark() # against old implementation
 
-    if True:
+    if False:
         verify() # against old implementation
 
 
