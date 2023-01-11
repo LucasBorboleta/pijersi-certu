@@ -1363,7 +1363,7 @@ class PijersiState:
 
         if self.__actions_by_simple_names is None:
             self.__actions_by_simple_names = {str(action).replace('!', ''):action for action in self.get_actions()}
-        return self.__actions_by_simple_names.keys()
+        return list(self.__actions_by_simple_names.keys())
 
 
     def get_action_by_name(self, action_name: str) -> PijersiAction:
@@ -2673,10 +2673,12 @@ SEARCHER_CATALOG.add( RandomSearcher("random") )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
 
-SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp", time_limit=5*60*1_000, rolloutPolicy=pijersiRandomPolicy) )
-SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd", iteration_limit=8_000, rolloutPolicy=mcts.randomPolicy) )
+if False:
+    SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
+
+    SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp", time_limit=5*60*1_000, rolloutPolicy=pijersiRandomPolicy) )
+    SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd", iteration_limit=8_000, rolloutPolicy=mcts.randomPolicy) )
 
 
 class Game:
@@ -3354,10 +3356,15 @@ def benchmark():
               ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
               ', time_old/time_new = ', time_old/time_new)
 
-    benchmark_first_get_actions()
-    benchmark_first_is_terminal()
-    benchmark_game_between_random_players()
-    benchmark_game_between_minimax2_players()
+    if True:
+        benchmark_first_get_actions()
+        benchmark_first_is_terminal()
+
+    if True:
+        benchmark_game_between_random_players()
+
+    if False:
+        benchmark_game_between_minimax2_players()
 
 
 def verify():

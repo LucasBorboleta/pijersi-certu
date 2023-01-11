@@ -1004,7 +1004,7 @@ class GameGui(ttk.Frame):
             self.__variable_action.set(action_name)
             # Show move result in an alternative pijersi state
             action = self.__pijersi_state.get_action_by_simple_name(action_name)
-            self.__pijersi_state_gui_input = action.state
+            self.__pijersi_state_gui_input = self.__pijersi_state.take_action(action)
              # Parameter input gui process to next step
             self.__gui_input_step = GuiInputStep.SELECTED_STEP_2
             self.__hightlight_legal_hexagons()
@@ -1034,7 +1034,7 @@ class GameGui(ttk.Frame):
             action_name = actions[0]
             self.__variable_action.set(action_name)
             action = self.__pijersi_state.get_action_by_simple_name(action_name)
-            self.__pijersi_state_gui_input = action.state
+            self.__pijersi_state_gui_input = self.__pijersi_state.take_action(action)
             # The action is terminal by definition
             self.__terminate_gui_action()
 
