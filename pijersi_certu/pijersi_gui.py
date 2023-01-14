@@ -1352,15 +1352,6 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
 
-    def __cmc_interupt(self, a, b, c):
-        """
-        If user interacts with the action input widget, then interupt the CMC process
-        """
-        #TODO: to be clarified with Marc -> No used by Marc and does not seems needed
-        if self.__cmc_state is not CMCState.OFF:
-            self.__cmc_reset(cmc_state=CMCState.OFF)
-
-
     def __cmc_set_legal_actions(self):
         """
         Filter legal actions according to the CMC process state
