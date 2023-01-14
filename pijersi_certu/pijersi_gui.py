@@ -294,18 +294,18 @@ class HexagonLineColor(enum.Enum):
 
 
 @enum.unique
-class MccState(enum.Enum):
-    """Mouse Canevas Control State"""
-    
-    NOT_STARTED = enum.auto()
+class CMCState(enum.Enum):
+    """States of the CMC process (Canevas Mouse Control)"""
 
-    SELECTION_1 = enum.auto()
+    OFF = enum.auto()
 
-    SELECTION_2 = enum.auto()
+    SELECTING_1 = enum.auto()
 
-    SELECTION_3 = enum.auto()
+    SELECTING_2 = enum.auto()
 
-    TERMINATED = enum.auto()
+    SELECTING_3 = enum.auto()
+
+    DONE = enum.auto()
 
 
 class GraphicalHexagon:
@@ -498,18 +498,17 @@ class GameGui(ttk.Frame):
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
 
-        # Mouse canevas control (mcc) variables
+        # Canevas Mouse Control (CMC) variables
 
-        self.__mcc_pijersi_state = None
-        self.__mcc_state = MccState.NOT_STARTED
+        self.__cmc_pijersi_state = None
+        self.__cmc_state = CMCState.OFF
 
-        self.__mcc_legal_actions = []
+        self.__cmc_legal_actions = []
+        self.__cmc_legal_hexagons = []
 
-        self.__mcc_legal_hexagons = []
-        self.__mcc_selected_hexagon = None
-
-        self.__mcc_stack_selected = False
-        self.__mcc_is_stack_move = False
+        self.__cmc_hexagon = None # the clicked hexagon
+        self.__cmc_hexagon_has_stack = False # Does the clicked hexagon has a stack ?
+        self.__cmc_hexagon_has_stack_selection = False # If the stack selected or just its top ?
 
         # Create widgets
 
@@ -661,8 +660,8 @@ class GameGui(ttk.Frame):
                                 width=CanvasConfig.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
-        self.__canvas.bind('<Motion>', self.__mcc_update_mouse_over)
-        self.__canvas.bind('<Button-1>', self.__mcc_update_mouse_click)
+        self.__canvas.bind('<Motion>', self.__cmc_update_mouse_over)
+        self.__canvas.bind('<Button-1>', self.__cmc_update_mouse_click)
 
        # In __frame_actions
 
@@ -688,7 +687,7 @@ class GameGui(ttk.Frame):
 
         self.__variable_action = tk.StringVar()
         self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
-        self.__entry_action.bind("<KeyPress>", self.__mcc_reset)
+        self.__entry_action.bind("<KeyPress>", self.__cmc_reset)
 
         self.__button_action_confirm = ttk.Button(self.__frame_human_actions,
                                   text='OK',
@@ -818,7 +817,8 @@ class GameGui(ttk.Frame):
         If user changes easy mode checkbox during a game, redo the right drawing
         """
 
-        self.__mcc_hightlight_legal_hexagons()
+        self.__cmc_set_legal_hexagons()
+        self.__cmc_hightlight_legal_hexagons()
         self.__draw_state()
 
 
@@ -839,7 +839,7 @@ class GameGui(ttk.Frame):
         else:
             self.__variable_log.set(message)
 
-        self.__mcc_reset(mcm_state=MccState.NOT_STARTED)
+        self.__cmc_reset(cmc_state=CMCState.OFF)
 
 
     def __command_update_edit_actions(self):
@@ -872,7 +872,7 @@ class GameGui(ttk.Frame):
 
         self.__game_started = not self.__game_started
 
-        self.__mcc_reset(mcm_state=MccState.NOT_STARTED)
+        self.__cmc_reset(cmc_state=CMCState.OFF)
 
         if self.__game_started:
 
@@ -1078,8 +1078,8 @@ class GameGui(ttk.Frame):
                 self.__entry_action.config(state="enabled")
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
-                if self.__mcc_state == MccState.NOT_STARTED:
-                    self.__mcc_reset()
+                if self.__cmc_state == CMCState.OFF:
+                    self.__cmc_reset()
 
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
@@ -1090,7 +1090,7 @@ class GameGui(ttk.Frame):
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
                     self.__button_action_confirm.config(state="disabled")
-                    self.__mcc_reset(mcm_state=MccState.NOT_STARTED)
+                    self.__cmc_reset(cmc_state=CMCState.OFF)
 
             else:
                 ready_for_next_turn = True
@@ -1138,132 +1138,11 @@ class GameGui(ttk.Frame):
 
            self.__make_animated_pictures()
 
-    ### MCC (Mouse Canevas Control) methods
 
-    def __mcc_terminate(self):
-        """
-        When MCC process is finished, transmits action to the kernel
-        """
-        self.__action_validated = True
-        self.__action_input = self.__variable_action.get()
-        self.__mcc_state = MccState.TERMINATED
+    ### CMC (Mouse Canevas Control) methods
 
 
-    def __mcc_reset(self, event=None, mcm_state=MccState.SELECTION_1):
-        """
-        Reset MCC and clean the drawing
-        """
-        self.__mcc_selected_hexagon = None
-
-        for hexagon in GraphicalHexagon.all:
-            hexagon.highlighted_for_destination_selection = False
-            hexagon.highlighted_for_source_selection = False
-            hexagon.highlighted_for_cube_selection = False
-            hexagon.highlighted_for_stack_selection = False
-
-        self.__mcc_state = mcm_state
-
-        self.__mcc_set_legal_hexagons()
-
-        if event is not None:
-            self.__mcc_update_mouse_over(event)
-
-        self.__mcc_pijersi_state = None
-        self.__draw_state()
-
-
-    def __mcc_interupt(self, a, b, c):
-        """
-        If user interacts with action input widget, then interupt MCC process
-        """
-        if self.__mcc_state is not MccState.NOT_STARTED:
-            self.__mcc_reset(mcm_state=MccState.NOT_STARTED)
-            
-            
-    def __mcc_set_legal_actions(self):
-        """
-        Filter legal actions according to MCC process state
-        """
-
-        if self.__mcc_state is MccState.SELECTION_1:
-            # Select all legal actions
-            self.__mcc_legal_actions = self.__pijersi_state.get_action_simple_names()
-
-        if self.__mcc_state is MccState.SELECTION_2:
-            # keep actions containing the selected hexagon name at first position
-            self.__mcc_legal_actions.clear()
-            
-            # If stack is selected, keep only stack actions
-            action_sign = "=" if self.__mcc_is_stack_move else "-"
-        
-            for action_name in self.__pijersi_state.get_action_simple_names():
-                if action_name[0:3] == self.__mcc_selected_hexagon.name + action_sign:
-                    self.__mcc_legal_actions.append(action_name)
-
-        if self.__mcc_state is MccState.SELECTION_3:
-            # keep actions with 2 steps containing the selected hexagon name at second position
-            legal_actions = copy.copy(self.__mcc_legal_actions)
-            self.__mcc_legal_actions.clear()
-            for action_name in legal_actions:
-                if action_name[0:5] == self.__variable_action.get():
-                    # keep actions with a second move
-                    if len(action_name) > 5:
-                        self.__mcc_legal_actions.append(action_name)
-
-
-    def __mcc_set_legal_hexagons(self):
-        """
-        Build the list of hexagons user can interact with
-        """
-
-        self.__mcc_legal_hexagons.clear()
-        self.__mcc_set_legal_actions()
-
-        # If MCC process is deactivated, no hexagon is added to legal hexagons list
-
-        # If no selection has been made, all starting hexagons are legal
-        # Selection is done on first hexagon name in action names
-        if self.__mcc_state is MccState.SELECTION_1:
-            self.__mcc_set_legal_hexagons_by_step(1)
-
-        # If starting hexagon is selected, first arrival hexagons are legal
-        # Selection is done on second hexagon name in action names
-        if self.__mcc_state is MccState.SELECTION_2:
-            self.__mcc_set_legal_hexagons_by_step(2)
-
-        # If target hexagon is selected, second arrival hexagons are legal
-        # Selection is done on third hexagon name in action names
-        if self.__mcc_state is MccState.SELECTION_3:
-            self.__mcc_set_legal_hexagons_by_step(3)
-            # Add selected hexagon to interrupt move
-            self.__mcc_legal_hexagons.append(self.__mcc_selected_hexagon)
-
-
-    def __mcc_set_legal_hexagons_by_step(self, step):
-        """
-        Build the list of graphical hexagons user can interact with from action names position
-        """
-
-        hex_locs = {1: (0, 2), 2:(3, 5), 3:(6, 8)}
-        (pos1, pos2) = hex_locs[step]
-        
-        hexagon_names = set()
-        for action_name in self.__mcc_legal_actions:
-            hexagon_names.add(action_name[pos1:pos2])
-            
-        for hexagon_name in hexagon_names:
-            graphical_hexagon = GraphicalHexagon.get(hexagon_name)
-            self.__mcc_legal_hexagons.append(graphical_hexagon)
-
-
-    def __mcc_hexagon_has_stack(self, hexagon_name):
-        for action in self.__mcc_legal_actions:
-            if action[0:3] == hexagon_name + "=":
-                return True
-        return False
-
-
-    def __mcc_update_mouse_over(self, event):
+    def __cmc_update_mouse_over(self, event):
         """
         If mouse pointer is over drawing canvas, mark hexagons to highlight.
         """
@@ -1272,11 +1151,11 @@ class GameGui(ttk.Frame):
         if not self.__variable_easy_mode.get():
             return
 
-        if self.__mcc_state in [MccState.SELECTION_1, MccState.SELECTION_2, MccState.SELECTION_3]:
+        if self.__cmc_state in [CMCState.SELECTING_1, CMCState.SELECTING_2, CMCState.SELECTING_3]:
             # Update only if change occurs to avoid multiple draw_state calls
             redraw = False
-            hexagon_at_mouse_over = self.__mcc_get_hexagon_at_position(event)
-            for hexagon in self.__mcc_legal_hexagons:
+            hexagon_at_mouse_over = self.__cmc_get_hexagon_at_position(event)
+            for hexagon in self.__cmc_legal_hexagons:
                 if hexagon is hexagon_at_mouse_over:
                     if not hexagon.highlighted_for_source_selection:
                         hexagon.highlighted_for_source_selection = True
@@ -1290,159 +1169,299 @@ class GameGui(ttk.Frame):
                 self.__draw_state()
 
 
-    def __mcc_update_mouse_click(self, event):
+    def __cmc_update_mouse_click(self, event):
         """
-        Manage click event. Call legit function according to __mcc_state
-        """
-
-        if self.__mcc_state is MccState.SELECTION_1:
-            self.__mcc_click_selection_1(event)
-
-        elif self.__mcc_state is MccState.SELECTION_2:
-            self.__mcc_click_selection_2(event)
-
-        elif self.__mcc_state is MccState.SELECTION_3:
-            self.__mcc_click_selection_3(event)
-
-
-    def __mcc_click_selection_1(self, event):
-        """
-        Manage click event when MCC process is in state SELECTION_1, 
-        meaning waiting that user selects a starting hexagon.
-        If user clicks on a legal hexagon, next MCC state is transitioned.
-        Otherwise, MCC process is reset.
+        Manage click event. Call legit function according to the CMC process state
         """
 
-        hexagon_at_mouse_click = self.__mcc_get_hexagon_at_position(event)
+        if self.__cmc_state is CMCState.SELECTING_1:
+            self.__cmc_update_mouse_click_1(event)
 
-        if hexagon_at_mouse_click in self.__mcc_legal_hexagons:
-            self.__mcc_selected_hexagon = hexagon_at_mouse_click
-            
+        elif self.__cmc_state is CMCState.SELECTING_2:
+            self.__cmc_update_mouse_click_2(event)
+
+        elif self.__cmc_state is CMCState.SELECTING_3:
+            self.__cmc_update_mouse_click_3(event)
+
+
+    def __cmc_update_mouse_click_1(self, event):
+        """
+        Manage click event when the CMC process is in state SELECTING_1,
+        meaning waiting that user selects a first hexagon.
+        If user clicks on a legal hexagon, the CMC state is updated.
+        Otherwise, the CMC process is reset.
+        """
+
+        hexagon_at_mouse_click = self.__cmc_get_hexagon_at_position(event)
+
+        if hexagon_at_mouse_click in self.__cmc_legal_hexagons:
+            self.__cmc_hexagon = hexagon_at_mouse_click
+
             # Give proper color (priority to stack)
-            self.__mcc_selected_hexagon.highlighted_for_cube_selection = True
-            self.__mcc_selected_hexagon.highlighted_for_source_selection = False
-            
-            has_stack = self.__mcc_hexagon_has_stack(self.__mcc_selected_hexagon.name)
-            self.__mcc_selected_hexagon.highlighted_for_stack_selection = has_stack
-            self.__mcc_stack_selected = has_stack
-            self.__mcc_is_stack_move = has_stack
-            
-            # Parameter input gui process to next step
-            self.__mcc_state = MccState.SELECTION_2
-            self.__mcc_hightlight_legal_hexagons()
+            self.__cmc_hexagon.highlighted_for_cube_selection = True
+            self.__cmc_hexagon.highlighted_for_source_selection = False
+
+            has_stack = self.__cmc_hexagon_has_stack_at_selection_1(self.__cmc_hexagon.name)
+            self.__cmc_hexagon.highlighted_for_stack_selection = has_stack
+            self.__cmc_hexagon_has_stack = has_stack
+            self.__cmc_hexagon_has_stack_selection = has_stack
+
+            # Update the textual-action-input widget
             self.__variable_action.set(hexagon_at_mouse_click.name)
 
+            # Update the CMC state
+            self.__cmc_state = CMCState.SELECTING_2
+
+            # Update and highlight the legal hexagons
+            self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_legal_hexagons()
+
         else:
-            self.__mcc_reset(event)
+            self.__cmc_reset(event)
 
         self.__draw_state()
 
 
-    def __mcc_click_selection_2(self, event):
+    def __cmc_update_mouse_click_2(self, event):
         """
-        Manage click event when gui input process is at step 1, meaning that a
-        starting hexagon is selected, waiting for a target selection.
-        If user clicks on a legal hexagon, next GUI step is invoked.
-        Otherwise, current process is cancelled.
+        Manage click event when the CMC process is in state SELECTING_2,
+        meaning waiting that user selects a second hexagon.
+        If user clicks on a legal hexagon, the CMC state is updated.
+        Otherwise, the CMC process is reset.
         """
 
-        hexagon_at_mouse_click = self.__mcc_get_hexagon_at_position(event)
-        # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
-        if self.__mcc_stack_selected and hexagon_at_mouse_click is self.__mcc_selected_hexagon:
-            self.__mcc_is_stack_move = not self.__mcc_is_stack_move
-            self.__mcc_selected_hexagon.highlighted_for_stack_selection = self.__mcc_is_stack_move
-            self.__mcc_hightlight_legal_hexagons()
+        hexagon_at_mouse_click = self.__cmc_get_hexagon_at_position(event)
 
-        elif hexagon_at_mouse_click in self.__mcc_legal_hexagons:
+        if self.__cmc_hexagon_has_stack and hexagon_at_mouse_click is self.__cmc_hexagon:
+            # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
+            self.__cmc_hexagon_has_stack_selection = not self.__cmc_hexagon_has_stack_selection
+            self.__cmc_hexagon.highlighted_for_stack_selection = self.__cmc_hexagon_has_stack_selection
+            self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_legal_hexagons()
+            # >> The CMC state is NOT changed
+
+
+        elif hexagon_at_mouse_click in self.__cmc_legal_hexagons:
             # Uncolor first selected hexagon
-            self.__mcc_selected_hexagon.highlighted_for_source_selection = False
-            self.__mcc_selected_hexagon.highlighted_for_stack_selection = False
-            self.__mcc_selected_hexagon.highlighted_for_cube_selection = False
-            # Change selected hexagon and filter corresponding actions
-            self.__mcc_selected_hexagon = hexagon_at_mouse_click
-            actions = [a[0:5] for a in self.__mcc_legal_actions if a[3:5] == hexagon_at_mouse_click.name]
-            actions.sort()
-            # If stack is selected, determine if stack moves or unstack
-            if len(actions) > 1:
-                if self.__mcc_is_stack_move:
-                    action_name = actions[-1]
-                else:
-                    action_name = actions[0]
-            else:
-                action_name = actions[0]
-            # Give correct color to selected hexagon
-            self.__mcc_selected_hexagon.highlighted_for_source_selection = False
-            self.__mcc_selected_hexagon.highlighted_for_cube_selection = True
-            self.__mcc_selected_hexagon.highlighted_for_stack_selection = (not self.__mcc_is_stack_move) and len(actions) > 1
-            # Store action in text field of action entry
-            self.__variable_action.set(action_name)
-            # Show move result in an alternative pijersi state
-            action = self.__pijersi_state.get_action_by_simple_name(action_name)
-            self.__mcc_pijersi_state = self.__pijersi_state.take_action(action)
-             # Parameter input gui process to next step
-            self.__mcc_state = MccState.SELECTION_3
-            self.__mcc_hightlight_legal_hexagons()
-            # If no more action available, this action is terminal
-            if len(self.__mcc_legal_actions) == 0:
-                self.__mcc_terminate()
-        else:
-            self.__mcc_reset(event)
-        self.__draw_state()
+            self.__cmc_hexagon.highlighted_for_source_selection = False
+            self.__cmc_hexagon.highlighted_for_stack_selection = False
+            self.__cmc_hexagon.highlighted_for_cube_selection = False
 
-
-    def __mcc_click_selection_3(self, event):
-        """
-        Manage click event when gui input process is at step 2, meaning that first target
-        is selected, waiting for a finish move.
-        If user clicks on a legal hexagon, next GUI step is invoked.
-        Otherwise, current process is cancelled.
-        """
-
-        hexagon_at_mouse_click = self.__mcc_get_hexagon_at_position(event)
-        # Manage half move. If user clicks the first target hexagon, terminate the action
-        if hexagon_at_mouse_click is self.__mcc_selected_hexagon:
-            self.__mcc_terminate()
-
-        elif hexagon_at_mouse_click in self.__mcc_legal_hexagons:
-            actions = [a[0:8] for a in self.__mcc_legal_actions if a[6:8] == hexagon_at_mouse_click.name]
+            # Change the selected hexagon and filter corresponding actions
+            self.__cmc_hexagon = hexagon_at_mouse_click
+            actions = [action[0:5] for action in self.__cmc_legal_actions if action[3:5] == hexagon_at_mouse_click.name]
             action_name = actions[0]
+
+            # Give correct color to selected hexagon
+            self.__cmc_hexagon.highlighted_for_source_selection = False
+            self.__cmc_hexagon.highlighted_for_cube_selection = True
+            self.__cmc_hexagon.highlighted_for_stack_selection = (not self.__cmc_hexagon_has_stack_selection) and len(actions) > 1
+
+            # Update the textual-action-input widget
             self.__variable_action.set(action_name)
+
+            # Show the action result in a virtual pijersi state
             action = self.__pijersi_state.get_action_by_simple_name(action_name)
-            self.__mcc_pijersi_state = self.__pijersi_state.take_action(action)
-            # The action is terminal by definition
-            self.__mcc_terminate()
+            self.__cmc_pijersi_state = self.__pijersi_state.take_action(action)
+
+            # Update the CMC state
+            self.__cmc_state = CMCState.SELECTING_3
+
+            # Update and highlight the legal hexagons
+            self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_legal_hexagons()
+
+            # If no more action available, this action is terminal
+            if len(self.__cmc_legal_actions) == 0:
+                self.__cmc_terminate()
 
         else:
-            self.__mcc_reset(event)
+            # User does not click on a legal hexagon
+            # The CMC process is reset
+            self.__cmc_reset(event)
 
         self.__draw_state()
 
 
-    def __mcc_get_hexagon_at_position(self, position):
+    def __cmc_update_mouse_click_3(self, event):
+        """
+        Manage click event when the CMC process is in state SELECTING_3,
+        meaning waiting that user selects a third hexagon and finishes the CMC process.
+        If user clicks on a legal hexagon, the CMC state is updated.
+        Otherwise, the CMC process is reset.
+        """
+
+        hexagon_at_mouse_click = self.__cmc_get_hexagon_at_position(event)
+
+        if hexagon_at_mouse_click is self.__cmc_hexagon:
+            # If user clicks the latest target hexagon, then this terminates the action
+            self.__cmc_terminate()
+
+        elif hexagon_at_mouse_click in self.__cmc_legal_hexagons:
+            actions = [action[0:8] for action in self.__cmc_legal_actions if action[6:8] == hexagon_at_mouse_click.name]
+            action_name = actions[0]
+
+            # Update the textual-action-input widget
+            self.__variable_action.set(action_name)
+
+            # Show the action result in a virtual pijersi state
+            action = self.__pijersi_state.get_action_by_simple_name(action_name)
+            self.__cmc_pijersi_state = self.__pijersi_state.take_action(action)
+
+            self.__cmc_terminate()
+
+        else:
+            self.__cmc_reset(event)
+
+        self.__draw_state()
+
+
+    def __cmc_terminate(self):
+        """
+        When the CMC process is finished, transmits the action to the GUI kernel
+        """
+        self.__action_validated = True
+        self.__action_input = self.__variable_action.get()
+        self.__cmc_state = CMCState.DONE
+
+
+    def __cmc_reset(self, event=None, cmc_state=CMCState.SELECTING_1):
+        """
+        Reset the CMC process and clean the drawing
+        """
+
+        self.__cmc_hexagon = None
+        self.__cmc_hexagon_has_stack = False
+        self.__cmc_hexagon_has_stack_selection = False
+
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_for_destination_selection = False
+            hexagon.highlighted_for_source_selection = False
+            hexagon.highlighted_for_cube_selection = False
+            hexagon.highlighted_for_stack_selection = False
+
+        self.__cmc_state = cmc_state
+
+        self.__cmc_set_legal_hexagons()
+
+        if event is not None:
+            self.__cmc_update_mouse_over(event)
+
+        self.__cmc_pijersi_state = None
+        self.__draw_state()
+
+
+    def __cmc_interupt(self, a, b, c):
+        """
+        If user interacts with the action input widget, then interupt the CMC process
+        """
+        #TODO: to be clarified with Marc -> No used by Marc and does not seems needed
+        if self.__cmc_state is not CMCState.OFF:
+            self.__cmc_reset(cmc_state=CMCState.OFF)
+
+
+    def __cmc_set_legal_actions(self):
+        """
+        Filter legal actions according to the CMC process state
+        """
+
+        if self.__cmc_state is CMCState.SELECTING_1:
+            # Keep all legal actions
+            self.__cmc_legal_actions = self.__pijersi_state.get_action_simple_names()
+
+        elif self.__cmc_state is CMCState.SELECTING_2:
+            # Keep actions containing the selected hexagon name at first selection
+            self.__cmc_legal_actions.clear()
+
+            # If stack is selected, keep only stack actions
+            action_sign = "=" if self.__cmc_hexagon_has_stack_selection else "-"
+
+            for action_name in self.__pijersi_state.get_action_simple_names():
+                if action_name[0:3] == self.__cmc_hexagon.name + action_sign:
+                    self.__cmc_legal_actions.append(action_name)
+
+        elif self.__cmc_state is CMCState.SELECTING_3:
+            # keep actions with 2 steps containing the selected hexagon name at second selection
+            legal_actions = copy.copy(self.__cmc_legal_actions)
+            self.__cmc_legal_actions.clear()
+            for action_name in legal_actions:
+                if action_name[0:5] == self.__variable_action.get():
+                    if len(action_name) > 5:
+                        self.__cmc_legal_actions.append(action_name)
+
+
+    def __cmc_set_legal_hexagons(self):
+        """
+        Build the list of hexagons user can interact with
+        """
+
+        self.__cmc_legal_hexagons.clear()
+        self.__cmc_set_legal_actions()
+
+        if self.__cmc_state is CMCState.SELECTING_1:
+            self.__cmc_set_legal_hexagons_at_step(1)
+
+        elif self.__cmc_state is CMCState.SELECTING_2:
+            self.__cmc_set_legal_hexagons_at_step(2)
+
+        elif self.__cmc_state is CMCState.SELECTING_3:
+            self.__cmc_set_legal_hexagons_at_step(3)
+            # Add the current selected hexagon to interrupt the selection at step 2
+            self.__cmc_legal_hexagons.append(self.__cmc_hexagon)
+
+        else:
+            # If the CMC process is deactivated, no hexagon is added to legal hexagons list
+            pass
+
+
+    def __cmc_set_legal_hexagons_at_step(self, step):
+        """
+        Build the list of graphical hexagons user can interact with at a given step of the selection process
+        """
+
+        # >> Indexes inside the action name
+        hexagone_name_indexes_by_step = {1: (0, 2), 2:(3, 5), 3:(6, 8)}
+        (index_1, index_2) = hexagone_name_indexes_by_step[step]
+
+        hexagon_names = set()
+        for action_name in self.__cmc_legal_actions:
+            hexagon_names.add(action_name[index_1:index_2])
+
+        for hexagon_name in hexagon_names:
+            graphical_hexagon = GraphicalHexagon.get(hexagon_name)
+            self.__cmc_legal_hexagons.append(graphical_hexagon)
+
+
+    def __cmc_hexagon_has_stack_at_selection_1(self, hexagon_name):
+        for action in self.__cmc_legal_actions:
+            if action[0:3] == hexagon_name + "=":
+                return True
+        return False
+
+
+    def __cmc_get_hexagon_at_position(self, position):
         """
         Return the hexagon given a drawing position
         """
-        for hexagon in self.__mcc_legal_hexagons:
+        for hexagon in self.__cmc_legal_hexagons:
             if hexagon.contains_point((position.x, position.y)):
                 return hexagon
-            
-        if self.__mcc_selected_hexagon is not None:
-            if self.__mcc_selected_hexagon.contains_point((position.x, position.y)):
-                return self.__mcc_selected_hexagon
-            
+
+        if self.__cmc_hexagon is not None:
+            if self.__cmc_hexagon.contains_point((position.x, position.y)):
+                return self.__cmc_hexagon
+
         return None
 
 
-    def __mcc_hightlight_legal_hexagons(self):
+    def __cmc_hightlight_legal_hexagons(self):
         """
-        Mark hexagons user can click
+        Mark legal hexagons that user can click
         """
-
-        self.__mcc_set_legal_hexagons()
 
         for hexagon in GraphicalHexagon.all:
-            if hexagon in self.__mcc_legal_hexagons:
-                if self.__mcc_state in [MccState.SELECTION_2, MccState.SELECTION_3]:
+            if hexagon in self.__cmc_legal_hexagons:
+                if self.__cmc_state in [CMCState.SELECTING_2, CMCState.SELECTING_3]:
                     # If not in easy mode, do not highlight hexagons
                     hexagon.highlighted_for_destination_selection = self.__variable_easy_mode.get()
                 else:
@@ -1597,8 +1616,8 @@ class GameGui(ttk.Frame):
 
         pijersi_state = self.__pijersi_state
 
-        if self.__mcc_pijersi_state is not None:
-            pijersi_state = self.__mcc_pijersi_state
+        if self.__cmc_pijersi_state is not None:
+            pijersi_state = self.__cmc_pijersi_state
 
         hex_states = pijersi_state.get_hexStates()
 
