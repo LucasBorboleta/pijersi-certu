@@ -293,21 +293,6 @@ class HexagonLineColor(enum.Enum):
     HIGHLIGHT = 'white'
 
 
-@enum.unique
-class CMCState(enum.Enum):
-    """States of the CMC process (Canevas Mouse Control)"""
-
-    OFF = enum.auto()
-
-    SELECTING_1 = enum.auto()
-
-    SELECTING_2 = enum.auto()
-
-    SELECTING_3 = enum.auto()
-
-    TERMINATED = enum.auto()
-
-
 class GraphicalHexagon:
 
     __all_sorted_hexagons = []
@@ -452,6 +437,21 @@ class GraphicalHexagon:
             GraphicalHexagon(hexagon, color)
 
 
+@enum.unique
+class CMCState(enum.Enum):
+    """States of the CMC process (Canevas Mouse Control)"""
+
+    DISABLED = enum.auto()
+
+    SELECTING_1 = enum.auto()
+
+    SELECTING_2 = enum.auto()
+
+    SELECTING_3 = enum.auto()
+
+    TERMINATED = enum.auto()
+
+
 class GameGui(ttk.Frame):
 
 
@@ -501,7 +501,7 @@ class GameGui(ttk.Frame):
         # Canevas Mouse Control (CMC) variables
 
         self.__cmc_pijersi_state = None
-        self.__cmc_state = CMCState.OFF
+        self.__cmc_state = CMCState.DISABLED
 
         self.__cmc_legal_actions = []
         self.__cmc_legal_hexagons = []
@@ -687,7 +687,7 @@ class GameGui(ttk.Frame):
 
         self.__variable_action = tk.StringVar()
         self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
-        self.__entry_action.bind("<KeyPress>", self.__cmc_reset)
+        self.__entry_action.bind("<KeyPress>", self.__cmc_reset_by_key_press)
 
         self.__button_action_confirm = ttk.Button(self.__frame_human_actions,
                                   text='OK',
@@ -839,7 +839,7 @@ class GameGui(ttk.Frame):
         else:
             self.__variable_log.set(message)
 
-        self.__cmc_reset(cmc_state=CMCState.OFF)
+        self.__cmc_reset(cmc_state=CMCState.DISABLED)
 
 
     def __command_update_edit_actions(self):
@@ -872,7 +872,7 @@ class GameGui(ttk.Frame):
 
         self.__game_started = not self.__game_started
 
-        self.__cmc_reset(cmc_state=CMCState.OFF)
+        self.__cmc_reset(cmc_state=CMCState.DISABLED)
 
         if self.__game_started:
 
@@ -1079,8 +1079,8 @@ class GameGui(ttk.Frame):
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
 
-                if self.__cmc_state == CMCState.OFF:
-                    self.__cmc_reset()
+                if self.__cmc_state == CMCState.DISABLED:
+                    self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
 
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
@@ -1091,7 +1091,7 @@ class GameGui(ttk.Frame):
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
                     self.__button_action_confirm.config(state="disabled")
-                    self.__cmc_reset(cmc_state=CMCState.OFF)
+                    self.__cmc_reset(cmc_state=CMCState.DISABLED)
 
             else:
                 ready_for_next_turn = True
@@ -1218,7 +1218,7 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_legal_hexagons()
 
         else:
-            self.__cmc_reset(event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
 
         self.__draw_state()
 
@@ -1279,7 +1279,7 @@ class GameGui(ttk.Frame):
         else:
             # User does not click on a legal hexagon
             # The CMC process is reset
-            self.__cmc_reset(event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
 
         self.__draw_state()
 
@@ -1312,7 +1312,7 @@ class GameGui(ttk.Frame):
             self.__cmc_terminate()
 
         else:
-            self.__cmc_reset(event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
 
         self.__draw_state()
 
@@ -1326,7 +1326,7 @@ class GameGui(ttk.Frame):
         self.__cmc_state = CMCState.TERMINATED
 
 
-    def __cmc_reset(self, event=None, cmc_state=CMCState.SELECTING_1):
+    def __cmc_reset(self, cmc_state, event=None):
         """
         Reset the CMC process and clean the drawing
         """
@@ -1350,6 +1350,13 @@ class GameGui(ttk.Frame):
 
         self.__cmc_pijersi_state = None
         self.__draw_state()
+
+
+    def __cmc_reset_by_key_press(self, *args):
+        """
+        Reset the CMC process when user interacts with the textual-action-input widget
+        """
+        self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
 
 
     def __cmc_set_legal_actions(self):
