@@ -305,7 +305,7 @@ class CMCState(enum.Enum):
 
     SELECTING_3 = enum.auto()
 
-    DONE = enum.auto()
+    TERMINATED = enum.auto()
 
 
 class GraphicalHexagon:
@@ -1078,6 +1078,7 @@ class GameGui(ttk.Frame):
                 self.__entry_action.config(state="enabled")
                 self.__button_action_confirm.config(state="enabled")
                 self.__progressbar['value'] = 0.
+
                 if self.__cmc_state == CMCState.OFF:
                     self.__cmc_reset()
 
@@ -1322,7 +1323,7 @@ class GameGui(ttk.Frame):
         """
         self.__action_validated = True
         self.__action_input = self.__variable_action.get()
-        self.__cmc_state = CMCState.DONE
+        self.__cmc_state = CMCState.TERMINATED
 
 
     def __cmc_reset(self, event=None, cmc_state=CMCState.SELECTING_1):
