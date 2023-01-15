@@ -798,7 +798,7 @@ class GameGui(ttk.Frame):
 
             if 0 <= turn_index < len(self.__turn_states):
                 self.__pijersi_state = self.__turn_states[turn_index]
-                self.__legend = self.__turn_actions[turn_index]
+                self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
                 self.__draw_state()
                 self.__variable_turn.set(turn_index)
 
@@ -987,7 +987,7 @@ class GameGui(ttk.Frame):
                     self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
 
                     self.__pijersi_state = self.__game.get_state()
-                    self.__legend = self.__game.get_last_action()
+                    self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
                     self.__draw_state()
 
                     self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
@@ -1099,7 +1099,7 @@ class GameGui(ttk.Frame):
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
-                self.__legend = self.__game.get_last_action()
+                self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
                 self.__draw_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
