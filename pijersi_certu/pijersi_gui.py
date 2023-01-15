@@ -1732,20 +1732,14 @@ class GameGui(ttk.Frame):
         for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
 
-            if  config == CubeLocation.BOTTOM or config == CubeLocation.MIDDLE:
+            if config == CubeLocation.MIDDLE:
+                cube_center = hexagon.center
+
+            elif config == CubeLocation.BOTTOM:
                 cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
 
             elif config == CubeLocation.TOP:
                 cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + top_shift
-
-            # if config == CubeLocation.MIDDLE:
-            #     cube_center = hexagon.center
-
-            # elif config == CubeLocation.BOTTOM:
-            #     cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
-
-            # elif config == CubeLocation.TOP:
-            #     cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
             cube_vertex = cube_center
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
