@@ -2692,7 +2692,7 @@ class Game:
 
         self.__enabled_log = True
         self.__log = ""
-        self.__turn = None
+        self.__turn = 0
         self.__last_action = None
         self.__turn_duration = {Player.T.WHITE:[], Player.T.BLACK:[]}
 

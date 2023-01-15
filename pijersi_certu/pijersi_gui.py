@@ -687,7 +687,7 @@ class GameGui(ttk.Frame):
 
         self.__variable_action = tk.StringVar()
         self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
-        self.__entry_action.bind("<KeyPress>", self.__cmc_reset_by_key_press)
+        self.__entry_action.bind("<KeyPress>", self.__command_update_action)
 
         self.__button_action_confirm = ttk.Button(self.__frame_human_actions,
                                   text='OK',
@@ -792,7 +792,16 @@ class GameGui(ttk.Frame):
         self.__searcher[rules.Player.T.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
 
 
+    def __command_update_action(self, *_):
+        self.__cmc_reset_by_other_widget ()
+        self.__variable_turn.set(len(self.__turn_states) - 1)
+        self.__command_update_turn()
+
+
     def __command_update_turn(self, *_):
+
+        self.__cmc_reset_by_other_widget()
+
         try:
             turn_index = int(self.__variable_turn.get())
 
@@ -824,13 +833,16 @@ class GameGui(ttk.Frame):
 
     def __command_action_confirm(self):
 
+        self.__cmc_reset_by_other_widget ()
+        self.__variable_turn.set(len(self.__turn_states) - 1)
+        self.__command_update_turn()
+
         self.__action_input = self.__variable_action.get()
         self.__action_input = self.__action_input.replace("!", "")
 
 
-        (self.__action_validated,
-         message) = rules.Notation.validate_simple_notation(self.__action_input,
-                                                            self.__pijersi_state.get_action_simple_names())
+        (self.__action_validated, message) = rules.Notation.validate_simple_notation(self.__action_input,
+                                                                                     self.__pijersi_state.get_action_simple_names())
 
         if self.__action_validated:
             self.__variable_log.set(message)
@@ -1095,6 +1107,7 @@ class GameGui(ttk.Frame):
 
             else:
                 ready_for_next_turn = True
+
             if ready_for_next_turn:
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
@@ -1148,6 +1161,10 @@ class GameGui(ttk.Frame):
         If mouse pointer is over drawing canvas, mark hexagons to highlight.
         """
 
+        # Do nothing if user is viewing some previous turn
+        if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
+            return
+
         # If not in easy mode, do not highlight hexagons
         if not self.__variable_easy_mode.get():
             return
@@ -1174,6 +1191,10 @@ class GameGui(ttk.Frame):
         """
         Manage click event. Call legit function according to the CMC process state
         """
+
+        # Do nothing if user is viewing some previous turn
+        if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
+            return
 
         if self.__cmc_state is CMCState.SELECTING_1:
             self.__cmc_update_mouse_click_1(event)
@@ -1352,11 +1373,15 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
 
-    def __cmc_reset_by_key_press(self, *args):
+    def __cmc_reset_by_other_widget(self, *_):
         """
-        Reset the CMC process when user interacts with the textual-action-input widget
+        Reset the CMC process when user interacts with other widget
         """
-        self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
+        if self.__cmc_state in [CMCState.SELECTING_1, CMCState.SELECTING_2, CMCState.SELECTING_3]:
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
+
+        else:
+            self.__cmc_reset(cmc_state=CMCState.DISABLED)
 
 
     def __cmc_set_legal_actions(self):
@@ -1480,7 +1505,7 @@ class GameGui(ttk.Frame):
             assert self.__game is not None
             turn = self.__game.get_turn()
 
-            if turn is None:
+            if turn == 0:
                 if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
                     shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
                 os.mkdir(AppConfig.TMP_PICTURE_DIR)
@@ -1607,7 +1632,9 @@ class GameGui(ttk.Frame):
 
         legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
 
-        self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER,
+        legend_text = self.__legend if not self.__legend.startswith("0") else ""
+
+        self.__canvas.create_text(*legend_position, text=legend_text, justify=tk.CENTER,
                                   font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
 
 
