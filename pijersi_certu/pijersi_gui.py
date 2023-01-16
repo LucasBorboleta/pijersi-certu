@@ -1522,11 +1522,13 @@ class GameGui(ttk.Frame):
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_as_destination = False
 
+        if not self.__variable_easy_mode.get():
+            return
+
         if self.__cmc_state in [CMCState.SELECTING_2, CMCState.SELECTING_3]:
             # During the CMC process at steps 2/3, hightlight the possible destinations
-            if self.__variable_easy_mode.get():
-                for hexagon in self.__cmc_legal_hexagons:
-                    hexagon.highlighted_as_destination = True
+            for hexagon in self.__cmc_legal_hexagons:
+                hexagon.highlighted_as_destination = True
 
         elif self.__cmc_state in [CMCState.SELECTING_1]:
             # During the CMC process at step 1
