@@ -1256,7 +1256,8 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_destination_hexagons()
 
         else:
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
+
 
         self.__draw_state()
 
@@ -1317,7 +1318,7 @@ class GameGui(ttk.Frame):
         else:
             # User does not click on a legal hexagon
             # The CMC process is reset
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
 
         self.__draw_state()
 
@@ -1350,7 +1351,7 @@ class GameGui(ttk.Frame):
             self.__cmc_terminate()
 
         else:
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1, event=event)
+            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
 
         self.__draw_state()
 
@@ -1368,7 +1369,7 @@ class GameGui(ttk.Frame):
         self.__action_input = self.__variable_action.get()
 
 
-    def __cmc_reset(self, cmc_state, event=None):
+    def __cmc_reset(self, cmc_state):
         """
         Reset the CMC process and clean the drawing
         """
@@ -1387,9 +1388,6 @@ class GameGui(ttk.Frame):
         self.__cmc_state = cmc_state
 
         self.__cmc_set_legal_hexagons()
-
-        if event is not None:
-            self.__cmc_update_mouse_over(event)
 
         self.__cmc_pijersi_state = None
         self.__draw_state()
