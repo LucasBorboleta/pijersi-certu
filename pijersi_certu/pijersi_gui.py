@@ -268,18 +268,6 @@ class HexagonColor(enum.Enum):
     DARK = rgb_color_as_hexadecimal((166, 109, 60))
     LIGHT = rgb_color_as_hexadecimal((242, 202, 128))
 
-    # Marc-theme-1
-    # HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((255, 255, 200))
-    # HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((255, 255, 100))
-    # HIGHLIGHT_CUBE_SELECTION = rgb_color_as_hexadecimal((255, 150, 150))
-    # HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((255, 100, 100))
-
-    # Lucas-theme-1
-    # HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((217, 204, 180))
-    # HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((138, 191, 161))
-    # HIGHLIGHT_CUBE_SELECTION = rgb_color_as_hexadecimal((191, 141, 122))
-    # HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((166, 52, 41))
-
     # Lucas-theme-2
     HIGHLIGHT_SOURCE_SELECTION = rgb_color_as_hexadecimal((217, 199, 193))
     HIGHLIGHT_DESTINATION_SELECTION = rgb_color_as_hexadecimal((140, 102, 94))
@@ -287,10 +275,11 @@ class HexagonColor(enum.Enum):
     HIGHLIGHT_STACK_SELECTION = rgb_color_as_hexadecimal((0, 95, 115))
 
 
-@enum.unique
 class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
     HIGHLIGHT = 'white'
+    HIGHLIGHT_PLAYED_BY_WHITE = 'white'
+    HIGHLIGHT_PLAYED_BY_BLACK = 'black'
 
 
 class GraphicalHexagon:
@@ -312,11 +301,12 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
-        self.highlighted_as_source = False
-        self.highlighted_as_destination = False
+        self.highlighted_as_played_by_white = False
+        self.highlighted_as_played_by_black = False
+        self.highlighted_as_selectable = False
         self.highlighted_as_cube = False
         self.highlighted_as_stack = False
-
+        self.highlighted_as_destination = False
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
@@ -397,6 +387,42 @@ class GraphicalHexagon:
             GraphicalHexagon.__create_all_sorted_hexagons()
             GraphicalHexagon.__init_done = True
 
+    @staticmethod
+    def reset_highlights():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_selectable = False
+            hexagon.highlighted_as_cube = False
+            hexagon.highlighted_as_stack = False
+            hexagon.highlighted_as_destination = False
+            hexagon.highlighted_as_played_by_white = False
+            hexagon.highlighted_as_played_by_black = False
+
+
+    @staticmethod
+    def reset_highlights_as_selectable():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_selectable = False
+
+
+    @staticmethod
+    def reset_highlights_as_cube_or_stack():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_cube = False
+            hexagon.highlighted_as_stack = False
+
+
+    @staticmethod
+    def reset_highlights_as_destination():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_destination = False
+
+
+    @staticmethod
+    def reset_highlights_as_played():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_played_by_white = False
+            hexagon.highlighted_as_played_by_black = False
+
 
     @staticmethod
     def show_all():
@@ -441,15 +467,11 @@ class GraphicalHexagon:
 class CMCState(enum.Enum):
     """States of the CMC process (Canevas Mouse Control)"""
 
-    DISABLED = enum.auto()
-
     SELECTING_1 = enum.auto()
 
     SELECTING_2 = enum.auto()
 
     SELECTING_3 = enum.auto()
-
-    TERMINATED = enum.auto()
 
 
 class GameGui(ttk.Frame):
@@ -499,18 +521,8 @@ class GameGui(ttk.Frame):
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
 
-        # Canevas Mouse Control (CMC) variables
-
-        self.__cmc_pijersi_state = None
-        self.__cmc_state = CMCState.DISABLED
-
-        self.__cmc_legal_actions = []
-        self.__cmc_legal_hexagons = []
-
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_hexagon_has_stack = False # Does the clicked hexagon has a stack ?
-        self.__cmc_hexagon_has_stack_selection = False # If the stack selected or just its top ?
+        # Reset the Canevas Mouse Control (CMC) variables and the graphical hexagon highlights
+        self.__cmc_reset()
 
         # Create widgets
 
@@ -689,11 +701,11 @@ class GameGui(ttk.Frame):
 
         self.__variable_action = tk.StringVar()
         self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
-        self.__entry_action.bind("<KeyPress>", self.__command_update_action)
+        self.__entry_action.bind("<KeyPress>", self.__command_protect_action)
 
-        self.__button_action_confirm = ttk.Button(self.__frame_human_actions,
+        self.__button_confirm_action = ttk.Button(self.__frame_human_actions,
                                   text='OK',
-                                  command=self.__command_action_confirm)
+                                  command=self.__command_confirm_action)
 
         self.__variable_edit_actions = tk.BooleanVar()
         self.__variable_edit_actions.set(self.__edit_actions)
@@ -745,7 +757,7 @@ class GameGui(ttk.Frame):
 
         self.__label_action.grid(row=0, column=0)
         self.__entry_action.grid(row=0, column=1)
-        self.__button_action_confirm.grid(row=0, column=2)
+        self.__button_confirm_action.grid(row=0, column=2)
         self.__button_edit_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
@@ -766,7 +778,7 @@ class GameGui(ttk.Frame):
         self.__text_actions.pack(side=tk.LEFT)
 
         self.__entry_action.config(state="disabled")
-        self.__button_action_confirm.config(state="disabled")
+        self.__button_confirm_action.config(state="disabled")
         self.__text_actions.config(state="disabled")
 
 
@@ -794,11 +806,7 @@ class GameGui(ttk.Frame):
         self.__searcher[rules.Player.T.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
 
 
-    def __command_update_action(self, *_):
-
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_reset_by_other_widget ()
+    def __command_protect_action(self, *_):
 
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
@@ -806,29 +814,16 @@ class GameGui(ttk.Frame):
 
     def __command_update_turn(self, *_):
 
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_reset_by_other_widget()
+        turn_index = int(self.__variable_turn.get())
+        assert 0 <= turn_index < len(self.__turn_states)
 
-        try:
-            turn_index = int(self.__variable_turn.get())
+        self.__pijersi_state = self.__turn_states[turn_index]
+        self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
+        self.__variable_turn.set(turn_index)
 
-            if 0 <= turn_index < len(self.__turn_states):
-                self.__pijersi_state = self.__turn_states[turn_index]
-                self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
-                self.__destination_hexagons = self.__get_destination_hexagons(self.__turn_actions[turn_index])
-                self.__cmc_hightlight_destination_hexagons()
-                self.__draw_state()
-                self.__variable_turn.set(turn_index)
-
-            else:
-                return
-
-        except ValueError:
-            return
-
-        except:
-            assert False
+        self.__cmc_reset()
+        self.__cmc_hightlight_played_hexagons()
+        self.__draw_state()
 
 
     def __command_update_easy_mode(self):
@@ -836,16 +831,10 @@ class GameGui(ttk.Frame):
         If user changes easy mode checkbox during a game, redo the right drawing
         """
 
-        self.__cmc_set_legal_hexagons()
-        self.__cmc_hightlight_destination_hexagons()
         self.__draw_state()
 
 
-    def __command_action_confirm(self):
-
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_reset_by_other_widget ()
+    def __command_confirm_action(self):
 
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
@@ -864,7 +853,7 @@ class GameGui(ttk.Frame):
         else:
             self.__variable_log.set(message)
 
-        self.__cmc_reset(cmc_state=CMCState.DISABLED)
+        self.__cmc_reset()
 
 
     def __command_update_edit_actions(self):
@@ -892,14 +881,10 @@ class GameGui(ttk.Frame):
             self.__game_timer_id = None
 
         self.__entry_action.config(state="disabled")
-        self.__button_action_confirm.config(state="disabled")
+        self.__button_confirm_action.config(state="disabled")
         self.__button_edit_actions.config(state="disabled")
 
         self.__game_started = not self.__game_started
-
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_reset(cmc_state=CMCState.DISABLED)
 
         if self.__game_started:
 
@@ -926,6 +911,7 @@ class GameGui(ttk.Frame):
 
            self.__combobox_white_player.config(state="disabled")
            self.__combobox_black_player.config(state="disabled")
+           self.__spinbox_turn.config(state="disabled")
 
            if self.__edit_actions:
                actions_text = self.__text_actions.get('1.0', tk.END)
@@ -1015,8 +1001,6 @@ class GameGui(ttk.Frame):
 
                     self.__pijersi_state = self.__game.get_state()
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
-                    self.__destination_hexagons = self.__get_destination_hexagons(self.__game.get_last_action())
-                    self.__cmc_hightlight_destination_hexagons()
                     self.__draw_state()
 
                     self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
@@ -1038,7 +1022,7 @@ class GameGui(ttk.Frame):
                    self.__combobox_black_player.config(state="readonly")
 
                    self.__entry_action.config(state="disabled")
-                   self.__button_action_confirm.config(state="disabled")
+                   self.__button_confirm_action.config(state="disabled")
 
                    self.__button_edit_actions.config(state="enabled")
                    self.__edit_actions = True
@@ -1069,14 +1053,18 @@ class GameGui(ttk.Frame):
                self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
                self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
+           self.__cmc_reset()
+           self.__draw_state()
+
         else:
            self.__combobox_white_player.config(state="readonly")
            self.__combobox_black_player.config(state="readonly")
+           self.__spinbox_turn.config(state="enabled")
 
            self.__entry_action.config(state="enabled")
            self.__variable_action.set("")
            self.__entry_action.config(state="disabled")
-           self.__button_action_confirm.config(state="disabled")
+           self.__button_confirm_action.config(state="disabled")
 
            self.__button_edit_actions.config(state="enabled")
            self.__edit_actions = False
@@ -1088,6 +1076,7 @@ class GameGui(ttk.Frame):
 
 
     def __command_next_turn(self):
+
 
         if self.__game_timer_id is not None:
             self.__canvas.after_cancel(self.__game_timer_id)
@@ -1105,11 +1094,8 @@ class GameGui(ttk.Frame):
 
             if searcher.is_interactive():
                 self.__entry_action.config(state="enabled")
-                self.__button_action_confirm.config(state="enabled")
+                self.__button_confirm_action.config(state="enabled")
                 self.__progressbar['value'] = 0.
-
-                if self.__cmc_state == CMCState.DISABLED:
-                    self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
 
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
@@ -1119,8 +1105,7 @@ class GameGui(ttk.Frame):
                     self.__action_input = None
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
-                    self.__button_action_confirm.config(state="disabled")
-                    self.__cmc_reset(cmc_state=CMCState.DISABLED)
+                    self.__button_confirm_action.config(state="disabled")
 
             else:
                 ready_for_next_turn = True
@@ -1130,8 +1115,6 @@ class GameGui(ttk.Frame):
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
                 self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
-                self.__destination_hexagons = self.__get_destination_hexagons(self.__game.get_last_action())
-                self.__cmc_hightlight_destination_hexagons()
                 self.__draw_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
@@ -1153,12 +1136,17 @@ class GameGui(ttk.Frame):
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
+                self.__cmc_reset()
+                self.__cmc_hightlight_played_hexagons()
+                self.__draw_state()
+
             self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
         else:
            self.__combobox_white_player.config(state="readonly")
            self.__combobox_black_player.config(state="readonly")
+           self.__spinbox_turn.config(state="enabled")
 
            self.__progressbar['value'] = 0.
 
@@ -1177,41 +1165,46 @@ class GameGui(ttk.Frame):
 
     def __cmc_update_mouse_over(self, event):
         """
-        If mouse pointer is over drawing canvas, highlight hexagons
+        Manage mouse over event: if mouse pointer is over canvas, then highlight the pointed hexagon when selectable
         """
 
         hexagon_at_over = self.__cmc_get_hexagon_at_position(event)
+
+        # Do nothing if the mouse has not moved to another hexagon
+        # >> This avoid multiple draws
         if self.__cmc_hexagon_at_over == hexagon_at_over:
-            # Do nothing if the mouse has not moved to another hexagon
-            # >> This avoid multiple draws
             return
 
         self.__cmc_hexagon_at_over = hexagon_at_over
 
+        # Do nothing if the game is not started
+        if not self.__game_started:
+            return
 
         # Do nothing if user is viewing some previous turn
         if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
             return
 
-        # If not in easy mode, do not highlight hexagons
-        if not self.__variable_easy_mode.get():
-            return
-
-        # Highlight hexagons: source and maybe destinations of the lastest state
-        self.__cmc_hightlight_source_hexagon()
-        self.__cmc_hightlight_destination_hexagons()
+        # Highlight selectable hexagons
+        self.__cmc_set_legal_hexagons()
+        self.__cmc_hightlight_selectable_hexagons()
         self.__draw_state()
 
 
     def __cmc_update_mouse_click(self, event):
         """
-        Manage click event. Call legit function according to the CMC process state
+        Manage click event:  if mouse is inside the canvas, manage the event regarding the CMC state
         """
+
+        # Do nothing if the game is not started
+        if not self.__game_started:
+            return
 
         # Do nothing if user is viewing some previous turn
         if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
             return
 
+        # Dispatch the management regarding the CMC state
         if self.__cmc_state is CMCState.SELECTING_1:
             self.__cmc_update_mouse_click_1(event)
 
@@ -1235,13 +1228,13 @@ class GameGui(ttk.Frame):
         if hexagon_at_mouse_click in self.__cmc_legal_hexagons:
             self.__cmc_hexagon_at_click = hexagon_at_mouse_click
 
-            # Give proper color (priority to stack)
+            # Reset all highlights
+            GraphicalHexagon.reset_highlights()
 
-            self.__cmc_hexagon_at_click.highlighted_as_cube = True
-            self.__cmc_hexagon_at_click.highlighted_as_source = False
-
+            # Define highlights for cube/stack
             has_stack = self.__cmc_hexagon_has_stack_at_selection_1(self.__cmc_hexagon_at_click.name)
             self.__cmc_hexagon_at_click.highlighted_as_stack = has_stack
+            self.__cmc_hexagon_at_click.highlighted_as_cube = not has_stack
             self.__cmc_hexagon_has_stack = has_stack
             self.__cmc_hexagon_has_stack_selection = has_stack
 
@@ -1253,11 +1246,13 @@ class GameGui(ttk.Frame):
 
             # Update and highlight the legal hexagons
             self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_selectable_hexagons()
             self.__cmc_hightlight_destination_hexagons()
 
         else:
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
-
+            self.__cmc_reset()
+            self.__cmc_state = CMCState.SELECTING_1
+            self.__cmc_hightlight_played_hexagons()
 
         self.__draw_state()
 
@@ -1276,24 +1271,24 @@ class GameGui(ttk.Frame):
             # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
             self.__cmc_hexagon_has_stack_selection = not self.__cmc_hexagon_has_stack_selection
             self.__cmc_hexagon_at_click.highlighted_as_stack = self.__cmc_hexagon_has_stack_selection
+            self.__cmc_hexagon_at_click.highlighted_as_cube = not self.__cmc_hexagon_at_click.highlighted_as_stack
+
             self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_selectable_hexagons()
             self.__cmc_hightlight_destination_hexagons()
             # >> The CMC state is NOT changed
 
-
         elif hexagon_at_mouse_click in self.__cmc_legal_hexagons:
-            # Uncolor first selected hexagon
-            self.__cmc_hexagon_at_click.highlighted_as_source = False
-            self.__cmc_hexagon_at_click.highlighted_as_stack = False
-            self.__cmc_hexagon_at_click.highlighted_as_cube = False
+            # Reset all highlights
+            GraphicalHexagon.reset_highlights()
 
             # Change the selected hexagon and filter corresponding actions
             self.__cmc_hexagon_at_click = hexagon_at_mouse_click
             actions = [action[0:5] for action in self.__cmc_legal_actions if action[3:5] == hexagon_at_mouse_click.name]
             action_name = actions[0]
 
-            # Give correct color to selected hexagon
-            self.__cmc_hexagon_at_click.highlighted_as_source = False
+            # Give correct highlights to selected hexagon
+            self.__cmc_hexagon_at_click.highlighted_as_selectable = False
             self.__cmc_hexagon_at_click.highlighted_as_cube = True
             self.__cmc_hexagon_at_click.highlighted_as_stack = (not self.__cmc_hexagon_has_stack_selection) and len(actions) > 1
 
@@ -1309,6 +1304,7 @@ class GameGui(ttk.Frame):
 
             # Update and highlight the legal hexagons
             self.__cmc_set_legal_hexagons()
+            self.__cmc_hightlight_selectable_hexagons()
             self.__cmc_hightlight_destination_hexagons()
 
             # If no more action available, this action is terminal
@@ -1318,7 +1314,9 @@ class GameGui(ttk.Frame):
         else:
             # User does not click on a legal hexagon
             # The CMC process is reset
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
+            self.__cmc_reset()
+            self.__cmc_state = CMCState.SELECTING_1
+            self.__cmc_hightlight_played_hexagons()
 
         self.__draw_state()
 
@@ -1351,9 +1349,30 @@ class GameGui(ttk.Frame):
             self.__cmc_terminate()
 
         else:
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
+            self.__cmc_reset()
+            self.__cmc_state = CMCState.SELECTING_1
+            self.__cmc_hightlight_played_hexagons()
 
         self.__draw_state()
+
+
+    def __cmc_reset(self):
+        """
+        Reset the CMC process and clean the drawing
+        """
+
+        self.__cmc_pijersi_state = None
+        self.__cmc_state = CMCState.SELECTING_1
+
+        self.__cmc_legal_actions = []
+        self.__cmc_legal_hexagons = []
+
+        self.__cmc_hexagon_at_over = None
+        self.__cmc_hexagon_at_click = None
+        self.__cmc_hexagon_has_stack = False # Does the clicked hexagon has a stack ?
+        self.__cmc_hexagon_has_stack_selection = False # If the stack selected or just its top ?
+
+        GraphicalHexagon.reset_highlights()
 
 
     def __cmc_terminate(self):
@@ -1361,47 +1380,10 @@ class GameGui(ttk.Frame):
         When the CMC process is finished, transmits the action to the GUI kernel
         """
 
-        self.__cmc_state = CMCState.TERMINATED
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_at_click = None
-
         self.__action_validated = True
         self.__action_input = self.__variable_action.get()
-
-
-    def __cmc_reset(self, cmc_state):
-        """
-        Reset the CMC process and clean the drawing
-        """
-
-        self.__cmc_hexagon_at_click = None
-        self.__cmc_hexagon_at_over = None
-        self.__cmc_hexagon_has_stack = False
-        self.__cmc_hexagon_has_stack_selection = False
-
-        for hexagon in GraphicalHexagon.all:
-            hexagon.highlighted_as_destination = False
-            hexagon.highlighted_as_source = False
-            hexagon.highlighted_as_cube = False
-            hexagon.highlighted_as_stack = False
-
-        self.__cmc_state = cmc_state
-
-        self.__cmc_set_legal_hexagons()
-
-        self.__cmc_pijersi_state = None
-        self.__draw_state()
-
-
-    def __cmc_reset_by_other_widget(self, *_):
-        """
-        Reset the CMC process when user interacts with other widget
-        """
-        if self.__cmc_state in [CMCState.SELECTING_1, CMCState.SELECTING_2, CMCState.SELECTING_3]:
-            self.__cmc_reset(cmc_state=CMCState.SELECTING_1)
-
-        else:
-            self.__cmc_reset(cmc_state=CMCState.DISABLED)
+        GraphicalHexagon.reset_highlights()
+        self.__cmc_hightlight_played_hexagons()
 
 
     def __cmc_set_legal_actions(self):
@@ -1485,64 +1467,75 @@ class GameGui(ttk.Frame):
 
     def __cmc_get_hexagon_at_position(self, position):
         """
-        Return the hexagon given a drawing position
+        Return the hexagon at a given position
         """
-        for hexagon in self.__cmc_legal_hexagons:
+
+        for hexagon in GraphicalHexagon.all:
             if hexagon.contains_point((position.x, position.y)):
                 return hexagon
-
-        if self.__cmc_hexagon_at_click is not None:
-            if self.__cmc_hexagon_at_click.contains_point((position.x, position.y)):
-                return self.__cmc_hexagon_at_click
 
         return None
 
 
-    def __cmc_hightlight_source_hexagon(self):
+    def __cmc_hightlight_selectable_hexagons(self):
         """
-        Mark hexagon selectable as source for the current state
+        Mark selectable hexagons
         """
 
-        if self.__cmc_state == CMCState.SELECTING_1:
-            for hexagon in GraphicalHexagon.all:
-                hexagon.highlighted_as_source = False
+        GraphicalHexagon.reset_highlights_as_selectable()
 
-            if self.__cmc_hexagon_at_over in self.__cmc_legal_hexagons:
-                self.__cmc_hexagon_at_over.highlighted_as_source = True
+        if self.__cmc_hexagon_at_over in self.__cmc_legal_hexagons:
+            self.__cmc_hexagon_at_over.highlighted_as_selectable = True
 
 
     def __cmc_hightlight_destination_hexagons(self):
         """
-        Mark hexagons selectable hexagons as destinations for the current state,
-        or mark destinations of some previous state
+        Mark hexagons as destinations
         """
 
-        for hexagon in GraphicalHexagon.all:
-            hexagon.highlighted_as_destination = False
+        GraphicalHexagon.reset_highlights_as_destination()
 
-        if not self.__variable_easy_mode.get():
-            return
+        for hexagon in self.__cmc_legal_hexagons:
+            hexagon.highlighted_as_destination = True
 
-        if self.__cmc_state in [CMCState.SELECTING_2, CMCState.SELECTING_3]:
-            # During the CMC process at steps 2/3, hightlight the possible destinations
-            for hexagon in self.__cmc_legal_hexagons:
-                hexagon.highlighted_as_destination = True
 
-        elif self.__cmc_state in [CMCState.SELECTING_1]:
-            # During the CMC process at step 1
+    def __cmc_hightlight_played_hexagons(self):
+        """
+        Mark played hexagons (targets of the action)
+        """
 
-            if (self.__cmc_hexagon_at_over is None or
-                self.__cmc_hexagon_at_over is not None and
-                self.__cmc_legal_hexagons is not None and
-                self.__cmc_hexagon_at_over not in self.__cmc_legal_hexagons):
-                # Highlight the previous destinations, only if the mouse if not over a selectable hexagon source
-                for hexagon in self.__destination_hexagons:
-                    hexagon.highlighted_as_destination = True
+        GraphicalHexagon.reset_highlights_as_played()
 
-        elif self.__cmc_state not in [CMCState.SELECTING_1, CMCState.SELECTING_2, CMCState.SELECTING_3]:
-            # Outside the CMC process hightlight the previous destinations
-            for hexagon in self.__destination_hexagons:
-                hexagon.highlighted_as_destination = True
+        played_action_name = None
+        player_index = None
+
+        turn_index = int(self.__variable_turn.get())
+
+        if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
+            # User is viewing previous turns: take the viewed action
+            played_action_name = str(self.__turn_actions[turn_index])
+            player_index = (turn_index + 1) % 2
+
+        elif self.__action_validated and self.__action_input is not None:
+            # User action has just been validated: take it
+            played_action_name = self.__action_input
+            player_index = (turn_index + 0) % 2
+
+        else:
+            # Take the lastest registered action, by either user or agent
+            played_action_name = str(self.__turn_actions[turn_index])
+            player_index = (turn_index + 1) % 2
+
+        if played_action_name is not None:
+            played_hexagons = self.__get_destination_hexagons(played_action_name)
+
+            if player_index == 0:
+                for hexagon in played_hexagons:
+                    hexagon.highlighted_as_played_by_white = True
+
+            elif player_index == 1:
+                for hexagon in played_hexagons:
+                    hexagon.highlighted_as_played_by_black = True
 
 
     def __get_destination_hexagons(self, action_name):
@@ -1712,10 +1705,11 @@ class GameGui(ttk.Frame):
 
     def __draw_all_cubes(self):
 
-        pijersi_state = self.__pijersi_state
-
         if self.__cmc_pijersi_state is not None:
             pijersi_state = self.__cmc_pijersi_state
+        else:
+            pijersi_state = self.__pijersi_state
+
 
         hex_states = pijersi_state.get_hexStates()
 
@@ -1779,8 +1773,22 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
 
+        line_width_scaling = 1
+
+        easy_mode = self.__variable_easy_mode.get()
+
         # Respect priority order in lighting
-        if hexagon.highlighted_as_destination:
+
+        if easy_mode:
+            if hexagon.highlighted_as_played_by_white:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
+                line_width_scaling = 3
+
+            elif hexagon.highlighted_as_played_by_black:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
+                line_width_scaling = 3
+
+        if easy_mode and hexagon.highlighted_as_destination:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
@@ -1792,14 +1800,14 @@ class GameGui(ttk.Frame):
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        if hexagon.highlighted_as_source:
+        if easy_mode and hexagon.highlighted_as_selectable:
             fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         self.__canvas.create_polygon(hexagon.vertex_data,
                               fill=fill_color,
                               outline=polygon_line_color,
-                              width=CanvasConfig.HEXA_LINE_WIDTH,
+                              width=CanvasConfig.HEXA_LINE_WIDTH*line_width_scaling,
                               joinstyle=tk.MITER)
 
         if hexagon.name:
