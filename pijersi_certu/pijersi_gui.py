@@ -1218,7 +1218,7 @@ class GameGui(ttk.Frame):
     def __cmc_update_mouse_click_1(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_1,
-        meaning waiting that user selects a first hexagon.
+        meaning wait that user selects a first hexagon.
         If user clicks on a legal hexagon, the CMC state is updated.
         Otherwise, the CMC process is reset.
         """
@@ -1260,7 +1260,7 @@ class GameGui(ttk.Frame):
     def __cmc_update_mouse_click_2(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_2,
-        meaning waiting that user selects a second hexagon.
+        meaning wait that user selects a second hexagon.
         If user clicks on a legal hexagon, the CMC state is updated.
         Otherwise, the CMC process is reset.
         """
@@ -1268,10 +1268,10 @@ class GameGui(ttk.Frame):
         hexagon_at_mouse_click = self.__cmc_get_hexagon_at_position(event)
 
         if self.__cmc_hexagon_has_stack and hexagon_at_mouse_click is self.__cmc_hexagon_at_click:
-            # Manage double click on selected hexagon, meaning unstack instead of moving the entire stack
+            # Manage double click on selected hexagon, meaning selecting stack's top instead of selecting the entire stack
             self.__cmc_hexagon_has_stack_selection = not self.__cmc_hexagon_has_stack_selection
             self.__cmc_hexagon_at_click.highlighted_as_stack = self.__cmc_hexagon_has_stack_selection
-            self.__cmc_hexagon_at_click.highlighted_as_cube = not self.__cmc_hexagon_at_click.highlighted_as_stack
+            self.__cmc_hexagon_at_click.highlighted_as_cube = not self.__cmc_hexagon_has_stack_selection
 
             self.__cmc_set_legal_hexagons()
             self.__cmc_hightlight_selectable_hexagons()
@@ -1289,8 +1289,11 @@ class GameGui(ttk.Frame):
 
             # Give correct highlights to selected hexagon
             self.__cmc_hexagon_at_click.highlighted_as_selectable = False
-            self.__cmc_hexagon_at_click.highlighted_as_cube = True
-            self.__cmc_hexagon_at_click.highlighted_as_stack = (not self.__cmc_hexagon_has_stack_selection) and len(actions) > 1
+            # >> If stack is selected at step 1, then it cannot be selected at step 2. And vice versa.
+            # >> Hypothesis: two moves are made in the action.
+            # >> If the hypothesis is wrong then it does not matter, because the action terminates at this step.
+            self.__cmc_hexagon_at_click.highlighted_as_stack = (not self.__cmc_hexagon_has_stack_selection)
+            self.__cmc_hexagon_at_click.highlighted_as_cube = not self.__cmc_hexagon_at_click.highlighted_as_stack
 
             # Update the textual-action-input widget
             self.__variable_action.set(action_name)
@@ -1324,7 +1327,7 @@ class GameGui(ttk.Frame):
     def __cmc_update_mouse_click_3(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_3,
-        meaning waiting that user selects a third hexagon and finishes the CMC process.
+        meaning wait that user selects a third hexagon and finishes the CMC process.
         If user clicks on a legal hexagon, the CMC state is updated.
         Otherwise, the CMC process is reset.
         """
