@@ -1185,6 +1185,10 @@ class GameGui(ttk.Frame):
         if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
             return
 
+        # Do nothing if user is not playing
+        if not self.__searcher[self.__pijersi_state.get_current_player()].is_interactive():
+            return
+
         # Highlight selectable hexagons
         self.__cmc_set_legal_hexagons()
         self.__cmc_hightlight_selectable_hexagons()
@@ -1202,6 +1206,10 @@ class GameGui(ttk.Frame):
 
         # Do nothing if user is viewing some previous turn
         if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
+            return
+
+        # Do nothing if user is not playing
+        if not self.__searcher[self.__pijersi_state.get_current_player()].is_interactive():
             return
 
         # Dispatch the management regarding the CMC state
