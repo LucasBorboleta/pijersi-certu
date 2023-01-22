@@ -1789,7 +1789,7 @@ class GameGui(ttk.Frame):
 
             elif hexagon.highlighted_as_played_by_black:
                 polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
-                line_width_scaling = 3
+                line_width_scaling = 4
 
         if easy_mode and hexagon.highlighted_as_destination:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
