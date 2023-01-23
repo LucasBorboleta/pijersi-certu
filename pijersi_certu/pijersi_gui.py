@@ -499,12 +499,10 @@ class GameGui(ttk.Frame):
         self.__game_timer_delay = 500
         self.__game_timer_id = None
 
-        self.__do_take_picture = False
         self.__picture_timer_id = None
         self.__picture_timer_delay = 100
         self.__picture_gif_duration = 2_000
-        assert self.__picture_timer_delay < self.__game_timer_delay
-
+        self.__picture_turn_index = None
 
         self.__edit_actions = False
         self.__turn_states = list()
@@ -728,13 +726,10 @@ class GameGui(ttk.Frame):
         self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
 
 
-        self.__variable_take_pictures = tk.BooleanVar()
-        self.__variable_take_pictures.set(self.__do_take_picture)
-        self.__button_take_pictures = ttk.Checkbutton (self.__frame_human_actions,
-                                       text='Take pictures',
-                                       command=self.__command_update_take_pictures,
-                                       variable=self.__variable_take_pictures)
-        self.__button_take_pictures.config(state="enabled")
+        self.__button_make_pictures = ttk.Button(self.__frame_human_actions,
+                                  text='Make pictures',
+                                  command=self.__command_make_pictures)
+        self.__button_make_pictures.config(state="enabled")
 
 
        # In __frame_text_actions
@@ -761,7 +756,7 @@ class GameGui(ttk.Frame):
         self.__button_edit_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
-        self.__button_take_pictures.grid(row=0, column=6)
+        self.__button_make_pictures.grid(row=0, column=6)
 
         self.__frame_human_actions.rowconfigure(0, pad=5)
         self.__frame_human_actions.columnconfigure(0, pad=5)
@@ -869,9 +864,10 @@ class GameGui(ttk.Frame):
            self.__text_actions.config(state="disabled")
 
 
-    def __command_update_take_pictures(self):
+    def __command_make_pictures(self):
 
-        self.__do_take_picture = self.__variable_take_pictures.get()
+        self.__picture_turn_index = None
+        self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
 
 
     def __command_start_stop(self):
@@ -883,6 +879,7 @@ class GameGui(ttk.Frame):
         self.__entry_action.config(state="disabled")
         self.__button_confirm_action.config(state="disabled")
         self.__button_edit_actions.config(state="disabled")
+        self.__button_make_pictures.config(state="disabled")
 
         self.__game_started = not self.__game_started
 
@@ -1038,7 +1035,8 @@ class GameGui(ttk.Frame):
                    self.__edit_actions = False
                    self.__variable_edit_actions.set(self.__edit_actions)
 
-                   self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
+                   self.__button_make_pictures.config(state="disabled")
+
                    self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
            else:
@@ -1050,7 +1048,8 @@ class GameGui(ttk.Frame):
                self.__edit_actions = False
                self.__variable_edit_actions.set(self.__edit_actions)
 
-               self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
+               self.__button_make_pictures.config(state="disabled")
+
                self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
            self.__cmc_reset()
@@ -1069,6 +1068,8 @@ class GameGui(ttk.Frame):
            self.__button_edit_actions.config(state="enabled")
            self.__edit_actions = False
            self.__variable_edit_actions.set(self.__edit_actions)
+
+           self.__button_make_pictures.config(state="enabled")
 
            self.__variable_log.set("pijersi stopped")
            self.__button_start_stop.configure(text="Start")
@@ -1140,7 +1141,6 @@ class GameGui(ttk.Frame):
                 self.__cmc_hightlight_played_hexagons()
                 self.__draw_state()
 
-            self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
         else:
@@ -1157,7 +1157,7 @@ class GameGui(ttk.Frame):
            self.__edit_actions = False
            self.__variable_edit_actions.set(self.__edit_actions)
 
-           self.__make_animated_pictures()
+           self.__button_make_pictures.config(state="enabled")
 
 
     ### CMC (Mouse Canevas Control) methods
@@ -1576,25 +1576,29 @@ class GameGui(ttk.Frame):
             self.__canvas.after_cancel(self.__picture_timer_id)
             self.__picture_timer_id = None
 
-        if self.__do_take_picture:
+        if self.__picture_turn_index is None:
 
-            assert self.__game is not None
-            turn = self.__game.get_turn()
+            if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
+                shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
+            os.mkdir(AppConfig.TMP_PICTURE_DIR)
 
-            if turn == 0:
-                if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
-                    shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
-                os.mkdir(AppConfig.TMP_PICTURE_DIR)
+            self.__picture_turn_index = 0
 
-                picture_index = 0
+            self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
+            self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+            self.__variable_turn.set(self.__picture_turn_index)
 
-            else:
-                picture_index = turn
+            self.__cmc_reset()
+            self.__cmc_hightlight_played_hexagons()
+            self.__draw_state()
 
-            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % picture_index)
+            self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
+            return
 
+        elif 0 <= self.__picture_turn_index < len(self.__turn_states):
+
+            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % self.__picture_turn_index)
             picture_png_file = picture_export_path + '.png'
-
 
             grab_canvas_only = True
 
@@ -1631,28 +1635,47 @@ class GameGui(ttk.Frame):
             image = ImageGrab.grab(bbox=picture_bbox)
             image.save(picture_png_file)
 
+            self.__picture_turn_index += 1
+
+            if 0 <= self.__picture_turn_index < len(self.__turn_states):
+
+                self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
+                self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+                self.__variable_turn.set(self.__picture_turn_index)
+
+                self.__cmc_reset()
+                self.__cmc_hightlight_played_hexagons()
+                self.__draw_state()
+
+                self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
+                return
+
+            else:
+                self.__picture_turn_index = None
+                self.__make_animated_pictures()
+
 
     def __make_animated_pictures(self):
-         if self.__do_take_picture:
-             if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
 
-                frames = []
-                picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
+        if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
 
-                if len(picture_list) != 0:
-                    for picture in picture_list:
-                        new_frame = Image.open(picture)
-                        frames.append(new_frame)
+           frames = []
+           picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
 
-                    # Save into a GIF file that loops forever
-                    frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
-                                   format='GIF',
-                                   append_images=frames[1:],
-                                   save_all=True,
-                                   duration=self.__picture_gif_duration, loop=0)
+           if len(picture_list) != 0:
+               for picture in picture_list:
+                   new_frame = Image.open(picture)
+                   frames.append(new_frame)
 
-                    print()
-                    print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
+               # Save into a GIF file that loops forever
+               frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
+                              format='GIF',
+                              append_images=frames[1:],
+                              save_all=True,
+                              duration=self.__picture_gif_duration, loop=0)
+
+               print()
+               print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
 
 
     ### Drawer iterators
