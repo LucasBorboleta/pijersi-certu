@@ -866,6 +866,7 @@ class GameGui(ttk.Frame):
 
     def __command_make_pictures(self):
 
+        self.__variable_log.set("making pictures ...")
         self.__picture_turn_index = None
         self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
 
@@ -1144,20 +1145,20 @@ class GameGui(ttk.Frame):
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
         else:
-           self.__combobox_white_player.config(state="readonly")
-           self.__combobox_black_player.config(state="readonly")
-           self.__spinbox_turn.config(state="enabled")
+            self.__combobox_white_player.config(state="readonly")
+            self.__combobox_black_player.config(state="readonly")
+            self.__spinbox_turn.config(state="enabled")
 
-           self.__progressbar['value'] = 0.
+            self.__progressbar['value'] = 0.
 
-           self.__game_started = False
-           self.__button_start_stop.configure(text="Start")
+            self.__game_started = False
+            self.__button_start_stop.configure(text="Start")
 
-           self.__button_edit_actions.config(state="enabled")
-           self.__edit_actions = False
-           self.__variable_edit_actions.set(self.__edit_actions)
+            self.__button_edit_actions.config(state="enabled")
+            self.__edit_actions = False
+            self.__variable_edit_actions.set(self.__edit_actions)
 
-           self.__button_make_pictures.config(state="enabled")
+            self.__button_make_pictures.config(state="enabled")
 
 
     ### CMC (Mouse Canevas Control) methods
@@ -1592,6 +1593,7 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_played_hexagons()
             self.__draw_state()
 
+            self.__variable_log.set(f"making picture {self.__picture_turn_index} ...")
             self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
             return
 
@@ -1647,12 +1649,19 @@ class GameGui(ttk.Frame):
                 self.__cmc_hightlight_played_hexagons()
                 self.__draw_state()
 
+                if self.__picture_turn_index != len(self.__turn_states) - 1:
+                    self.__variable_log.set(f"making picture {self.__picture_turn_index} ...")
+                else:
+                    self.__variable_log.set(f"making picture {self.__picture_turn_index} and animated pictures ...")
+
                 self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
                 return
 
             else:
                 self.__picture_turn_index = None
                 self.__make_animated_pictures()
+                self.__variable_log.set("pictures are ready ; see the terminal windows")
+
 
 
     def __make_animated_pictures(self):
