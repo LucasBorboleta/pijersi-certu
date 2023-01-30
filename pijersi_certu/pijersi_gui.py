@@ -214,7 +214,7 @@ class CanvasConfig:
 
 
     # Geometrical line widths
-    CUBE_LINE_WIDTH = 1
+    CUBE_LINE_WIDTH = 2
     HEXA_LINE_WIDTH = 1
 
     # Origin of the orthonormal x-y frame and the oblic u-v frame
@@ -865,6 +865,22 @@ class GameGui(ttk.Frame):
 
 
     def __command_make_pictures(self):
+
+        self.__button_quit.config(state="disabled")
+        self.__button_start_stop.config(state="disabled")
+        self.__combobox_white_player.config(state="disabled")
+        self.__combobox_black_player.config(state="disabled")
+        
+        self.__button_easy_mode.config(state="disabled")
+        self.__combobox_button_faces.config(state="disabled")
+        
+        self.__entry_action.config(state="disabled")
+        self.__button_confirm_action.config(state="disabled")
+        self.__button_edit_actions.config(state="disabled")
+        self.__spinbox_turn.config(state="disabled")
+        self.__button_make_pictures.config(state="disabled")        
+
+        self.__text_actions.config(state="disabled")
 
         self.__variable_log.set("making pictures ...")
         self.__picture_turn_index = None
@@ -1662,6 +1678,21 @@ class GameGui(ttk.Frame):
                 self.__make_animated_pictures()
                 self.__variable_log.set("pictures are ready ; see the terminal windows")
 
+                self.__button_quit.config(state="enabled")
+                self.__button_start_stop.config(state="enabled")
+                self.__combobox_white_player.config(state="readonly")
+                self.__combobox_black_player.config(state="readonly")
+                
+                self.__button_easy_mode.config(state="enabled")
+                self.__combobox_button_faces.config(state="enabled")
+                
+                self.__entry_action.config(state="disabled")
+                self.__button_confirm_action.config(state="disabled")
+                self.__button_edit_actions.config(state="enabled")
+                self.__spinbox_turn.config(state="enabled")
+                self.__button_make_pictures.config(state="enabled")    
+                
+                self.__text_actions.config(state="disabled")
 
 
     def __make_animated_pictures(self):
@@ -2011,7 +2042,7 @@ class GameGui(ttk.Frame):
 
             delta = cube_center[0] - face_vertex_W[0]
 
-            angle_count = 20
+            angle_count = 200
             for angle_index in range(angle_count):
                 angle_value = angle_index*2*math.pi/angle_count
 
