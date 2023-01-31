@@ -3,7 +3,6 @@
 
 """pijersi_gui.py implements a GUI for the PIJERSI boardgame."""
 
-
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rule engine for the PIJERSI boardgame.
 
@@ -16,26 +15,24 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
-
+import copy
 import enum
+import sys
 import glob
 import math
 import os
 import shutil
-import sys
-import copy
 
-from PIL import Image
-from PIL import ImageTk
-from PIL import ImageGrab
-
-import tkinter as tk
 from tkinter import font
 from tkinter import ttk
-
+import tkinter as tk
+from PIL import Image
+from PIL import ImageGrab
+from PIL import ImageTk
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
+
 import pijersi_rules as rules
 
 
@@ -69,14 +66,11 @@ class TinyVector:
             self.__x = float(xy_pair[0])
             self.__y = float(xy_pair[1])
 
-
     def __repr__(self):
         return str(self)
 
-
     def __str__(self):
         return str((self.__x, self.__y))
-
 
     def __getitem__(self, key):
         if key == 0:
@@ -88,14 +82,11 @@ class TinyVector:
         else:
             raise IndexError()
 
-
     def __neg__(self):
-        return TinyVector((-self.__x , -self.__y))
-
+        return TinyVector((-self.__x, -self.__y))
 
     def __pos__(self):
-        return TinyVector((self.__x , self.__y))
-
+        return TinyVector((self.__x, self.__y))
 
     def __add__(self, other):
         if isinstance(other, TinyVector):
@@ -107,7 +98,6 @@ class TinyVector:
         else:
             raise NotImplementedError()
 
-
     def __sub__(self, other):
         if isinstance(other, TinyVector):
             return TinyVector((self.__x - other.__x, self.__y - other.__y))
@@ -118,14 +108,12 @@ class TinyVector:
         else:
             raise NotImplementedError()
 
-
     def __mul__(self, other):
         if isinstance(other, (int, float)):
             return TinyVector((self.__x*other, self.__y*other))
 
         else:
             raise NotImplementedError()
-
 
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
@@ -134,18 +122,14 @@ class TinyVector:
         else:
             raise NotImplementedError()
 
-
     def __radd__(self, other):
         return self.__add__(other)
-
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
-
     def __rtruediv__(self, other):
         return self.__div__(other)
-
 
     def __rsub__(self, other):
         if isinstance(other, TinyVector):
@@ -157,7 +141,6 @@ class TinyVector:
         else:
             raise NotImplementedError()
 
-
     @staticmethod
     def inner(that, other):
         if isinstance(that, TinyVector) and isinstance(other, TinyVector):
@@ -165,7 +148,6 @@ class TinyVector:
 
         else:
             raise NotImplementedError()
-
 
     @staticmethod
     def norm(that):
@@ -197,7 +179,7 @@ class CanvasConfig:
     HEXA_SIDE_ANGLE = 2*math.pi/HEXA_VERTEX_COUNT
     HEXA_WIDTH = WIDTH/NX
     HEXA_SIDE = HEXA_WIDTH*math.tan(HEXA_SIDE_ANGLE/2)
-    HEXA_DELTA_Y = math.sqrt(HEXA_SIDE**2 -(HEXA_WIDTH/2)**2)
+    HEXA_DELTA_Y = math.sqrt(HEXA_SIDE**2 - (HEXA_WIDTH/2)**2)
     HEXA_COS_SIDE_ANGLE = math.cos(HEXA_SIDE_ANGLE)
     HEXA_SIN_SIDE_ANGLE = math.sin(HEXA_SIDE_ANGLE)
 
@@ -207,11 +189,10 @@ class CanvasConfig:
 
     # Font used for text in the canvas
     FONT_FAMILY = 'Calibri'
-    FONT_LABEL_SIZE = int(0.30*HEXA_SIDE) # size for 'e5', 'f5' ...
+    FONT_LABEL_SIZE = int(0.30*HEXA_SIDE)  # size for 'e5', 'f5' ...
     FONT_FACE_SIZE = int(0.50*HEXA_SIDE)  # size for 'K', 'F' ...
-    FONT_LEGEND_SIZE = int(0.60*HEXA_SIDE) # size for 'a1-a2!=a3!' ...
+    FONT_LEGEND_SIZE = int(0.60*HEXA_SIDE)  # size for 'a1-a2!=a3!' ...
     FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((166, 109, 60))
-
 
     # Geometrical line widths
     CUBE_LINE_WIDTH = 2
@@ -234,8 +215,8 @@ class CubeConfig:
 
     __cube_file_name = {}
 
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.WISE)] = 'wise-black.png'
-    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.ROCK)] = 'rock-black.png'
+    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.WISE) ] = 'wise-black.png'
+    __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.ROCK) ] = 'rock-black.png'
     __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.PAPER)] = 'paper-black.png'
     __cube_file_name[(rules.Player.T.BLACK, rules.Cube.T.SCISSORS)] = 'scissors-black.png'
 
@@ -247,7 +228,7 @@ class CubeConfig:
     CUBE_FILE_PATH = {}
 
     for (file_key, file_name) in __cube_file_name.items():
-        CUBE_FILE_PATH[file_key] =os.path.join(_package_home, 'pictures', file_name)
+        CUBE_FILE_PATH[file_key] = os.path.join(_package_home, 'pictures', file_name)
 
 
 class CubeLocation(enum.Enum):
@@ -290,7 +271,6 @@ class GraphicalHexagon:
 
     all = None
 
-
     def __init__(self, hexagon, color):
 
         assert hexagon.name not in GraphicalHexagon.__name_to_hexagon
@@ -312,7 +292,7 @@ class GraphicalHexagon:
 
         (u, v) = self.position_uv
 
-        self.center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+        self.center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH * (u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
 
         self.vertex_data = list()
 
@@ -320,21 +300,20 @@ class GraphicalHexagon:
             vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
 
             hexagon_vertex = self.center
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE * math.cos(vertex_angle)*CanvasConfig.UNIT_X
+            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE * math.sin(vertex_angle)*CanvasConfig.UNIT_Y
 
             self.vertex_data.append(hexagon_vertex[0])
             self.vertex_data.append(hexagon_vertex[1])
 
-
     def contains_point(self, point):
         """ Is the point inside the current hexagon ?"""
 
-        #>> This implementation relies of the following properties:
-        #>> - All hexagons of the Pijersi board are regular hexagons: all the 6 sides are of equal lengths.
-        #>> - All hexagons have the same sizes.
-        #>> - All hexagons can be translated to the central hexagon and does match it.
-        #>> - The x-axis is orthogonal to an hexagon side.
+        # >> This implementation relies of the following properties:
+        # >> - All hexagons of the Pijersi board are regular hexagons: all the 6 sides are of equal lengths.
+        # >> - All hexagons have the same sizes.
+        # >> - All hexagons can be translated to the central hexagon and does match it.
+        # >> - The x-axis is orthogonal to an hexagon side.
 
         SAFE_RELATIVE_INSIDE_WIDTH = 0.99
 
@@ -350,14 +329,12 @@ class GraphicalHexagon:
         if is_inside:
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
-
         if is_inside:
             # first rotation by CanvasConfig.HEXA_SIDE_ANGLE
             (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
                       CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
-
 
         if is_inside:
             # second rotation by CanvasConfig.HEXA_SIDE_ANGLE
@@ -366,19 +343,14 @@ class GraphicalHexagon:
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
-
         return is_inside
-
-
 
     def __str__(self):
         return f"GraphicalHexagon({self.name}, {self.position_uv}, {self.index}, {self.color})"
 
-
     @staticmethod
     def get(name):
         return GraphicalHexagon.__name_to_hexagon[name]
-
 
     @staticmethod
     def init():
@@ -397,12 +369,10 @@ class GraphicalHexagon:
             hexagon.highlighted_as_played_by_white = False
             hexagon.highlighted_as_played_by_black = False
 
-
     @staticmethod
     def reset_highlights_as_selectable():
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_as_selectable = False
-
 
     @staticmethod
     def reset_highlights_as_cube_or_stack():
@@ -410,12 +380,10 @@ class GraphicalHexagon:
             hexagon.highlighted_as_cube = False
             hexagon.highlighted_as_stack = False
 
-
     @staticmethod
     def reset_highlights_as_destination():
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_as_destination = False
-
 
     @staticmethod
     def reset_highlights_as_played():
@@ -423,12 +391,10 @@ class GraphicalHexagon:
             hexagon.highlighted_as_played_by_white = False
             hexagon.highlighted_as_played_by_black = False
 
-
     @staticmethod
     def show_all():
         for hexagon in GraphicalHexagon.__all_sorted_hexagons:
             print(hexagon)
-
 
     @staticmethod
     def __create_all_sorted_hexagons():
@@ -436,7 +402,6 @@ class GraphicalHexagon:
             GraphicalHexagon.__all_sorted_hexagons.append(GraphicalHexagon.__name_to_hexagon[name])
 
         GraphicalHexagon.all = GraphicalHexagon.__all_sorted_hexagons
-
 
     @staticmethod
     def __create_hexagons():
@@ -476,7 +441,6 @@ class CMCState(enum.Enum):
 
 class GameGui(ttk.Frame):
 
-
     def __init__(self):
 
         self.__face_drawers = dict()
@@ -494,7 +458,6 @@ class GameGui(ttk.Frame):
         self.__use_background_photo = CanvasConfig.USE_BACKGROUND_PHOTO
 
         self.__legend = ""
-        self.__destination_hexagons = []
 
         self.__game_timer_delay = 500
         self.__game_timer_id = None
@@ -505,6 +468,7 @@ class GameGui(ttk.Frame):
         self.__picture_turn_index = None
 
         self.__edit_actions = False
+
         self.__turn_states = list()
         self.__turn_actions = list()
 
@@ -547,7 +511,6 @@ class GameGui(ttk.Frame):
         # Wait events
         self.__root.mainloop()
 
-
     def __create_widgets(self):
 
         searcher_catalog_names = rules.SEARCHER_CATALOG.get_names()
@@ -583,28 +546,27 @@ class GameGui(ttk.Frame):
         # In __frame_commands
 
         self.__button_quit = ttk.Button(self.__frame_commands,
-                                 text='Quit',
-                                 command=self.__root.destroy)
+                                        text='Quit',
+                                        command=self.__root.destroy)
 
         self.__button_start_stop = ttk.Button(self.__frame_commands,
-                                  text='Start',
-                                  command=self.__command_start_stop)
-
+                                              text='Start',
+                                              command=self.__command_start_stop)
 
         self.__variable_faces = tk.StringVar()
         self.__combobox_button_faces = ttk.Combobox(self.__frame_commands,
-                                                  width=max(map(len, self.__cube_faces_options)),
-                                                  textvariable=self.__variable_faces,
-                                                  values=self.__cube_faces_options)
+                                                    width=max(map(len, self.__cube_faces_options)),
+                                                    textvariable=self.__variable_faces,
+                                                    values=self.__cube_faces_options)
         self.__combobox_button_faces.set(self.__cube_faces_options[2])
         self.__variable_faces.trace_add('write', self.__command_update_faces)
 
         self.__variable_easy_mode = tk.BooleanVar()
         self.__variable_easy_mode.set(True)
-        self.__button_easy_mode = ttk.Checkbutton (self.__frame_commands,
-                                                text='Easy mode',
-                                                variable=self.__variable_easy_mode,
-                                                command=self.__command_update_easy_mode)
+        self.__button_easy_mode = ttk.Checkbutton(self.__frame_commands,
+                                                  text='Easy mode',
+                                                  variable=self.__variable_easy_mode,
+                                                  command=self.__command_update_easy_mode)
 
         self.__button_start_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
@@ -623,29 +585,27 @@ class GameGui(ttk.Frame):
 
         self.__variable_white_player = tk.StringVar()
         self.__combobox_white_player = ttk.Combobox(self.__frame_players,
-                                                  width=searcher_catalog_names_width,
-                                                  textvariable=self.__variable_white_player,
-                                                  values=searcher_catalog_names)
+                                                    width=searcher_catalog_names_width,
+                                                    textvariable=self.__variable_white_player,
+                                                    values=searcher_catalog_names)
         self.__combobox_white_player.config(state="readonly")
         self.__variable_white_player.set(searcher_catalog_names[0])
-
 
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
         self.__variable_black_player = tk.StringVar()
         self.__combobox_black_player = ttk.Combobox(self.__frame_players,
-                                                  width=searcher_catalog_names_width,
-                                                  textvariable=self.__variable_black_player,
-                                                  values=searcher_catalog_names)
+                                                    width=searcher_catalog_names_width,
+                                                    textvariable=self.__variable_black_player,
+                                                    values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
         self.__variable_black_player.set(searcher_catalog_names[0])
 
-
         self.__progressbar = ttk.Progressbar(self.__frame_players,
-                                            orient=tk.HORIZONTAL,
-                                            length=300,
-                                            maximum=100,
-                                            mode='determinate')
+                                             orient=tk.HORIZONTAL,
+                                             length=300,
+                                             maximum=100,
+                                             mode='determinate')
 
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
@@ -668,8 +628,8 @@ class GameGui(ttk.Frame):
         # In __frame_board
 
         self.__canvas = tk.Canvas(self.__frame_board,
-                                height=CanvasConfig.HEIGHT,
-                                width=CanvasConfig.WIDTH)
+                                  height=CanvasConfig.HEIGHT,
+                                  width=CanvasConfig.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
         self.__canvas.bind('<Motion>', self.__cmc_update_mouse_over)
@@ -679,19 +639,19 @@ class GameGui(ttk.Frame):
 
         self.__variable_log = tk.StringVar()
         self.__label_log = ttk.Label(self.__frame_actions,
-                                  textvariable=self.__variable_log,
-                                  width=90,
-                                  padding=5,
-                                  foreground='red',
-                                  borderwidth=2, relief="groove")
+                                     textvariable=self.__variable_log,
+                                     width=90,
+                                     padding=5,
+                                     foreground='red',
+                                     borderwidth=2, relief="groove")
 
         self.__variable_summary = tk.StringVar()
         self.__label_summary = ttk.Label(self.__frame_actions,
-                                  textvariable=self.__variable_summary,
-                                  width=90,
-                                  padding=5,
-                                  foreground='black',
-                                  borderwidth=2, relief="groove")
+                                         textvariable=self.__variable_summary,
+                                         width=90,
+                                         padding=5,
+                                         foreground='black',
+                                         borderwidth=2, relief="groove")
 
        # In __frame_human_actions
 
@@ -702,15 +662,12 @@ class GameGui(ttk.Frame):
         self.__entry_action.bind("<KeyPress>", self.__command_protect_action)
 
         self.__button_confirm_action = ttk.Button(self.__frame_human_actions,
-                                  text='OK',
-                                  command=self.__command_confirm_action)
+                                                  text='OK',
+                                                  command=self.__command_confirm_action)
 
-        self.__variable_edit_actions = tk.BooleanVar()
-        self.__variable_edit_actions.set(self.__edit_actions)
-        self.__button_edit_actions = ttk.Checkbutton (self.__frame_human_actions,
-                                       text='Edit actions',
-                                       command=self.__command_update_edit_actions,
-                                       variable=self.__variable_edit_actions)
+        self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
+                                                text='Edit actions',
+                                                command=self.__command_edit_actions)
         self.__button_edit_actions.config(state="enabled")
 
         self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn :')
@@ -725,21 +682,19 @@ class GameGui(ttk.Frame):
                                           width=5)
         self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
 
-
         self.__button_make_pictures = ttk.Button(self.__frame_human_actions,
-                                  text='Make pictures',
-                                  command=self.__command_make_pictures)
+                                                 text='Make pictures',
+                                                 command=self.__command_make_pictures)
         self.__button_make_pictures.config(state="enabled")
-
 
        # In __frame_text_actions
 
         self.__text_actions = tk.Text(self.__frame_text_actions,
-                                  width=60,
-                                  background='lightgrey',
-                                  borderwidth=2, relief="groove")
+                                      width=60,
+                                      background='lightgrey',
+                                      borderwidth=2, relief="groove")
 
-        self.__scrollbar_actions = ttk.Scrollbar(self.__frame_text_actions, orient = 'vertical')
+        self.__scrollbar_actions = ttk.Scrollbar(self.__frame_text_actions, orient='vertical')
 
         self.__text_actions.config(yscrollcommand=self.__scrollbar_actions.set)
         self.__scrollbar_actions.config(command=self.__text_actions.yview)
@@ -748,7 +703,6 @@ class GameGui(ttk.Frame):
         self.__label_summary.pack(side=tk.TOP, pady=10)
 
         self.__frame_human_actions.pack(side=tk.TOP)
-
 
         self.__label_action.grid(row=0, column=0)
         self.__entry_action.grid(row=0, column=1)
@@ -767,7 +721,6 @@ class GameGui(ttk.Frame):
         self.__frame_human_actions.columnconfigure(5, pad=5)
         self.__frame_human_actions.columnconfigure(6, pad=10)
 
-
         self.__frame_text_actions.pack(side=tk.TOP)
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
         self.__text_actions.pack(side=tk.LEFT)
@@ -775,7 +728,6 @@ class GameGui(ttk.Frame):
         self.__entry_action.config(state="disabled")
         self.__button_confirm_action.config(state="disabled")
         self.__text_actions.config(state="disabled")
-
 
     def __create_cube_photos(self):
         if self.__cube_photos is None:
@@ -790,22 +742,18 @@ class GameGui(ttk.Frame):
                 cube_tk_photo = ImageTk.PhotoImage(cube_photo)
                 self.__cube_photos[key] = cube_tk_photo
 
-
     def __command_update_faces(self, *_):
         self.__cube_faces = self.__variable_faces.get()
         self.__draw_state()
-
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
         self.__searcher[rules.Player.T.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
 
-
     def __command_protect_action(self, *_):
 
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
-
 
     def __command_update_turn(self, *_):
 
@@ -820,14 +768,12 @@ class GameGui(ttk.Frame):
         self.__cmc_hightlight_played_hexagons()
         self.__draw_state()
 
-
     def __command_update_easy_mode(self):
         """
         If user changes easy mode checkbox during a game, redo the right drawing
         """
 
         self.__draw_state()
-
 
     def __command_confirm_action(self):
 
@@ -836,7 +782,6 @@ class GameGui(ttk.Frame):
 
         self.__action_input = self.__variable_action.get()
         self.__action_input = self.__action_input.replace("!", "")
-
 
         (self.__action_validated, message) = rules.Notation.validate_simple_notation(self.__action_input,
                                                                                      self.__pijersi_state.get_action_simple_names())
@@ -850,19 +795,169 @@ class GameGui(ttk.Frame):
 
         self.__cmc_reset()
 
+    def __command_edit_actions(self):
 
-    def __command_update_edit_actions(self):
+        if not self.__edit_actions:
 
-        self.__edit_actions = self.__variable_edit_actions.get()
+            self.__edit_actions = True
 
-        if self.__edit_actions:
-            self.__button_start_stop.configure(text="Resume")
+            self.__button_edit_actions.configure(text="Validate actions")
+
+            # update widgets status
+
             self.__text_actions.config(state="normal")
 
-        else:
-           self.__button_start_stop.configure(text="Start")
-           self.__text_actions.config(state="disabled")
+            self.__button_start_stop.config(state="disabled")
+            self.__combobox_white_player.config(state="disabled")
+            self.__combobox_black_player.config(state="disabled")
 
+            self.__entry_action.config(state="disabled")
+            self.__button_confirm_action.config(state="disabled")
+            self.__spinbox_turn.config(state="disabled")
+            self.__button_make_pictures.config(state="disabled")
+
+            return
+
+        elif self.__edit_actions:
+
+            # try to validate edited actions
+
+            actions_text = self.__text_actions.get('1.0', tk.END)
+
+            self.__text_actions.config(state="normal")
+            self.__text_actions.delete('1.0', tk.END)
+            self.__text_actions.config(state="disabled")
+
+            validated_edited_actions = True
+            actions_items = actions_text.split()
+
+            # check length of action items
+            if validated_edited_actions and not len(actions_items) % 2 == 0:
+                validated_edited_actions = False
+                self.__variable_log.set("error: not an even count of words")
+
+            # check action indices
+            if validated_edited_actions:
+                action_count = int(len(actions_items)/2)
+                for action_index in range(action_count):
+                    even_action_item = actions_items[2*action_index]
+                    if even_action_item != str(action_index + 1):
+                        validated_edited_actions = False
+                        self.__variable_log.set("error: bad index '%s'" % even_action_item)
+
+            # extract actions
+            if validated_edited_actions:
+                edited_actions = list()
+                for action_index in range(action_count):
+                    action = actions_items[2*action_index + 1]
+                    action = action.replace("!", "")
+                    edited_actions.append(action)
+
+            # interpet actions
+            if validated_edited_actions:
+
+                self.__game = rules.Game()
+
+                white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
+                black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
+
+                self.__game.set_white_searcher(white_replayer)
+                self.__game.set_black_searcher(black_replayer)
+
+                self.__game.start()
+
+                self.__turn_states = list()
+                self.__turn_states.append(self.__game.get_state())
+                self.__turn_actions = list()
+                self.__turn_actions.append("")
+                self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+                self.__variable_turn.set(len(self.__turn_states) - 1)
+
+                for (action_index, action) in enumerate(edited_actions):
+
+                    if not self.__game.has_next_turn():
+                        validated_edited_actions = False
+                        self.__variable_log.set("error: too much actions")
+                        break
+
+                    self.__pijersi_state = self.__game.get_state()
+
+                    (action_validated, message) = rules.Notation.validate_simple_notation(action,
+                                                                                          self.__pijersi_state.get_action_simple_names())
+                    if not action_validated:
+                        validated_edited_actions = False
+                        self.__variable_log.set("error at turn %d: %s" % (action_index + 1, message))
+                        break
+
+                    player = self.__pijersi_state.get_current_player()
+
+                    if player == rules.Player.T.WHITE:
+                        white_replayer.set_action_simple_name(action)
+                    else:
+                        black_replayer.set_action_simple_name(action)
+
+                    self.__game.next_turn()
+
+                    self.__turn_states.append(self.__game.get_state())
+                    self.__turn_actions.append(self.__game.get_last_action())
+
+                    self.__variable_summary.set(self.__game.get_summary())
+                    self.__variable_log.set(self.__game.get_log())
+
+                    self.__text_actions.config(state="normal")
+
+                    turn = self.__game.get_turn()
+                    notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+                    if turn % 2 == 0:
+                        notation = ' '*2 + notation + "\n"
+
+                    self.__text_actions.insert(tk.END, notation)
+                    self.__text_actions.see(tk.END)
+                    self.__text_actions.config(state="disabled")
+
+                self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
+                self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+
+                self.__pijersi_state = self.__game.get_state()
+                self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+                self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+                self.__variable_turn.set(len(self.__turn_states) - 1)
+
+                self.__cmc_reset()
+                self.__cmc_hightlight_played_hexagons()
+                self.__draw_state()
+
+            if not validated_edited_actions:
+
+                self.__text_actions.config(state="normal")
+                self.__text_actions.delete('1.0', tk.END)
+                self.__text_actions.config(state="disabled")
+
+                self.__text_actions.config(state="normal")
+                self.__text_actions.insert(tk.END, actions_text)
+                self.__text_actions.see(tk.END)
+
+            if validated_edited_actions:
+
+                self.__edit_actions = False
+
+                # update widgets status
+
+                self.__button_edit_actions.configure(text="Edit actions")
+
+                self.__text_actions.config(state="disabled")
+
+                self.__button_start_stop.config(state="enabled")
+                self.__combobox_white_player.config(state="readonly")
+                self.__combobox_black_player.config(state="readonly")
+
+                self.__entry_action.config(state="disabled")
+                self.__button_confirm_action.config(state="disabled")
+                self.__spinbox_turn.config(state="enabled")
+                self.__button_make_pictures.config(state="enabled")
+
+            return
 
     def __command_make_pictures(self):
 
@@ -870,22 +965,21 @@ class GameGui(ttk.Frame):
         self.__button_start_stop.config(state="disabled")
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
-        
+
         self.__button_easy_mode.config(state="disabled")
         self.__combobox_button_faces.config(state="disabled")
-        
+
         self.__entry_action.config(state="disabled")
         self.__button_confirm_action.config(state="disabled")
         self.__button_edit_actions.config(state="disabled")
         self.__spinbox_turn.config(state="disabled")
-        self.__button_make_pictures.config(state="disabled")        
+        self.__button_make_pictures.config(state="disabled")
 
         self.__text_actions.config(state="disabled")
 
         self.__variable_log.set("making pictures ...")
         self.__picture_turn_index = None
         self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
-
 
     def __command_start_stop(self):
 
@@ -902,199 +996,61 @@ class GameGui(ttk.Frame):
 
         if self.__game_started:
 
-           self.__game = rules.Game()
-           self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-           self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
-           self.__game.start()
+            self.__game = rules.Game()
+            self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
+            self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+            self.__game.start()
 
-           self.__pijersi_state = self.__game.get_state()
-           self.__legend = ""
+            self.__pijersi_state = self.__game.get_state()
+            self.__legend = ""
 
-           self.__turn_states = list()
-           self.__turn_states.append(self.__game.get_state())
-           self.__turn_actions = list()
-           self.__turn_actions.append("")
-           self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
-           self.__variable_turn.set(len(self.__turn_states) - 1)
+            self.__turn_states = list()
+            self.__turn_states.append(self.__game.get_state())
+            self.__turn_actions = list()
+            self.__turn_actions.append("")
+            self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+            self.__variable_turn.set(len(self.__turn_states) - 1)
 
-           self.__button_start_stop.configure(text="Stop")
+            self.__button_start_stop.configure(text="Stop")
 
-           self.__variable_log.set(self.__game.get_log())
-           self.__variable_summary.set(self.__game.get_summary())
-           self.__progressbar['value'] = 50.
+            self.__variable_log.set(self.__game.get_log())
+            self.__variable_summary.set(self.__game.get_summary())
+            self.__progressbar['value'] = 50.
 
-           self.__combobox_white_player.config(state="disabled")
-           self.__combobox_black_player.config(state="disabled")
-           self.__spinbox_turn.config(state="disabled")
+            self.__combobox_white_player.config(state="disabled")
+            self.__combobox_black_player.config(state="disabled")
+            self.__spinbox_turn.config(state="disabled")
 
-           if self.__edit_actions:
-               actions_text = self.__text_actions.get('1.0', tk.END)
+            self.__text_actions.config(state="normal")
+            self.__text_actions.delete('1.0', tk.END)
+            self.__text_actions.config(state="disabled")
 
-               self.__text_actions.config(state="normal")
-               self.__text_actions.delete('1.0', tk.END)
-               self.__text_actions.config(state="disabled")
+            self.__button_edit_actions.config(state="disabled")
+            self.__button_make_pictures.config(state="disabled")
 
-               validated_edited_actions = True
-               actions_items = actions_text.split()
+            self.__cmc_reset()
+            self.__draw_state()
 
-               # check length of action items
-               if validated_edited_actions and not len(actions_items) % 2 == 0:
-                  validated_edited_actions = False
-                  self.__variable_log.set("error: not an even count of words")
-
-               # check action indices
-               if validated_edited_actions:
-                  action_count = int(len(actions_items)/2)
-                  for action_index in range(action_count):
-                      even_action_item = actions_items[2*action_index]
-                      if even_action_item != str(action_index + 1):
-                          validated_edited_actions = False
-                          self.__variable_log.set("error: bad index '%s'" % even_action_item)
-
-               # extract actions
-               if validated_edited_actions:
-                   edited_actions = list()
-                   for action_index in range(action_count):
-                       action = actions_items[2*action_index + 1]
-                       action = action.replace("!", "")
-                       edited_actions.append(action)
-
-               # interpet actions
-               if validated_edited_actions:
-
-                    white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
-                    black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
-
-                    self.__game.set_white_searcher(white_replayer)
-                    self.__game.set_black_searcher(black_replayer)
-
-                    for (action_index, action) in enumerate(edited_actions):
-
-                        if not self.__game.has_next_turn():
-                            validated_edited_actions = False
-                            self.__variable_log.set("error: too much actions")
-                            break
-
-                        self.__pijersi_state = self.__game.get_state()
-
-                        (action_validated, message) = rules.Notation.validate_simple_notation(action,
-                                                                  self.__pijersi_state.get_action_simple_names())
-                        if not action_validated:
-                            validated_edited_actions = False
-                            self.__variable_log.set("error at turn %d: %s" % (action_index + 1, message))
-                            break
-
-                        player = self.__pijersi_state.get_current_player()
-
-                        if player == rules.Player.T.WHITE:
-                            white_replayer.set_action_simple_name(action)
-                        else:
-                            black_replayer.set_action_simple_name(action)
-
-                        self.__game.next_turn()
-
-                        self.__turn_states.append(self.__game.get_state())
-                        self.__turn_actions.append(self.__game.get_last_action())
-
-                        self.__variable_summary.set(self.__game.get_summary())
-                        self.__variable_log.set(self.__game.get_log())
-
-                        self.__text_actions.config(state="normal")
-
-                        turn = self.__game.get_turn()
-                        notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
-                        if turn % 2 == 0:
-                            notation = ' '*2 + notation + "\n"
-
-                        self.__text_actions.insert(tk.END, notation)
-                        self.__text_actions.see(tk.END)
-                        self.__text_actions.config(state="disabled")
-
-                    self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-                    self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
-
-                    self.__pijersi_state = self.__game.get_state()
-                    self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
-                    self.__draw_state()
-
-                    self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
-                    self.__variable_turn.set(len(self.__turn_states) - 1)
-
-
-               if not validated_edited_actions:
-                   self.__game_started = False
-
-                   self.__text_actions.config(state="normal")
-                   self.__text_actions.delete('1.0', tk.END)
-                   self.__text_actions.config(state="disabled")
-
-                   self.__text_actions.config(state="normal")
-                   self.__text_actions.insert(tk.END, actions_text)
-                   self.__text_actions.see(tk.END)
-
-                   self.__combobox_white_player.config(state="readonly")
-                   self.__combobox_black_player.config(state="readonly")
-
-                   self.__entry_action.config(state="disabled")
-                   self.__button_confirm_action.config(state="disabled")
-
-                   self.__button_edit_actions.config(state="enabled")
-                   self.__edit_actions = True
-                   self.__variable_edit_actions.set(self.__edit_actions)
-
-                   self.__button_start_stop.configure(text="Resume")
-                   self.__progressbar['value'] = 0.
-
-               else:
-                   self.__game_started = True
-
-                   self.__button_edit_actions.config(state="disabled")
-                   self.__edit_actions = False
-                   self.__variable_edit_actions.set(self.__edit_actions)
-
-                   self.__button_make_pictures.config(state="disabled")
-
-                   self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
-
-           else:
-               self.__text_actions.config(state="normal")
-               self.__text_actions.delete('1.0', tk.END)
-               self.__text_actions.config(state="disabled")
-
-               self.__button_edit_actions.config(state="disabled")
-               self.__edit_actions = False
-               self.__variable_edit_actions.set(self.__edit_actions)
-
-               self.__button_make_pictures.config(state="disabled")
-
-               self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
-
-           self.__cmc_reset()
-           self.__draw_state()
+            self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
         else:
-           self.__combobox_white_player.config(state="readonly")
-           self.__combobox_black_player.config(state="readonly")
-           self.__spinbox_turn.config(state="enabled")
+            self.__combobox_white_player.config(state="readonly")
+            self.__combobox_black_player.config(state="readonly")
+            self.__spinbox_turn.config(state="enabled")
 
-           self.__entry_action.config(state="enabled")
-           self.__variable_action.set("")
-           self.__entry_action.config(state="disabled")
-           self.__button_confirm_action.config(state="disabled")
+            self.__entry_action.config(state="enabled")
+            self.__variable_action.set("")
+            self.__entry_action.config(state="disabled")
+            self.__button_confirm_action.config(state="disabled")
 
-           self.__button_edit_actions.config(state="enabled")
-           self.__edit_actions = False
-           self.__variable_edit_actions.set(self.__edit_actions)
+            self.__button_edit_actions.config(state="enabled")
+            self.__button_make_pictures.config(state="enabled")
 
-           self.__button_make_pictures.config(state="enabled")
-
-           self.__variable_log.set("pijersi stopped")
-           self.__button_start_stop.configure(text="Start")
-           self.__progressbar['value'] = 0.
-
+            self.__variable_log.set("pijersi stopped")
+            self.__button_start_stop.configure(text="Start")
+            self.__progressbar['value'] = 0.
 
     def __command_next_turn(self):
-
 
         if self.__game_timer_id is not None:
             self.__canvas.after_cancel(self.__game_timer_id)
@@ -1171,14 +1127,9 @@ class GameGui(ttk.Frame):
             self.__button_start_stop.configure(text="Start")
 
             self.__button_edit_actions.config(state="enabled")
-            self.__edit_actions = False
-            self.__variable_edit_actions.set(self.__edit_actions)
-
             self.__button_make_pictures.config(state="enabled")
 
-
     ### CMC (Mouse Canevas Control) methods
-
 
     def __cmc_update_mouse_over(self, event):
         """
@@ -1211,7 +1162,6 @@ class GameGui(ttk.Frame):
         self.__cmc_hightlight_selectable_hexagons()
         self.__draw_state()
 
-
     def __cmc_update_mouse_click(self, event):
         """
         Manage click event:  if mouse is inside the canvas, manage the event regarding the CMC state
@@ -1238,7 +1188,6 @@ class GameGui(ttk.Frame):
 
         elif self.__cmc_state is CMCState.SELECTING_3:
             self.__cmc_update_mouse_click_3(event)
-
 
     def __cmc_update_mouse_click_1(self, event):
         """
@@ -1281,7 +1230,6 @@ class GameGui(ttk.Frame):
 
         self.__draw_state()
 
-
     def __cmc_update_mouse_click_2(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_2,
@@ -1317,7 +1265,7 @@ class GameGui(ttk.Frame):
             # >> If stack is selected at step 1, then it cannot be selected at step 2. And vice versa.
             # >> Hypothesis: two moves are made in the action.
             # >> If the hypothesis is wrong then it does not matter, because the action terminates at this step.
-            self.__cmc_hexagon_at_click.highlighted_as_stack = (not self.__cmc_hexagon_has_stack_selection)
+            self.__cmc_hexagon_at_click.highlighted_as_stack = not self.__cmc_hexagon_has_stack_selection
             self.__cmc_hexagon_at_click.highlighted_as_cube = not self.__cmc_hexagon_at_click.highlighted_as_stack
 
             # Update the textual-action-input widget
@@ -1347,7 +1295,6 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_played_hexagons()
 
         self.__draw_state()
-
 
     def __cmc_update_mouse_click_3(self, event):
         """
@@ -1383,7 +1330,6 @@ class GameGui(ttk.Frame):
 
         self.__draw_state()
 
-
     def __cmc_reset(self):
         """
         Reset the CMC process and clean the drawing
@@ -1397,11 +1343,12 @@ class GameGui(ttk.Frame):
 
         self.__cmc_hexagon_at_over = None
         self.__cmc_hexagon_at_click = None
-        self.__cmc_hexagon_has_stack = False # Does the clicked hexagon has a stack ?
-        self.__cmc_hexagon_has_stack_selection = False # If the stack selected or just its top ?
+        # Does the clicked hexagon has a stack ?
+        self.__cmc_hexagon_has_stack = False
+        # If the stack selected or just its top ?
+        self.__cmc_hexagon_has_stack_selection = False
 
         GraphicalHexagon.reset_highlights()
-
 
     def __cmc_terminate(self):
         """
@@ -1412,7 +1359,6 @@ class GameGui(ttk.Frame):
         self.__action_input = self.__variable_action.get()
         GraphicalHexagon.reset_highlights()
         self.__cmc_hightlight_played_hexagons()
-
 
     def __cmc_set_legal_actions(self):
         """
@@ -1443,7 +1389,6 @@ class GameGui(ttk.Frame):
                     if len(action_name) > 5:
                         self.__cmc_legal_actions.append(action_name)
 
-
     def __cmc_set_legal_hexagons(self):
         """
         Build the list of hexagons user can interact with
@@ -1467,14 +1412,13 @@ class GameGui(ttk.Frame):
             # If the CMC process is deactivated, no hexagon is added to legal hexagons list
             pass
 
-
     def __cmc_set_legal_hexagons_at_step(self, step):
         """
         Build the list of graphical hexagons user can interact with at a given step of the selection process
         """
 
         # >> Indexes inside the action name
-        hexagone_name_indexes_by_step = {1: (0, 2), 2:(3, 5), 3:(6, 8)}
+        hexagone_name_indexes_by_step = {1: (0, 2), 2: (3, 5), 3: (6, 8)}
         (index_1, index_2) = hexagone_name_indexes_by_step[step]
 
         hexagon_names = set()
@@ -1485,13 +1429,11 @@ class GameGui(ttk.Frame):
             graphical_hexagon = GraphicalHexagon.get(hexagon_name)
             self.__cmc_legal_hexagons.append(graphical_hexagon)
 
-
     def __cmc_hexagon_has_stack_at_selection_1(self, hexagon_name):
         for action in self.__cmc_legal_actions:
             if action[0:3] == hexagon_name + "=":
                 return True
         return False
-
 
     def __cmc_get_hexagon_at_position(self, position):
         """
@@ -1504,7 +1446,6 @@ class GameGui(ttk.Frame):
 
         return None
 
-
     def __cmc_hightlight_selectable_hexagons(self):
         """
         Mark selectable hexagons
@@ -1515,7 +1456,6 @@ class GameGui(ttk.Frame):
         if self.__cmc_hexagon_at_over in self.__cmc_legal_hexagons:
             self.__cmc_hexagon_at_over.highlighted_as_selectable = True
 
-
     def __cmc_hightlight_destination_hexagons(self):
         """
         Mark hexagons as destinations
@@ -1525,7 +1465,6 @@ class GameGui(ttk.Frame):
 
         for hexagon in self.__cmc_legal_hexagons:
             hexagon.highlighted_as_destination = True
-
 
     def __cmc_hightlight_played_hexagons(self):
         """
@@ -1565,7 +1504,6 @@ class GameGui(ttk.Frame):
                 for hexagon in played_hexagons:
                     hexagon.highlighted_as_played_by_black = True
 
-
     def __get_destination_hexagons(self, action_name):
 
         simple_action_name = action_name.replace("!", "")
@@ -1585,7 +1523,6 @@ class GameGui(ttk.Frame):
 
         destination_hexagons = [GraphicalHexagon.get(hexagon_name) for hexagon_name in hexagon_names]
         return destination_hexagons
-
 
     def __take_picture(self):
 
@@ -1676,47 +1613,45 @@ class GameGui(ttk.Frame):
             else:
                 self.__picture_turn_index = None
                 self.__make_animated_pictures()
-                self.__variable_log.set("pictures are ready ; see the terminal windows")
+                self.__variable_log.set("pictures are ready ; see the terminal window")
 
                 self.__button_quit.config(state="enabled")
                 self.__button_start_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
-                
+
                 self.__button_easy_mode.config(state="enabled")
                 self.__combobox_button_faces.config(state="enabled")
-                
+
                 self.__entry_action.config(state="disabled")
                 self.__button_confirm_action.config(state="disabled")
                 self.__button_edit_actions.config(state="enabled")
                 self.__spinbox_turn.config(state="enabled")
-                self.__button_make_pictures.config(state="enabled")    
-                
-                self.__text_actions.config(state="disabled")
+                self.__button_make_pictures.config(state="enabled")
 
+                self.__text_actions.config(state="disabled")
 
     def __make_animated_pictures(self):
 
         if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
 
-           frames = []
-           picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
+            frames = []
+            picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
 
-           if len(picture_list) != 0:
-               for picture in picture_list:
-                   new_frame = Image.open(picture)
-                   frames.append(new_frame)
+            if len(picture_list) != 0:
+                for picture in picture_list:
+                    new_frame = Image.open(picture)
+                    frames.append(new_frame)
 
-               # Save into a GIF file that loops forever
-               frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
-                              format='GIF',
-                              append_images=frames[1:],
-                              save_all=True,
-                              duration=self.__picture_gif_duration, loop=0)
+                # Save into a GIF file that loops forever
+                frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
+                               format='GIF',
+                               append_images=frames[1:],
+                               save_all=True,
+                               duration=self.__picture_gif_duration, loop=0)
 
-               print()
-               print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
-
+                print()
+                print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
 
     ### Drawer iterators
 
@@ -1730,7 +1665,6 @@ class GameGui(ttk.Frame):
         self.__draw_all_hexagons()
         self.__draw_all_cubes()
         self.__draw_legend()
-
 
     def __draw_canvas_background(self):
         if self.__background_tk_photo is None:
@@ -1753,7 +1687,6 @@ class GameGui(ttk.Frame):
                                    image=self.__background_tk_photo,
                                    anchor=tk.NW)
 
-
     def __draw_legend(self):
 
         (u, v) = (2, -4)
@@ -1768,7 +1701,6 @@ class GameGui(ttk.Frame):
 
         legend_position = hexagon_vertex - 1.0*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
 
-
         legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
 
         legend_text = self.__legend if not self.__legend.startswith("0") else ""
@@ -1776,14 +1708,12 @@ class GameGui(ttk.Frame):
         self.__canvas.create_text(*legend_position, text=legend_text, justify=tk.CENTER,
                                   font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
 
-
     def __draw_all_cubes(self):
 
         if self.__cmc_pijersi_state is not None:
             pijersi_state = self.__cmc_pijersi_state
         else:
             pijersi_state = self.__pijersi_state
-
 
         hex_states = pijersi_state.get_hexStates()
 
@@ -1799,44 +1729,41 @@ class GameGui(ttk.Frame):
                 # Hexagon with a stack
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.TOP,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.top,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
+                                 cube_color=hex_state.player,
+                                 cube_sort=hex_state.top,
+                                 cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.BOTTOM,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.bottom,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
+                                 cube_color=hex_state.player,
+                                 cube_sort=hex_state.bottom,
+                                 cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
 
             elif hex_state.top is not None:
                 # Hexagon with a single cube at top
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.MIDDLE,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.top,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
+                                 cube_color=hex_state.player,
+                                 cube_sort=hex_state.top,
+                                 cube_label=rules.Cube.to_name(hex_state.player, hex_state.top))
 
             elif hex_state.bottom is not None:
                 # Hexagon with a single cube at bottom
 
                 self.__draw_cube(name=hexagon.name, config=CubeLocation.MIDDLE,
-                               cube_color=hex_state.player,
-                               cube_sort=hex_state.bottom,
-                               cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
-
-
+                                 cube_color=hex_state.player,
+                                 cube_sort=hex_state.bottom,
+                                 cube_label=rules.Cube.to_name(hex_state.player, hex_state.bottom))
 
     def __draw_all_hexagons(self):
 
         for hexagon in GraphicalHexagon.all:
             self.__draw_hexagon(hexagon)
 
-
     ### Drawer primitives
 
     def __draw_hexagon(self, hexagon):
 
-        label_position = ( TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
+        label_position = (TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
                           0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
 
         if self.__use_background_photo:
@@ -1879,16 +1806,15 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         self.__canvas.create_polygon(hexagon.vertex_data,
-                              fill=fill_color,
-                              outline=polygon_line_color,
-                              width=CanvasConfig.HEXA_LINE_WIDTH*line_width_scaling,
-                              joinstyle=tk.MITER)
+                                     fill=fill_color,
+                                     outline=polygon_line_color,
+                                     width=CanvasConfig.HEXA_LINE_WIDTH*line_width_scaling,
+                                     joinstyle=tk.MITER)
 
         if hexagon.name:
             label_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LABEL_SIZE, weight='bold')
 
             self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
-
 
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
 
@@ -1906,8 +1832,6 @@ class GameGui(ttk.Frame):
         if hexagon.highlighted_as_cube:
             top_shift = shift_value
 
-        (u, v) = hexagon.position_uv
-
         cube_vertices = list()
 
         for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
@@ -1917,17 +1841,16 @@ class GameGui(ttk.Frame):
                 cube_center = hexagon.center
 
             elif config == CubeLocation.BOTTOM:
-                cube_center = hexagon.center - 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
+                cube_center = hexagon.center - 0.40 * CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
 
             elif config == CubeLocation.TOP:
-                cube_center = hexagon.center + 0.40*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + top_shift
+                cube_center = hexagon.center + 0.40 * CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + top_shift
 
             cube_vertex = cube_center
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
             cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
 
             cube_vertices.append(cube_vertex)
-
 
         if cube_color == rules.Player.T.BLACK:
             fill_color = CubeColor.BLACK.value
@@ -1939,7 +1862,6 @@ class GameGui(ttk.Frame):
 
         else:
             assert False
-
 
         line_color = ''
 
@@ -1957,26 +1879,25 @@ class GameGui(ttk.Frame):
         elif self.__cube_faces == 'faces=drawings':
 
             self.__canvas.create_rectangle(*cube_vertex_NW, *cube_vertex_SE,
-                                fill=fill_color,
-                                outline=line_color)
+                                           fill=fill_color,
+                                           outline=line_color)
             self.__face_drawers[cube_sort](cube_center, cube_vertices, face_color)
 
         elif self.__cube_faces == 'faces=letters':
 
             self.__canvas.create_rectangle(*cube_vertex_NW, *cube_vertex_SE,
-                                fill=fill_color,
-                                outline=line_color)
+                                           fill=fill_color,
+                                           outline=line_color)
 
             face_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_FACE_SIZE, weight='bold')
 
             self.__canvas.create_text(*cube_center,
-                               text=cube_label,
-                               justify=tk.CENTER,
-                               font=face_font,
-                               fill=face_color)
+                                      text=cube_label,
+                                      justify=tk.CENTER,
+                                      font=face_font,
+                                      fill=face_color)
         else:
             assert False
-
 
     def __draw_paper_face(self, cube_center, cube_vertices, face_color):
 
@@ -1984,10 +1905,9 @@ class GameGui(ttk.Frame):
         face_vertex_SE = 0.5*cube_center + 0.5*cube_vertices[3]
 
         self.__canvas.create_rectangle(*face_vertex_NW, *face_vertex_SE,
-                                fill='',
-                                outline=face_color,
-                                width=CanvasConfig.CUBE_LINE_WIDTH)
-
+                                       fill='',
+                                       outline=face_color,
+                                       width=CanvasConfig.CUBE_LINE_WIDTH)
 
     def __draw_rock_face(self, cube_center, cube_vertices, face_color):
 
@@ -1995,10 +1915,9 @@ class GameGui(ttk.Frame):
         face_vertex_SE = 0.5*cube_center + 0.5*cube_vertices[3]
 
         self.__canvas.create_oval(*face_vertex_NW, *face_vertex_SE,
-                           fill='',
-                           outline=face_color,
-                           width=CanvasConfig.CUBE_LINE_WIDTH)
-
+                                  fill='',
+                                  outline=face_color,
+                                  width=CanvasConfig.CUBE_LINE_WIDTH)
 
     def __draw_scissors_face(self, cube_center, cube_vertices, face_color):
 
@@ -2008,15 +1927,14 @@ class GameGui(ttk.Frame):
         face_vertex_SE = 0.5*cube_center + 0.5*cube_vertices[3]
 
         self.__canvas.create_line(*face_vertex_NE, *face_vertex_SW,
-                           fill=face_color,
-                           width=CanvasConfig.CUBE_LINE_WIDTH,
-                           capstyle=tk.ROUND)
+                                  fill=face_color,
+                                  width=CanvasConfig.CUBE_LINE_WIDTH,
+                                  capstyle=tk.ROUND)
 
         self.__canvas.create_line(*face_vertex_NW, *face_vertex_SE,
-                           fill=face_color,
-                           width=CanvasConfig.CUBE_LINE_WIDTH,
-                           capstyle=tk.ROUND)
-
+                                  fill=face_color,
+                                  width=CanvasConfig.CUBE_LINE_WIDTH,
+                                  capstyle=tk.ROUND)
 
     def __draw_wise_face(self, cube_center, cube_vertices, face_color):
 
@@ -2062,11 +1980,11 @@ class GameGui(ttk.Frame):
             wise_data.extend(face_vertex_SW)
 
         self.__canvas.create_polygon(wise_data,
-                              fill='',
-                              outline=face_color,
-                              width=CanvasConfig.CUBE_LINE_WIDTH,
-                              joinstyle=tk.ROUND,
-                              smooth=True)
+                                     fill='',
+                                     outline=face_color,
+                                     width=CanvasConfig.CUBE_LINE_WIDTH,
+                                     joinstyle=tk.ROUND,
+                                     smooth=True)
 
 
 GraphicalHexagon.init()
@@ -2083,5 +2001,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
