@@ -502,7 +502,6 @@ class GameGui(ttk.Frame):
 
         self.__draw_state()
 
-        self.__command_update_faces()
         self.__command_update_players()
 
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
@@ -553,13 +552,9 @@ class GameGui(ttk.Frame):
                                               text='Start',
                                               command=self.__command_start_stop)
 
-        self.__variable_faces = tk.StringVar()
-        self.__combobox_button_faces = ttk.Combobox(self.__frame_commands,
-                                                    width=max(map(len, self.__cube_faces_options)),
-                                                    textvariable=self.__variable_faces,
-                                                    values=self.__cube_faces_options)
-        self.__combobox_button_faces.set(self.__cube_faces_options[2])
-        self.__variable_faces.trace_add('write', self.__command_update_faces)
+        self.__button_resume = ttk.Button(self.__frame_commands,
+                                              text='Resume',
+                                              command=self.__command_resume)
 
         self.__variable_easy_mode = tk.BooleanVar()
         self.__variable_easy_mode.set(True)
@@ -572,7 +567,7 @@ class GameGui(ttk.Frame):
         self.__button_quit.grid(row=0, column=1)
 
         self.__button_easy_mode.grid(row=1, column=0)
-        self.__combobox_button_faces.grid(row=1, column=1)
+        self.__button_resume.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
         self.__frame_commands.rowconfigure(1, pad=5)
@@ -741,10 +736,6 @@ class GameGui(ttk.Frame):
                 cube_photo = cube_photo.resize((cube_photo_width, cube_photo_width))
                 cube_tk_photo = ImageTk.PhotoImage(cube_photo)
                 self.__cube_photos[key] = cube_tk_photo
-
-    def __command_update_faces(self, *_):
-        self.__cube_faces = self.__variable_faces.get()
-        self.__draw_state()
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
@@ -967,7 +958,7 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.config(state="disabled")
 
         self.__button_easy_mode.config(state="disabled")
-        self.__combobox_button_faces.config(state="disabled")
+        self.__button_resume.config(state="disabled")
 
         self.__entry_action.config(state="disabled")
         self.__button_confirm_action.config(state="disabled")
@@ -1049,6 +1040,10 @@ class GameGui(ttk.Frame):
             self.__variable_log.set("pijersi stopped")
             self.__button_start_stop.configure(text="Start")
             self.__progressbar['value'] = 0.
+
+    def __command_resume(self):
+        self.__variable_log.set("Button 'Resume' NOT IMPLEMENTED !!!")
+        pass
 
     def __command_next_turn(self):
 
@@ -1621,7 +1616,7 @@ class GameGui(ttk.Frame):
                 self.__combobox_black_player.config(state="readonly")
 
                 self.__button_easy_mode.config(state="enabled")
-                self.__combobox_button_faces.config(state="enabled")
+                self.__button_resume.config(state="enabled")
 
                 self.__entry_action.config(state="disabled")
                 self.__button_confirm_action.config(state="disabled")
