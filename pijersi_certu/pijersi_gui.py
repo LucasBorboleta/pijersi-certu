@@ -548,9 +548,9 @@ class GameGui(ttk.Frame):
                                         text='Quit',
                                         command=self.__root.destroy)
 
-        self.__button_start_stop = ttk.Button(self.__frame_commands,
-                                              text='Start',
-                                              command=self.__command_start_stop)
+        self.__button_new_stop = ttk.Button(self.__frame_commands,
+                                              text='New',
+                                              command=self.__command_new_stop)
 
         self.__button_resume = ttk.Button(self.__frame_commands,
                                               text='Resume',
@@ -563,7 +563,7 @@ class GameGui(ttk.Frame):
                                                   variable=self.__variable_easy_mode,
                                                   command=self.__command_update_easy_mode)
 
-        self.__button_start_stop.grid(row=0, column=0)
+        self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
         self.__button_easy_mode.grid(row=1, column=0)
@@ -798,7 +798,7 @@ class GameGui(ttk.Frame):
 
             self.__text_actions.config(state="normal")
 
-            self.__button_start_stop.config(state="disabled")
+            self.__button_new_stop.config(state="disabled")
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
 
@@ -939,7 +939,7 @@ class GameGui(ttk.Frame):
 
                 self.__text_actions.config(state="disabled")
 
-                self.__button_start_stop.config(state="enabled")
+                self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
 
@@ -953,7 +953,7 @@ class GameGui(ttk.Frame):
     def __command_make_pictures(self):
 
         self.__button_quit.config(state="disabled")
-        self.__button_start_stop.config(state="disabled")
+        self.__button_new_stop.config(state="disabled")
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
 
@@ -972,20 +972,15 @@ class GameGui(ttk.Frame):
         self.__picture_turn_index = None
         self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
 
-    def __command_start_stop(self):
+    def __command_new_stop(self):
 
         if self.__game_timer_id is not None:
             self.__canvas.after_cancel(self.__game_timer_id)
             self.__game_timer_id = None
 
-        self.__entry_action.config(state="disabled")
-        self.__button_confirm_action.config(state="disabled")
-        self.__button_edit_actions.config(state="disabled")
-        self.__button_make_pictures.config(state="disabled")
+        if not self.__game_started:
 
-        self.__game_started = not self.__game_started
-
-        if self.__game_started:
+            self.__game_started = True
 
             self.__game = rules.Game()
             self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
@@ -1002,11 +997,14 @@ class GameGui(ttk.Frame):
             self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
             self.__variable_turn.set(len(self.__turn_states) - 1)
 
-            self.__button_start_stop.configure(text="Stop")
+            self.__button_new_stop.configure(text="Stop")
 
             self.__variable_log.set(self.__game.get_log())
             self.__variable_summary.set(self.__game.get_summary())
             self.__progressbar['value'] = 50.
+
+            self.__entry_action.config(state="disabled")
+            self.__button_confirm_action.config(state="disabled")
 
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
@@ -1024,7 +1022,10 @@ class GameGui(ttk.Frame):
 
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
-        else:
+        elif self.__game_started:
+
+            self.__game_started = False
+
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
             self.__spinbox_turn.config(state="enabled")
@@ -1038,7 +1039,7 @@ class GameGui(ttk.Frame):
             self.__button_make_pictures.config(state="enabled")
 
             self.__variable_log.set("pijersi stopped")
-            self.__button_start_stop.configure(text="Start")
+            self.__button_new_stop.configure(text="New")
             self.__progressbar['value'] = 0.
 
     def __command_resume(self):
@@ -1119,7 +1120,7 @@ class GameGui(ttk.Frame):
             self.__progressbar['value'] = 0.
 
             self.__game_started = False
-            self.__button_start_stop.configure(text="Start")
+            self.__button_new_stop.configure(text="New")
 
             self.__button_edit_actions.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
@@ -1611,7 +1612,7 @@ class GameGui(ttk.Frame):
                 self.__variable_log.set("pictures are ready ; see the terminal window")
 
                 self.__button_quit.config(state="enabled")
-                self.__button_start_stop.config(state="enabled")
+                self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
 
