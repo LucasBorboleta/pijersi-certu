@@ -1476,7 +1476,7 @@ class PijersiState:
                 counters[Cube.to_name(player, cube)] = sum((player_cube_table[hex_code] for hex_code in player_codes))
 
         summary = (
-            f"turn {self.__turn} / player {Player.to_name(self.__player)} / credit {self.__credit} / " +
+            f"Turn {self.__turn} / player {Player.to_name(self.__player)} / credit {self.__credit} / " +
              "alive " + " ".join([f"{cube_name}:{cube_count}" for (cube_name, cube_count) in sorted(counters.items())]))
 
         return summary
@@ -2766,7 +2766,7 @@ class Game:
             if self.__enabled_log:
                 player_name = f"{Player.to_name(player)}-{self.__searcher[player].get_name()}"
                 print()
-                print(f"{player_name} is thinking ...")
+                print(f"Player {player_name} is thinking ...")
                 turn_start = time.time()
 
             action = self.__searcher[player].search(self.__pijersi_state)
@@ -2778,10 +2778,10 @@ class Game:
                 turn_end = time.time()
                 turn_duration = turn_end - turn_start
                 self.__turn_duration[player].append(turn_duration)
-                print(f"{player_name} is done after %.1f seconds" % turn_duration)
+                print(f"Player {player_name} is done after %.1f seconds" % turn_duration)
 
                 action_count = len(self.__pijersi_state.get_actions())
-                self.__log = f"turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
+                self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
                 print(self.__log)
                 print("-"*40)
 
@@ -2806,13 +2806,13 @@ class Game:
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
 
                 if rewards[Player.T.WHITE] == rewards[Player.T.BLACK]:
-                    self.__log = f"nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+                    self.__log = f"Nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
 
                 elif rewards[Player.T.WHITE] > rewards[Player.T.BLACK]:
-                    self.__log = f"{white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+                    self.__log = f"Player {white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
 
                 else:
-                    self.__log = f"{black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
+                    self.__log = f"Player {black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
 
                 print(self.__log)
 
@@ -2940,7 +2940,7 @@ def test():
         summary = new_state.get_summary()
         print()
         print(f"summary = {summary}")
-        assert summary == "turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
+        assert summary == "Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
 
 
     def test_game_between_random_players():

@@ -473,7 +473,8 @@ class GameGui(ttk.Frame):
         self.__turn_actions = list()
 
         self.__game = None
-        self.__game_started = False
+        self.__game_played = False
+        self.__game_terminated = False
         self.__pijersi_state = rules.PijersiState()
         self.__searcher = [None, None]
 
@@ -723,6 +724,7 @@ class GameGui(ttk.Frame):
         self.__entry_action.config(state="disabled")
         self.__button_confirm_action.config(state="disabled")
         self.__text_actions.config(state="disabled")
+        self.__button_resume.config(state="disabled")
 
     def __create_cube_photos(self):
         if self.__cube_photos is None:
@@ -755,6 +757,11 @@ class GameGui(ttk.Frame):
         self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
         self.__variable_turn.set(turn_index)
 
+        if turn_index != len(self.__turn_states) - 1 or not self.__game_terminated:
+            self.__button_resume.config(state="enabled")
+        else:
+            self.__button_resume.config(state="disabled")
+
         self.__cmc_reset()
         self.__cmc_hightlight_played_hexagons()
         self.__draw_state()
@@ -780,7 +787,6 @@ class GameGui(ttk.Frame):
         if self.__action_validated:
             self.__variable_log.set(message)
             self.__variable_action.set("")
-
         else:
             self.__variable_log.set(message)
 
@@ -807,6 +813,8 @@ class GameGui(ttk.Frame):
             self.__spinbox_turn.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
 
+            self.__button_resume.config(state="disabled")
+
             return
 
         elif self.__edit_actions:
@@ -825,7 +833,7 @@ class GameGui(ttk.Frame):
             # check length of action items
             if validated_edited_actions and not len(actions_items) % 2 == 0:
                 validated_edited_actions = False
-                self.__variable_log.set("error: not an even count of words")
+                self.__variable_log.set("Error: not an even count of words")
 
             # check action indices
             if validated_edited_actions:
@@ -834,7 +842,7 @@ class GameGui(ttk.Frame):
                     even_action_item = actions_items[2*action_index]
                     if even_action_item != str(action_index + 1):
                         validated_edited_actions = False
-                        self.__variable_log.set("error: bad index '%s'" % even_action_item)
+                        self.__variable_log.set("Error: bad index '%s'" % even_action_item)
 
             # extract actions
             if validated_edited_actions:
@@ -868,7 +876,7 @@ class GameGui(ttk.Frame):
 
                     if not self.__game.has_next_turn():
                         validated_edited_actions = False
-                        self.__variable_log.set("error: too much actions")
+                        self.__variable_log.set("Error: too much actions")
                         break
 
                     self.__pijersi_state = self.__game.get_state()
@@ -877,7 +885,7 @@ class GameGui(ttk.Frame):
                                                                                           self.__pijersi_state.get_action_simple_names())
                     if not action_validated:
                         validated_edited_actions = False
-                        self.__variable_log.set("error at turn %d: %s" % (action_index + 1, message))
+                        self.__variable_log.set("Error at turn %d: %s" % (action_index + 1, message))
                         break
 
                     player = self.__pijersi_state.get_current_player()
@@ -905,6 +913,8 @@ class GameGui(ttk.Frame):
                     self.__text_actions.insert(tk.END, notation)
                     self.__text_actions.see(tk.END)
                     self.__text_actions.config(state="disabled")
+
+                self.__game_terminated = not self.__game.has_next_turn()
 
                 self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
                 self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
@@ -948,6 +958,11 @@ class GameGui(ttk.Frame):
                 self.__spinbox_turn.config(state="enabled")
                 self.__button_make_pictures.config(state="enabled")
 
+                if not self.__game_terminated:
+                    self.__button_resume.config(state="enabled")
+                else:
+                    self.__button_resume.config(state="disabled")
+
             return
 
     def __command_make_pictures(self):
@@ -968,7 +983,7 @@ class GameGui(ttk.Frame):
 
         self.__text_actions.config(state="disabled")
 
-        self.__variable_log.set("making pictures ...")
+        self.__variable_log.set("Making pictures ...")
         self.__picture_turn_index = None
         self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
 
@@ -978,9 +993,10 @@ class GameGui(ttk.Frame):
             self.__canvas.after_cancel(self.__game_timer_id)
             self.__game_timer_id = None
 
-        if not self.__game_started:
+        if not self.__game_played:
 
-            self.__game_started = True
+            self.__game_played = True
+            self.__game_terminated = False
 
             self.__game = rules.Game()
             self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
@@ -1017,14 +1033,22 @@ class GameGui(ttk.Frame):
             self.__button_edit_actions.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
 
+            self.__button_resume.config(state="disabled")
+
             self.__cmc_reset()
             self.__draw_state()
 
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
-        elif self.__game_started:
+        elif self.__game_played:
 
-            self.__game_started = False
+            self.__game_played = False
+            self.__game_terminated = not self.__game.has_next_turn()
+
+            self.__button_new_stop.configure(text="New")
+
+            self.__variable_log.set("Game stopped")
+            self.__progressbar['value'] = 0.
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
@@ -1038,13 +1062,117 @@ class GameGui(ttk.Frame):
             self.__button_edit_actions.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
 
-            self.__variable_log.set("pijersi stopped")
-            self.__button_new_stop.configure(text="New")
-            self.__progressbar['value'] = 0.
+            if not self.__game_terminated:
+                self.__button_resume.config(state="enabled")
+            else:
+                self.__button_resume.config(state="disabled")
+
 
     def __command_resume(self):
-        self.__variable_log.set("Button 'Resume' NOT IMPLEMENTED !!!")
-        pass
+
+        # like "__command_edit_actions" but driven by the actual action list, possibly made shorter.
+
+        resume_turn_index = int(self.__variable_turn.get())
+        resume_actions = self.__turn_actions[1: resume_turn_index + 1]
+
+        self.__text_actions.config(state="normal")
+        self.__text_actions.delete('1.0', tk.END)
+        self.__text_actions.config(state="disabled")
+
+        # interpet actions
+
+        self.__game = rules.Game()
+
+        white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
+        black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
+
+        self.__game.set_white_searcher(white_replayer)
+        self.__game.set_black_searcher(black_replayer)
+
+        self.__game.start()
+
+        self.__turn_states = list()
+        self.__turn_states.append(self.__game.get_state())
+        self.__turn_actions = list()
+        self.__turn_actions.append("")
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__variable_turn.set(len(self.__turn_states) - 1)
+
+        for (action_index, action) in enumerate(resume_actions):
+            
+            action = action.replace("!", "")
+
+            self.__pijersi_state = self.__game.get_state()
+
+            player = self.__pijersi_state.get_current_player()
+
+            if player == rules.Player.T.WHITE:
+                white_replayer.set_action_simple_name(action)
+            else:
+                black_replayer.set_action_simple_name(action)
+
+            self.__game.next_turn()
+
+            self.__turn_states.append(self.__game.get_state())
+            self.__turn_actions.append(self.__game.get_last_action())
+
+            self.__variable_summary.set(self.__game.get_summary())
+            self.__variable_log.set(self.__game.get_log())
+
+            self.__text_actions.config(state="normal")
+
+            turn = self.__game.get_turn()
+            notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+            if turn % 2 == 0:
+                notation = ' '*2 + notation + "\n"
+
+            self.__text_actions.insert(tk.END, notation)
+            self.__text_actions.see(tk.END)
+            self.__text_actions.config(state="disabled")
+
+        assert self.__game.has_next_turn()
+        self.__game_played = True
+        self.__game_terminated = False
+
+        self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
+        self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+
+        self.__pijersi_state = self.__game.get_state()
+
+        if self.__game.get_turn() > 0:
+            self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+        else:
+            self.__legend = ""
+
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__variable_turn.set(len(self.__turn_states) - 1)
+
+        self.__variable_log.set(f"Game resumed at turn {resume_turn_index}")
+
+        self.__cmc_reset()
+        self.__cmc_hightlight_played_hexagons()
+        self.__draw_state()
+
+        # update widgets status
+
+        self.__button_new_stop.configure(text="Stop")
+
+        self.__entry_action.config(state="disabled")
+        self.__button_confirm_action.config(state="disabled")
+
+        self.__combobox_white_player.config(state="disabled")
+        self.__combobox_black_player.config(state="disabled")
+        self.__spinbox_turn.config(state="disabled")
+
+        self.__text_actions.config(state="disabled")
+
+        self.__button_edit_actions.config(state="disabled")
+        self.__button_make_pictures.config(state="disabled")
+
+        self.__button_resume.config(state="disabled")
+
+        # watch next turn
+        self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
     def __command_next_turn(self):
 
@@ -1052,7 +1180,7 @@ class GameGui(ttk.Frame):
             self.__canvas.after_cancel(self.__game_timer_id)
             self.__game_timer_id = None
 
-        if self.__game_started and self.__game.has_next_turn():
+        if self.__game_played and self.__game.has_next_turn():
 
             self.__pijersi_state = self.__game.get_state()
             player = self.__pijersi_state.get_current_player()
@@ -1113,14 +1241,17 @@ class GameGui(ttk.Frame):
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
         else:
+
+            self.__game_played = False
+            self.__game_terminated = True
+
+            self.__button_new_stop.configure(text="New")
+
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
             self.__spinbox_turn.config(state="enabled")
 
             self.__progressbar['value'] = 0.
-
-            self.__game_started = False
-            self.__button_new_stop.configure(text="New")
 
             self.__button_edit_actions.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
@@ -1141,8 +1272,8 @@ class GameGui(ttk.Frame):
 
         self.__cmc_hexagon_at_over = hexagon_at_over
 
-        # Do nothing if the game is not started
-        if not self.__game_started:
+        # Do nothing if the game is not played
+        if not self.__game_played:
             return
 
         # Do nothing if user is viewing some previous turn
@@ -1163,8 +1294,8 @@ class GameGui(ttk.Frame):
         Manage click event:  if mouse is inside the canvas, manage the event regarding the CMC state
         """
 
-        # Do nothing if the game is not started
-        if not self.__game_started:
+        # Do nothing if the game is not played
+        if not self.__game_played:
             return
 
         # Do nothing if user is viewing some previous turn
@@ -1353,8 +1484,11 @@ class GameGui(ttk.Frame):
 
         self.__action_validated = True
         self.__action_input = self.__variable_action.get()
+        self.__variable_action.set("")
+
         GraphicalHexagon.reset_highlights()
         self.__cmc_hightlight_played_hexagons()
+
 
     def __cmc_set_legal_actions(self):
         """
@@ -1542,7 +1676,7 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_played_hexagons()
             self.__draw_state()
 
-            self.__variable_log.set(f"making picture {self.__picture_turn_index} ...")
+            self.__variable_log.set(f"Making picture {self.__picture_turn_index} ...")
             self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
             return
 
@@ -1599,9 +1733,9 @@ class GameGui(ttk.Frame):
                 self.__draw_state()
 
                 if self.__picture_turn_index != len(self.__turn_states) - 1:
-                    self.__variable_log.set(f"making picture {self.__picture_turn_index} ...")
+                    self.__variable_log.set(f"Making picture {self.__picture_turn_index} ...")
                 else:
-                    self.__variable_log.set(f"making picture {self.__picture_turn_index} and animated pictures ...")
+                    self.__variable_log.set(f"Making picture {self.__picture_turn_index} and animated pictures ...")
 
                 self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
                 return
@@ -1609,7 +1743,7 @@ class GameGui(ttk.Frame):
             else:
                 self.__picture_turn_index = None
                 self.__make_animated_pictures()
-                self.__variable_log.set("pictures are ready ; see the terminal window")
+                self.__variable_log.set("Pictures are ready ; see the terminal window")
 
                 self.__button_quit.config(state="enabled")
                 self.__button_new_stop.config(state="enabled")
