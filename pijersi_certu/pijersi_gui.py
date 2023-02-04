@@ -1156,6 +1156,8 @@ class GameGui(ttk.Frame):
 
         # update widgets status
 
+        self.__progressbar['value'] = 50.
+
         self.__button_new_stop.configure(text="Stop")
 
         self.__entry_action.config(state="disabled")
