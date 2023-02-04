@@ -519,29 +519,30 @@ class GameGui(ttk.Frame):
         # Frames
 
         self.__frame_left = ttk.Frame(self.__root)
-        self.__frame_right = ttk.Frame(self.__root)
-
         self.__frame_left.pack(side=tk.LEFT)
+
+        self.__frame_right = ttk.Frame(self.__root, padding=10)
         self.__frame_right.pack(side=tk.TOP)
 
         self.__frame_commands_and_players = ttk.Frame(self.__frame_right)
-        self.__frame_actions = ttk.Frame(self.__frame_right)
-
         self.__frame_commands_and_players.pack(side=tk.TOP)
 
-        self.__frame_board = ttk.Frame(self.__frame_left, padding=10)
-
+        self.__frame_actions = ttk.Frame(self.__frame_right, padding=10)
         self.__frame_actions.pack(side=tk.TOP)
+
+        self.__frame_board = ttk.Frame(self.__frame_left, padding=10)
         self.__frame_board.pack(side=tk.TOP)
 
-        self.__frame_commands = ttk.Frame(self.__frame_commands_and_players, padding=20)
-        self.__frame_players = ttk.Frame(self.__frame_commands_and_players, padding=20)
+        self.__frame_commands = ttk.Frame(self.__frame_commands_and_players, padding=0)
+        self.__frame_commands.grid(row=0, column=0)
 
-        self.__frame_commands.pack(side=tk.LEFT)
-        self.__frame_players.pack(side=tk.LEFT)
+        self.__frame_players = ttk.Frame(self.__frame_commands_and_players, padding=0)
+        self.__frame_players.grid(row=0, column=1)
+        self.__frame_commands_and_players.columnconfigure(1, pad=80)
 
-        self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=10)
-        self.__frame_text_actions = ttk.Frame(self.__frame_actions)
+
+        self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=0)
+        self.__frame_text_actions = ttk.Frame(self.__frame_actions, padding=10)
 
         # In __frame_commands
 
@@ -1099,7 +1100,7 @@ class GameGui(ttk.Frame):
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
         for (action_index, action) in enumerate(resume_actions):
-            
+
             action = action.replace("!", "")
 
             self.__pijersi_state = self.__game.get_state()
