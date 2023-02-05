@@ -530,9 +530,11 @@ class GameGui(ttk.Frame):
         searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 1
 
         self.__style = ttk.Style()
-        # >> theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
-        # >> default and nice theme : vista
-        self.__style.theme_use('vista')
+        # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+        # >> default and nice theme is 'vista'
+        # >> but 'vista' does not support to change style for TProgressbar
+        # >> so 'clam' is used instead, as a second nice choice
+        self.__style.theme_use('clam')
         self.__style.configure("White.Horizontal.TProgressbar", background='white')
         self.__style.configure("Black.Horizontal.TProgressbar", background='black')
 
@@ -620,11 +622,11 @@ class GameGui(ttk.Frame):
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
-                                             style="White.Horizontal.TProgressbar",
                                              length=300,
                                              maximum=100,
                                              mode='determinate')
-        
+        self.__progressbar.configure(style="White.Horizontal.TProgressbar")
+
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
 
@@ -1097,7 +1099,7 @@ class GameGui(ttk.Frame):
                     if backend_future is not None:
                         backend_future.cancel()
                 self.__backend_futures = [None for player in rules.Player.T]
-                self.__concurrent_executor.shutdown()
+                self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
                 self.__concurrent_executor = None
 
             self.__button_new_stop.configure(text="New")
@@ -1280,10 +1282,10 @@ class GameGui(ttk.Frame):
             elif not backend_searcher.is_interactive():
 
                 if player == rules.Player.T.WHITE:
-                    self.__progressbar.config(style="White.Horizontal.TProgressbar")
+                    self.__progressbar.configure(style="White.Horizontal.TProgressbar")
 
                 elif player == rules.Player.T.BLACK:
-                    self.__progressbar.config(style="Black.Horizontal.TProgressbar")
+                    self.__progressbar.configure(style="Black.Horizontal.TProgressbar")
 
                 if self.__backend_futures[player] is None:
                     ready_for_next_turn = False
