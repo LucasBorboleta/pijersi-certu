@@ -3,8 +3,8 @@
 
 """Test concurrent"""
 
-# from concurrent.futures import ProcessPoolExecutor as PoolExecutor
-from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+from concurrent.futures import ProcessPoolExecutor as PoolExecutor
+# from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 import os
 import sys
 import time

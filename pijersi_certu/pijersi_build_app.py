@@ -76,30 +76,30 @@ print("Building pijersi_certu application ...")
 os.chdir(os.path.join(_product_home, "pijersi_certu"))
 
 if os.path.isdir("tmp_dist"):
-   shutil.rmtree("tmp_dist") 
+   shutil.rmtree("tmp_dist")
 
 if os.path.isdir("tmp_build"):
-   shutil.rmtree("tmp_build") 
+   shutil.rmtree("tmp_build")
 
 if os.path.isfile("pijersi_certu.spec"):
-   os.remove("pijersi_certu.spec") 
+   os.remove("pijersi_certu.spec")
 
-subprocess.run(args=[_venv_python_executable, 
-                     "-m", "PyInstaller", 
+subprocess.run(args=[_venv_python_executable,
+                     "-m", "PyInstaller",
                      "--distpath",  "tmp_dist",
                      "--workpath", "tmp_build",
                      "--add-data", "pictures;pictures",
                      "--onefile",
                      "-n", "pijersi_certu",
                      "-i", "pictures\pijersi.ico",
-                     "pijersi_gui.py"], 
+                     "pijersi_gui.py"],
                shell=False, check=True)
 
 if os.path.isdir("tmp_build"):
-   shutil.rmtree("tmp_build") 
+   shutil.rmtree("tmp_build")
 
 if os.path.isfile("pijersi_certu.spec"):
-   os.remove("pijersi_certu.spec") 
+   os.remove("pijersi_certu.spec")
 
 print()
 print("Building pijersi_certu application done")

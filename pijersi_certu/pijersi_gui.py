@@ -22,11 +22,13 @@ import glob
 import math
 import os
 import shutil
-# >> concurrent.futures.ProcessPoolExecutor opens the GUI twice when unzipped from a single app executable
-from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 from tkinter import font
 from tkinter import ttk
 import tkinter as tk
+
+from concurrent.futures import ProcessPoolExecutor as PoolExecutor
+from multiprocessing import freeze_support
+
 from PIL import Image
 from PIL import ImageGrab
 from PIL import ImageTk
@@ -570,7 +572,7 @@ class GameGui(ttk.Frame):
 
         self.__button_quit = ttk.Button(self.__frame_commands,
                                         text='Quit',
-                                        command=self.__root.destroy)
+                                        command=self.__command_quit)
 
         self.__button_new_stop = ttk.Button(self.__frame_commands,
                                               text='New',
@@ -762,6 +764,17 @@ class GameGui(ttk.Frame):
                 cube_photo = cube_photo.resize((cube_photo_width, cube_photo_width))
                 cube_tk_photo = ImageTk.PhotoImage(cube_photo)
                 self.__cube_photos[key] = cube_tk_photo
+
+    def __command_quit(self, *_):
+        if self.__concurrent_executor is not None:
+            for backend_future in self.__backend_futures:
+                if backend_future is not None:
+                    backend_future.cancel()
+            self.__backend_futures = [None for player in rules.Player.T]
+            self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
+            self.__concurrent_executor = None
+
+        self.__root.destroy()
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
@@ -2269,11 +2282,14 @@ GraphicalHexagon.init()
 def main():
     print("Hello")
     print(_COPYRIGHT_AND_LICENSE)
-
     _ = GameGui()
-
     print("Bye")
 
 
 if __name__ == "__main__":
+    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
+    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
+    freeze_support()
+
     main()
+
