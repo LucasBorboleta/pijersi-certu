@@ -758,6 +758,10 @@ class GameGui(ttk.Frame):
 
         if turn_index > 0:
             self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
+
+            if self.__game_terminated and turn_index == (len(self.__turn_states) - 1):
+                self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
         else:
             self.__legend = ""
 
@@ -929,6 +933,10 @@ class GameGui(ttk.Frame):
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+                    if self.__game_terminated:
+                        self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
                 else:
                     self.__legend = ""
 
@@ -1151,6 +1159,10 @@ class GameGui(ttk.Frame):
 
         if self.__game.get_turn() > 0:
             self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+            if self.__game_terminated:
+                self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
         else:
             self.__legend = ""
 
@@ -1224,9 +1236,14 @@ class GameGui(ttk.Frame):
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
+                self.__game_terminated = not self.__game.has_next_turn()
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+                    if self.__game_terminated:
+                        self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
                 else:
                     self.__legend = ""
 
@@ -1671,6 +1688,23 @@ class GameGui(ttk.Frame):
         destination_hexagons = [GraphicalHexagon.get(hexagon_name) for hexagon_name in hexagon_names]
         return destination_hexagons
 
+    def __make_legend_score(self, pijersi_state):
+        rewards = pijersi_state.get_rewards()
+
+        if rewards[rules.Player.T.WHITE] == rules.Reward.WIN:
+            legend_score = "1-0"
+
+        elif rewards[rules.Player.T.BLACK] == rules.Reward.WIN:
+            legend_score = "0-1"
+
+        elif rewards[rules.Player.T.WHITE] == rules.Reward.DRAW:
+            legend_score = "½-½"
+
+        else:
+            legend_score = ""
+
+        return legend_score
+
     def __take_picture(self):
 
         if self.__picture_timer_id is not None:
@@ -1687,10 +1721,7 @@ class GameGui(ttk.Frame):
 
             self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
 
-            if self.__picture_turn_index > 0:
-                self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
-            else:
-                self.__legend = ""
+            self.__legend = ""
 
             self.__variable_turn.set(self.__picture_turn_index)
 
@@ -1750,6 +1781,10 @@ class GameGui(ttk.Frame):
 
                 if self.__picture_turn_index > 0:
                     self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+
+                    if self.__game_terminated and self.__picture_turn_index == (len(self.__turn_states) - 1):
+                        self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
                 else:
                     self.__legend = ""
 
