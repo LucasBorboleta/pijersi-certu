@@ -755,7 +755,12 @@ class GameGui(ttk.Frame):
         assert 0 <= turn_index < len(self.__turn_states)
 
         self.__pijersi_state = self.__turn_states[turn_index]
-        self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
+
+        if turn_index > 0:
+            self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
+        else:
+            self.__legend = ""
+
         self.__variable_turn.set(turn_index)
 
         if turn_index != len(self.__turn_states) - 1 or not self.__game_terminated:
@@ -921,7 +926,11 @@ class GameGui(ttk.Frame):
                 self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
 
                 self.__pijersi_state = self.__game.get_state()
-                self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+                if self.__game.get_turn() > 0:
+                    self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+                else:
+                    self.__legend = ""
 
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
@@ -1215,7 +1224,12 @@ class GameGui(ttk.Frame):
                 self.__progressbar['value'] = 50.
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
-                self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+
+                if self.__game.get_turn() > 0:
+                    self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
+                else:
+                    self.__legend = ""
+
                 self.__draw_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
@@ -1672,7 +1686,12 @@ class GameGui(ttk.Frame):
             self.__picture_turn_index = 0
 
             self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
-            self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+
+            if self.__picture_turn_index > 0:
+                self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+            else:
+                self.__legend = ""
+
             self.__variable_turn.set(self.__picture_turn_index)
 
             self.__cmc_reset()
@@ -1728,7 +1747,12 @@ class GameGui(ttk.Frame):
             if 0 <= self.__picture_turn_index < len(self.__turn_states):
 
                 self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
-                self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+
+                if self.__picture_turn_index > 0:
+                    self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
+                else:
+                    self.__legend = ""
+
                 self.__variable_turn.set(self.__picture_turn_index)
 
                 self.__cmc_reset()
@@ -1836,9 +1860,7 @@ class GameGui(ttk.Frame):
 
         legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
 
-        legend_text = self.__legend if not self.__legend.startswith("0") else ""
-
-        self.__canvas.create_text(*legend_position, text=legend_text, justify=tk.CENTER,
+        self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER,
                                   font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
 
     def __draw_all_cubes(self):
