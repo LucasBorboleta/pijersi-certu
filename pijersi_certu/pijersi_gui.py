@@ -22,6 +22,7 @@ import glob
 import math
 import os
 import shutil
+from concurrent.futures import ProcessPoolExecutor
 
 from tkinter import font
 from tkinter import ttk
@@ -439,6 +440,12 @@ class CMCState(enum.Enum):
     SELECTING_3 = enum.auto()
 
 
+def search_task(searcher, pijersi_state):
+    action = searcher.search(pijersi_state)
+    action_simple_name = str(action).replace("!", "")
+    return action_simple_name
+
+
 class GameGui(ttk.Frame):
 
     def __init__(self):
@@ -484,6 +491,12 @@ class GameGui(ttk.Frame):
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
 
+        # For concurrent execution
+        self.__concurrent_executor = None
+        self.__frontend_searchers = [None for player in rules.Player.T]
+        self.__backend_searchers = [None for player in rules.Player.T]
+        self.__backend_futures = [None for player in rules.Player.T]
+
         # Reset the Canevas Mouse Control (CMC) variables and the graphical hexagon highlights
         self.__cmc_reset()
 
@@ -515,6 +528,13 @@ class GameGui(ttk.Frame):
 
         searcher_catalog_names = rules.SEARCHER_CATALOG.get_names()
         searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 1
+
+        self.__style = ttk.Style()
+        # >> theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+        # >> default and nice theme : vista
+        self.__style.theme_use('vista')
+        self.__style.configure("White.Horizontal.TProgressbar", background='white')
+        self.__style.configure("Black.Horizontal.TProgressbar", background='black')
 
         # Frames
 
@@ -600,10 +620,11 @@ class GameGui(ttk.Frame):
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
+                                             style="White.Horizontal.TProgressbar",
                                              length=300,
                                              maximum=100,
                                              mode='determinate')
-
+        
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
 
@@ -862,7 +883,7 @@ class GameGui(ttk.Frame):
                     action = action.replace("!", "")
                     edited_actions.append(action)
 
-            # interpet actions
+            # interpret actions
             if validated_edited_actions:
 
                 self.__game = rules.Game()
@@ -925,9 +946,6 @@ class GameGui(ttk.Frame):
                     self.__text_actions.config(state="disabled")
 
                 self.__game_terminated = not self.__game.has_next_turn()
-
-                self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-                self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
 
                 self.__pijersi_state = self.__game.get_state()
 
@@ -1016,9 +1034,20 @@ class GameGui(ttk.Frame):
             self.__game_played = True
             self.__game_terminated = False
 
+            self.__concurrent_executor = ProcessPoolExecutor(max_workers=1)
+            self.__backend_futures = [None for player in rules.Player.T]
+
             self.__game = rules.Game()
-            self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-            self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
+
+            self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
+            self.__backend_searchers[rules.Player.T.BLACK] = self.__searcher[rules.Player.T.BLACK]
+
+            self.__frontend_searchers[rules.Player.T.WHITE] = rules.HumanSearcher(self.__backend_searchers[rules.Player.T.WHITE].get_name())
+            self.__frontend_searchers[rules.Player.T.BLACK] = rules.HumanSearcher(self.__backend_searchers[rules.Player.T.BLACK].get_name())
+
+            self.__game.set_white_searcher(self.__frontend_searchers[rules.Player.T.WHITE])
+            self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
+
             self.__game.start()
 
             self.__pijersi_state = self.__game.get_state()
@@ -1035,7 +1064,7 @@ class GameGui(ttk.Frame):
 
             self.__variable_log.set(self.__game.get_log())
             self.__variable_summary.set(self.__game.get_summary())
-            self.__progressbar['value'] = 50.
+            self.__progressbar['value'] = 0.
 
             self.__entry_action.config(state="disabled")
             self.__button_confirm_action.config(state="disabled")
@@ -1062,6 +1091,14 @@ class GameGui(ttk.Frame):
 
             self.__game_played = False
             self.__game_terminated = not self.__game.has_next_turn()
+
+            if self.__concurrent_executor is not None:
+                for backend_future in self.__backend_futures:
+                    if backend_future is not None:
+                        backend_future.cancel()
+                self.__backend_futures = [None for player in rules.Player.T]
+                self.__concurrent_executor.shutdown()
+                self.__concurrent_executor = None
 
             self.__button_new_stop.configure(text="New")
 
@@ -1097,7 +1134,7 @@ class GameGui(ttk.Frame):
         self.__text_actions.delete('1.0', tk.END)
         self.__text_actions.config(state="disabled")
 
-        # interpet actions
+        # interpret actions
 
         self.__game = rules.Game()
 
@@ -1152,9 +1189,6 @@ class GameGui(ttk.Frame):
         self.__game_played = True
         self.__game_terminated = False
 
-        self.__game.set_white_searcher(self.__searcher[rules.Player.T.WHITE])
-        self.__game.set_black_searcher(self.__searcher[rules.Player.T.BLACK])
-
         self.__pijersi_state = self.__game.get_state()
 
         if self.__game.get_turn() > 0:
@@ -1175,9 +1209,23 @@ class GameGui(ttk.Frame):
         self.__cmc_hightlight_played_hexagons()
         self.__draw_state()
 
+        # prepare next turn
+
+        self.__concurrent_executor = ProcessPoolExecutor(max_workers=1)
+        self.__backend_futures = [None for player in rules.Player.T]
+
+        self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
+        self.__backend_searchers[rules.Player.T.BLACK] = self.__searcher[rules.Player.T.BLACK]
+
+        self.__frontend_searchers[rules.Player.T.WHITE] = rules.HumanSearcher(self.__backend_searchers[rules.Player.T.WHITE].get_name())
+        self.__frontend_searchers[rules.Player.T.BLACK] = rules.HumanSearcher(self.__backend_searchers[rules.Player.T.BLACK].get_name())
+
+        self.__game.set_white_searcher(self.__frontend_searchers[rules.Player.T.WHITE])
+        self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
+
         # update widgets status
 
-        self.__progressbar['value'] = 50.
+        self.__progressbar['value'] = 0.
 
         self.__button_new_stop.configure(text="Stop")
 
@@ -1208,13 +1256,13 @@ class GameGui(ttk.Frame):
 
             self.__pijersi_state = self.__game.get_state()
             player = self.__pijersi_state.get_current_player()
-            searcher = self.__searcher[player]
-
-            self.__progressbar['value'] = 50.
+            backend_searcher = self.__backend_searchers[player]
+            frontend_searcher = self.__frontend_searchers[player]
 
             ready_for_next_turn = False
 
-            if searcher.is_interactive():
+            if backend_searcher.is_interactive():
+
                 self.__entry_action.config(state="enabled")
                 self.__button_confirm_action.config(state="enabled")
                 self.__progressbar['value'] = 0.
@@ -1222,18 +1270,50 @@ class GameGui(ttk.Frame):
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
 
-                    searcher.set_action_simple_name(self.__action_input)
+                    frontend_searcher.set_action_simple_name(self.__action_input)
 
                     self.__action_input = None
                     self.__action_validated = False
                     self.__entry_action.config(state="disabled")
                     self.__button_confirm_action.config(state="disabled")
 
-            else:
-                ready_for_next_turn = True
+            elif not backend_searcher.is_interactive():
+
+                if player == rules.Player.T.WHITE:
+                    self.__progressbar.config(style="White.Horizontal.TProgressbar")
+
+                elif player == rules.Player.T.BLACK:
+                    self.__progressbar.config(style="Black.Horizontal.TProgressbar")
+
+                if self.__backend_futures[player] is None:
+                    ready_for_next_turn = False
+
+                    self.__backend_futures[player] = self.__concurrent_executor.submit(search_task,
+                                                                                       backend_searcher,
+                                                                                       self.__pijersi_state)
+                    self.__progressbar['value'] = 10.
+
+                elif self.__backend_futures[player].done():
+                    ready_for_next_turn = True
+
+                    action_simple_name = self.__backend_futures[player].result()
+                    frontend_searcher.set_action_simple_name(action_simple_name)
+                    self.__backend_futures[player].cancel()
+                    self.__backend_futures[player] = None
+
+                    self.__progressbar['value'] = 100.
+
+                else:
+                    ready_for_next_turn = False
+
+                    progressbar_value = self.__progressbar['value']
+                    progressbar_value += 10.
+                    if progressbar_value > 100.:
+                        progressbar_value = 10.
+                    self.__progressbar['value'] = progressbar_value
 
             if ready_for_next_turn:
-                self.__progressbar['value'] = 50.
+                self.__progressbar['value'] = 0.
                 self.__game.next_turn()
                 self.__pijersi_state = self.__game.get_state()
                 self.__game_terminated = not self.__game.has_next_turn()
@@ -1278,6 +1358,10 @@ class GameGui(ttk.Frame):
 
             self.__game_played = False
             self.__game_terminated = True
+
+            self.__concurrent_executor.shutdown()
+            self.__concurrent_executor = None
+            self.__backend_futures = [None for player in rules.Player.T]
 
             self.__button_new_stop.configure(text="New")
 

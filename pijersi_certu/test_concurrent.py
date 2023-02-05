@@ -3,7 +3,7 @@
 
 """Test concurrent"""
 
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 import os
 import sys
 import time
@@ -15,11 +15,13 @@ sys.path.append(_package_home)
 import pijersi_rules as rules
 
 
-def search_task(searcher, pijersi_state):
+class Foo:
     
-    action = searcher.search(pijersi_state)
-    action_simple_name = str(action).replace("!", "")
-    return action_simple_name
+    @staticmethod
+    def search_task(searcher, pijersi_state):
+        action = searcher.search(pijersi_state)
+        action_simple_name = str(action).replace("!", "")
+        return action_simple_name
 
 
 def main():
@@ -28,23 +30,22 @@ def main():
     depth = 2
 
     use_concurrent = True
-    wait_count_max = 2
+    wait_count_max = 4
 
     if use_concurrent:
-        concurrent_executor = concurrent.futures.ProcessPoolExecutor(max_workers=1)
+        concurrent_executor = ProcessPoolExecutor(max_workers=1)
 
-    real_searchers = [None for player in rules.Player.T]
-    proxy_searchers = [None for player in rules.Player.T]
+    backend_searchers = [None for player in rules.Player.T] 
+    backend_searchers[rules.Player.T.WHITE] = rules.MinimaxSearcher(name=f"white-minimax-{depth}", max_depth=depth)
+    backend_searchers[rules.Player.T.BLACK] = rules.MinimaxSearcher(name=f"black-minimax-{depth}", max_depth=depth)
     
-    real_searchers[rules.Player.T.WHITE] = rules.MinimaxSearcher(name=f"white-minimax-{depth}", max_depth=depth)
-    real_searchers[rules.Player.T.BLACK] = rules.MinimaxSearcher(name=f"black-minimax-{depth}", max_depth=depth)
-    
-    proxy_searchers[rules.Player.T.WHITE] = rules.HumanSearcher(real_searchers[rules.Player.T.WHITE].get_name())
-    proxy_searchers[rules.Player.T.BLACK] = rules.HumanSearcher(real_searchers[rules.Player.T.BLACK].get_name())
+    frontend_searchers = [None for player in rules.Player.T]
+    frontend_searchers[rules.Player.T.WHITE] = rules.HumanSearcher(backend_searchers[rules.Player.T.WHITE].get_name())
+    frontend_searchers[rules.Player.T.BLACK] = rules.HumanSearcher(backend_searchers[rules.Player.T.BLACK].get_name())
 
     game = rules.Game()
-    game.set_white_searcher(proxy_searchers[rules.Player.T.WHITE])
-    game.set_black_searcher(proxy_searchers[rules.Player.T.BLACK])
+    game.set_white_searcher(frontend_searchers[rules.Player.T.WHITE])
+    game.set_black_searcher(frontend_searchers[rules.Player.T.BLACK])
     
     game.start()
     game_stopped = False
@@ -56,7 +57,7 @@ def main():
         player = pijersi_state.get_current_player()
         
         if use_concurrent:
-            search_future = concurrent_executor.submit(search_task, real_searchers[player], pijersi_state)
+            search_future = concurrent_executor.submit(Foo.search_task, backend_searchers[player], pijersi_state)
             wait_count = 0
             while True:                
                 if search_future.done():
@@ -84,10 +85,10 @@ def main():
                     time.sleep(0.5)
         
         else:
-            action_simple_name = search_task(real_searchers[player], pijersi_state)
+            action_simple_name = Foo.search_task(backend_searchers[player], pijersi_state)
         
         if not game_stopped:
-           proxy_searchers[player].set_action_simple_name(action_simple_name)
+           frontend_searchers[player].set_action_simple_name(action_simple_name)
            game.next_turn()
            
         else:
