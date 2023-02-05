@@ -3,7 +3,8 @@
 
 """Test concurrent"""
 
-from concurrent.futures import ProcessPoolExecutor
+# from concurrent.futures import ProcessPoolExecutor as PoolExecutor
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 import os
 import sys
 import time
@@ -33,7 +34,7 @@ def main():
     wait_count_max = 4
 
     if use_concurrent:
-        concurrent_executor = ProcessPoolExecutor(max_workers=1)
+        concurrent_executor = PoolExecutor(max_workers=1)
 
     backend_searchers = [None for player in rules.Player.T] 
     backend_searchers[rules.Player.T.WHITE] = rules.MinimaxSearcher(name=f"white-minimax-{depth}", max_depth=depth)

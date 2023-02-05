@@ -22,8 +22,8 @@ import glob
 import math
 import os
 import shutil
-from concurrent.futures import ProcessPoolExecutor
-
+# >> concurrent.futures.ProcessPoolExecutor opens the GUI twice when unzipped from a single app executable
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 from tkinter import font
 from tkinter import ttk
 import tkinter as tk
@@ -831,7 +831,7 @@ class GameGui(ttk.Frame):
 
             self.__edit_actions = True
 
-            self.__button_edit_actions.configure(text="Validate actions")
+            self.__button_edit_actions.configure(text="Check actions")
 
             # update widgets status
 
@@ -1036,7 +1036,7 @@ class GameGui(ttk.Frame):
             self.__game_played = True
             self.__game_terminated = False
 
-            self.__concurrent_executor = ProcessPoolExecutor(max_workers=1)
+            self.__concurrent_executor = PoolExecutor(max_workers=1)
             self.__backend_futures = [None for player in rules.Player.T]
 
             self.__game = rules.Game()
@@ -1213,7 +1213,7 @@ class GameGui(ttk.Frame):
 
         # prepare next turn
 
-        self.__concurrent_executor = ProcessPoolExecutor(max_workers=1)
+        self.__concurrent_executor = PoolExecutor(max_workers=1)
         self.__backend_futures = [None for player in rules.Player.T]
 
         self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
@@ -1361,7 +1361,7 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = True
 
-            self.__concurrent_executor.shutdown()
+            self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
             self.__concurrent_executor = None
             self.__backend_futures = [None for player in rules.Player.T]
 
