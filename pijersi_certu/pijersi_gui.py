@@ -28,6 +28,8 @@ import tkinter as tk
 
 from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from multiprocessing import freeze_support
+import multiprocessing
+import signal
 
 from PIL import Image
 from PIL import ImageGrab
@@ -2293,3 +2295,6 @@ if __name__ == "__main__":
 
     main()
 
+    # >> clean any residual process, not yet killed
+    for child_process in multiprocessing.active_children():
+        os.kill(child_process.pid, signal.SIGTERM)
