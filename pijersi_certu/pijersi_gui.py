@@ -666,7 +666,7 @@ class GameGui(ttk.Frame):
                                      textvariable=self.__variable_log,
                                      width=90,
                                      padding=5,
-                                     foreground='red',
+                                     foreground='brown',
                                      borderwidth=2, relief="groove")
 
         self.__variable_summary = tk.StringVar()
@@ -2296,5 +2296,8 @@ if __name__ == "__main__":
     main()
 
     # >> clean any residual process, not yet killed
+    print()
+    print(f"Killing {len(multiprocessing.active_children())} child processes ...")
     for child_process in multiprocessing.active_children():
         os.kill(child_process.pid, signal.SIGTERM)
+    print(f"Killing {len(multiprocessing.active_children())} child processes done")
