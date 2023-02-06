@@ -2683,7 +2683,8 @@ if False:
 
 class Game:
 
-    __slots__ = ('__searcher', '__pijersi_state', '__enabled_log', '__log', '__turn', '__last_action', '__turn_duration')
+    __slots__ = ('__searcher', '__pijersi_state', '__enabled_log', '__log', '__turn', '__last_action',
+                 '__turn_duration', '__turn_start', '__turn_end')
 
 
     def __init__(self):
@@ -2695,6 +2696,8 @@ class Game:
         self.__turn = 0
         self.__last_action = None
         self.__turn_duration = {Player.T.WHITE:[], Player.T.BLACK:[]}
+        self.__turn_start = None
+        self.__turn_end = None
 
 
     def enable_log(self, condition: bool):
@@ -2748,6 +2751,14 @@ class Game:
         self.__pijersi_state = state
 
 
+    def set_turn_start(self, turn_start: Optional[float]):
+        self.__turn_start = turn_start
+
+
+    def set_turn_end(self, turn_end: Optional[float]):
+        self.__turn_end = turn_end
+
+
     def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
         return self.__pijersi_state.get_rewards()
 
@@ -2767,7 +2778,7 @@ class Game:
                 player_name = f"{Player.to_name(player)}-{self.__searcher[player].get_name()}"
                 print()
                 print(f"Player {player_name} is thinking ...")
-                turn_start = time.time()
+                turn_start = time.time() if self.__turn_start is None else self.__turn_start
 
             action = self.__searcher[player].search(self.__pijersi_state)
 
@@ -2775,7 +2786,7 @@ class Game:
             self.__turn = self.__pijersi_state.get_turn()
 
             if self.__enabled_log:
-                turn_end = time.time()
+                turn_end = time.time() if self.__turn_end is None else self.__turn_end
                 turn_duration = turn_end - turn_start
                 self.__turn_duration[player].append(turn_duration)
                 print(f"Player {player_name} is done after %.1f seconds" % turn_duration)

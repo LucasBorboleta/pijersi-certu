@@ -22,6 +22,7 @@ import glob
 import math
 import os
 import shutil
+import time
 from tkinter import font
 from tkinter import ttk
 import tkinter as tk
@@ -1069,6 +1070,8 @@ class GameGui(ttk.Frame):
             self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
 
             self.__game.start()
+            self.__game.set_turn_start(time.time())
+            self.__game.set_turn_end(None)
 
             self.__pijersi_state = self.__game.get_state()
             self.__legend = ""
@@ -1263,6 +1266,10 @@ class GameGui(ttk.Frame):
 
         self.__button_resume.config(state="disabled")
 
+        # start timer
+        self.__game.set_turn_start(time.time())
+        self.__game.set_turn_end(None)
+
         # watch next turn
         self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
@@ -1334,7 +1341,12 @@ class GameGui(ttk.Frame):
 
             if ready_for_next_turn:
                 self.__progressbar['value'] = 0.
+
+                self.__game.set_turn_end(time.time())
                 self.__game.next_turn()
+                self.__game.set_turn_start(time.time())
+                self.__game.set_turn_end(None)
+
                 self.__pijersi_state = self.__game.get_state()
                 self.__game_terminated = not self.__game.has_next_turn()
 
