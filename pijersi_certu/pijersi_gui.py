@@ -545,29 +545,30 @@ class GameGui(ttk.Frame):
         # Frames
 
         self.__frame_left = ttk.Frame(self.__root)
-        self.__frame_left.pack(side=tk.LEFT)
+        self.__frame_left.grid(row=0, column=0, sticky='nw')
 
-        self.__frame_right = ttk.Frame(self.__root, padding=10)
-        self.__frame_right.pack(side=tk.TOP)
+        self.__frame_right = ttk.Frame(self.__root, padding=15)
+        self.__frame_right.grid(row=0, column=1, sticky='nw')
 
         self.__frame_commands_and_players = ttk.Frame(self.__frame_right)
-        self.__frame_commands_and_players.pack(side=tk.TOP)
+        self.__frame_commands_and_players.grid(row=0, column=0, sticky='nw')
 
-        self.__frame_actions = ttk.Frame(self.__frame_right, padding=10)
-        self.__frame_actions.pack(side=tk.TOP)
+        self.__frame_actions = ttk.Frame(self.__frame_right)
+        self.__frame_actions.grid(row=1, column=0, sticky='nw')
 
-        self.__frame_board = ttk.Frame(self.__frame_left, padding=10)
-        self.__frame_board.pack(side=tk.TOP)
+        self.__frame_board = ttk.Frame(self.__frame_left)
+        self.__frame_board.pack(fill=tk.BOTH)
 
-        self.__frame_commands = ttk.Frame(self.__frame_commands_and_players, padding=0)
+        self.__frame_commands = ttk.Frame(self.__frame_commands_and_players)
         self.__frame_commands.grid(row=0, column=0)
 
-        self.__frame_players = ttk.Frame(self.__frame_commands_and_players, padding=0)
-        self.__frame_players.grid(row=0, column=1)
-        self.__frame_commands_and_players.columnconfigure(1, pad=80)
+        self.__frame_players = ttk.Frame(self.__frame_commands_and_players)
+        self.__frame_players.grid(row=0, column=1, sticky='e')
 
+        self.__frame_commands_and_players.columnconfigure(1, pad=60)
+        self.__frame_commands_and_players.columnconfigure(0, pad=20)
 
-        self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=0)
+        self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=10)
         self.__frame_text_actions = ttk.Frame(self.__frame_actions, padding=10)
 
         # In __frame_commands
@@ -664,7 +665,7 @@ class GameGui(ttk.Frame):
         self.__variable_log = tk.StringVar()
         self.__label_log = ttk.Label(self.__frame_actions,
                                      textvariable=self.__variable_log,
-                                     width=90,
+                                     width=95,
                                      padding=5,
                                      foreground='brown',
                                      borderwidth=2, relief="groove")
@@ -672,7 +673,7 @@ class GameGui(ttk.Frame):
         self.__variable_summary = tk.StringVar()
         self.__label_summary = ttk.Label(self.__frame_actions,
                                          textvariable=self.__variable_summary,
-                                         width=90,
+                                         width=95,
                                          padding=5,
                                          foreground='black',
                                          borderwidth=2, relief="groove")
@@ -691,6 +692,7 @@ class GameGui(ttk.Frame):
 
         self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
                                                 text='Edit actions',
+                                                width=max(len('Edit actions'), len('Validate actions')),
                                                 command=self.__command_edit_actions)
         self.__button_edit_actions.config(state="enabled")
 
@@ -723,10 +725,12 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(yscrollcommand=self.__scrollbar_actions.set)
         self.__scrollbar_actions.config(command=self.__text_actions.yview)
 
-        self.__label_log.pack(side=tk.TOP)
-        self.__label_summary.pack(side=tk.TOP, pady=10)
+        self.__label_log.grid(row=0, column=0)
+        self.__label_summary.grid(row=1, column=0)
+        self.__frame_human_actions.grid(row=2, column=0)
+        self.__frame_text_actions.grid(row=3, column=0)
 
-        self.__frame_human_actions.pack(side=tk.TOP)
+        self.__frame_actions.rowconfigure(0, pad=20)
 
         self.__label_action.grid(row=0, column=0)
         self.__entry_action.grid(row=0, column=1)
@@ -745,7 +749,6 @@ class GameGui(ttk.Frame):
         self.__frame_human_actions.columnconfigure(5, pad=5)
         self.__frame_human_actions.columnconfigure(6, pad=10)
 
-        self.__frame_text_actions.pack(side=tk.TOP)
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
         self.__text_actions.pack(side=tk.LEFT)
 
@@ -846,7 +849,7 @@ class GameGui(ttk.Frame):
 
             self.__edit_actions = True
 
-            self.__button_edit_actions.configure(text="Check actions")
+            self.__button_edit_actions.configure(text="Validate actions")
 
             # update widgets status
 
@@ -998,7 +1001,7 @@ class GameGui(ttk.Frame):
 
                 # update widgets status
 
-                self.__button_edit_actions.configure(text="Edit actions")
+                self.__button_edit_actions.configure(text='Edit actions')
 
                 self.__text_actions.config(state="disabled")
 
