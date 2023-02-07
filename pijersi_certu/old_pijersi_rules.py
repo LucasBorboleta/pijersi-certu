@@ -1074,7 +1074,7 @@ class PijersiState:
                 counters[cube.label] += 1
 
         summary = (
-            f"turn {self.__turn} / player {Player.name(self.__player)} / credit {self.__credit} / " +
+            f"Turn {self.__turn} / player {Player.name(self.__player)} / credit {self.__credit} / " +
              "alive %s" % " ".join([f"{label}:{count}" for (label, count) in sorted(counters.items())]))
 
         return summary

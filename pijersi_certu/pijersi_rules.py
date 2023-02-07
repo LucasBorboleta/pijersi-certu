@@ -3218,8 +3218,8 @@ def benchmark():
             assert id(old_actions) != old_actions_id
 
 
-        time_new = timeit.timeit(do_new, number=100)
-        time_old = timeit.timeit(do_old, number=100)
+        time_new = timeit.timeit(do_new, number=1_000)
+        time_old = timeit.timeit(do_old, number=1_000)
         print("do_new() => ", time_new)
         print("do_old() => ", time_old,
               ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
@@ -3243,8 +3243,8 @@ def benchmark():
             assert not old_state.is_terminal(use_cache=False)
 
 
-        time_new = timeit.timeit(do_new, number=100)
-        time_old = timeit.timeit(do_old, number=100)
+        time_new = timeit.timeit(do_new, number=1_000)
+        time_old = timeit.timeit(do_old, number=1_000)
         print("do_new() => ", time_new)
         print("do_old() => ", time_old,
               ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
@@ -3374,7 +3374,7 @@ def benchmark():
     if True:
         benchmark_game_between_random_players()
 
-    if False:
+    if True:
         benchmark_game_between_minimax2_players()
 
 
