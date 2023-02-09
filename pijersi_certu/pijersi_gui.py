@@ -532,7 +532,7 @@ class GameGui(ttk.Frame):
     def __create_widgets(self):
 
         searcher_catalog_names = rules.SEARCHER_CATALOG.get_names()
-        searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 1
+        searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 4
 
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
