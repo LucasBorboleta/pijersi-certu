@@ -2021,54 +2021,153 @@ class MinimaxState:
         return MinimaxState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-class MinimaxSearcher(Searcher):
+class StateEvaluator():
 
-    __slots__ = ('__max_depth',
-                 '__cube_weight', '__fighter_weight',
+    __slots__ = ('__cube_weight', '__fighter_weight',
                  '__dmin_weight', '__dave_weight', '__credit_weight',
-                 '__debug', '__debug_level', '__alpha_cuts', '__beta_cuts')
-
-    default_weights_by_depth = {}
-
-    default_weights_by_depth[1] = {'dmin_weight':16,
-                                   'fighter_weight':8,
-                                   'cube_weight':4,
-                                   'dave_weight':2,
-                                   'credit_weight':1}
-
-    default_weights_by_depth[2] = {'dmin_weight':16,
-                                   'fighter_weight':8,
-                                   'cube_weight':4,
-                                   'dave_weight':2,
-                                   'credit_weight':1}
+                 '__debug')
 
 
-    def __init__(self, name: str, max_depth: int=1,
-                  cube_weight: Optional[float]=None,
+
+    def __init__(self, cube_weight: Optional[float]=None,
                   fighter_weight: Optional[float]=None,
                   dmin_weight: Optional[float]=None,
                   dave_weight: Optional[float]=None,
                   credit_weight: Optional[int]=None):
 
+        default_weights = {'dmin_weight':16,
+                          'fighter_weight':8,
+                          'cube_weight':4,
+                          'dave_weight':2,
+                          'credit_weight':1}
+
+        self.__debug = False
+
+        self.__dmin_weight = dmin_weight if dmin_weight is not None else default_weights['dmin_weight']
+        self.__dave_weight = dave_weight if dave_weight is not None else default_weights['dave_weight']
+        self.__cube_weight = cube_weight if cube_weight is not None else default_weights['cube_weight']
+        self.__fighter_weight = fighter_weight if fighter_weight is not None else default_weights['fighter_weight']
+        self.__credit_weight = credit_weight if credit_weight is not None else default_weights['credit_weight']
+
+
+    def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
+        # evaluate favorability for pijersi_maximizer_player
+
+        assert depth >= 0
+
+        # evaluate as if pijersi_maximizer_player == Player.T.WHITE and use minimax_maximizer_sign
+        minimax_maximizer_sign = 1 if state.get_current_maximizer_player() == Player.T.WHITE else -1
+
+        value = 0
+
+        pijersi_state = state.get_pijersi_state()
+
+        if pijersi_state.is_terminal():
+            # >> amplify terminal value using the depth (rationale: winning faster is safer)
+
+            white_reward = pijersi_state.get_rewards()[Player.T.WHITE]
+
+            if white_reward == Reward.WIN:
+                value = minimax_maximizer_sign*OMEGA_2*(depth + 1)
+
+            elif white_reward == Reward.DRAW:
+                # >> no use of minimax_maximizer_sign because the DRAW applies to both WHITE and BLACK
+                value = OMEGA*(depth + 1)
+
+            else:
+                value = minimax_maximizer_sign*(-OMEGA_2)*(depth + 1)
+
+        else:
+
+            dmin_norm = 8
+            dave_norm = dmin_norm
+            cube_norm = 14
+            fighter_norm = 12
+            credit_norm = PijersiState.get_max_credit()
+
+            # white and black distances to goal
+            distances = pijersi_state.get_distances_to_goal()
+
+            if not distances[Player.T.WHITE]:
+                distances[Player.T.WHITE] = [dmin_norm]
+
+            if not distances[Player.T.BLACK]:
+                distances[Player.T.BLACK] = [dmin_norm]
+
+            white_min_distance = min(distances[Player.T.WHITE])
+            black_min_distance = min(distances[Player.T.BLACK])
+
+            white_ave_distance = mean(distances[Player.T.WHITE])
+            black_ave_distance = mean(distances[Player.T.BLACK])
+
+            dmin_difference = minimax_maximizer_sign*(black_min_distance - white_min_distance)
+            dave_difference = minimax_maximizer_sign*(black_ave_distance - white_ave_distance)
+
+
+            # white and black with alive cubes
+            cube_counts = pijersi_state.get_cube_counts()
+            cube_difference = minimax_maximizer_sign*(cube_counts[Player.T.WHITE] - cube_counts[Player.T.BLACK])
+
+            # white and black with alive fighters
+            fighter_counts = pijersi_state.get_fighter_counts()
+            fighter_difference = minimax_maximizer_sign*(fighter_counts[Player.T.WHITE] - fighter_counts[Player.T.BLACK])
+
+            # credit acts symmetrically for white and black
+            credit = pijersi_state.get_credit()
+
+            # normalize each feature in the intervall [-1, +1]
+
+            if self.__debug:
+                assert dmin_difference <= dmin_norm
+                assert -dmin_difference <= dmin_norm
+
+                assert dave_difference <= dave_norm
+                assert -dave_difference <= dave_norm
+
+                assert cube_difference <= cube_norm
+                assert -cube_difference <= cube_norm
+
+                assert fighter_difference <= fighter_norm
+                assert -fighter_difference <= fighter_norm
+
+                assert credit <= credit_norm
+                assert -credit <= credit_norm
+
+            dmin_difference = dmin_difference/dmin_norm
+            dave_difference = dave_difference/dave_norm
+            cube_difference = cube_difference/cube_norm
+            fighter_difference = fighter_difference/fighter_norm
+            credit = credit/credit_norm
+
+            # synthesis
+
+            value += self.__dmin_weight*dmin_difference
+            value += self.__dave_weight*dave_difference
+            value += self.__cube_weight*cube_difference
+            value += self.__fighter_weight*fighter_difference
+            value += self.__credit_weight*credit
+
+        return value
+
+
+class MinimaxSearcher(Searcher):
+
+    __slots__ = ('__max_depth', '__state_evaluator',
+                 '__debug', '__debug_level',
+                 '__alpha_cuts', '__beta_cuts')
+
+
+    def __init__(self, name: str, max_depth: int=1, state_evaluator: Optional[StateEvaluator]=None):
+
         super().__init__(name)
+
+        assert max_depth >= 1
+        self.__max_depth = max_depth
+
+        self.__state_evaluator = state_evaluator if state_evaluator is not None else StateEvaluator()
 
         self.__debug = False
         self.__debug_level = 1
-
-        assert max_depth >= 1
-
-        if max_depth in MinimaxSearcher.default_weights_by_depth:
-            weights = MinimaxSearcher.default_weights_by_depth[max_depth]
-        else:
-            weights = MinimaxSearcher.default_weights_by_depth[2]
-
-        self.__max_depth = max_depth
-
-        self.__dmin_weight = dmin_weight if dmin_weight is not None else weights['dmin_weight']
-        self.__dave_weight = dave_weight if dave_weight is not None else weights['dave_weight']
-        self.__cube_weight = cube_weight if cube_weight is not None else weights['cube_weight']
-        self.__fighter_weight = fighter_weight if fighter_weight is not None else weights['fighter_weight']
-        self.__credit_weight = credit_weight if credit_weight is not None else weights['credit_weight']
 
         self.__alpha_cuts = []
         self.__beta_cuts = []
@@ -2182,103 +2281,7 @@ class MinimaxSearcher(Searcher):
 
 
     def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
-        # evaluate favorability for pijersi_maximizer_player
-
-        assert depth >= 0
-
-        # evaluate as if pijersi_maximizer_player == Player.T.WHITE and use minimax_maximizer_sign
-        minimax_maximizer_sign = 1 if state.get_current_maximizer_player() == Player.T.WHITE else -1
-
-        value = 0
-
-        pijersi_state = state.get_pijersi_state()
-
-        if pijersi_state.is_terminal():
-            # >> amplify terminal value using the depth (rationale: winning faster is safer)
-
-            white_reward = pijersi_state.get_rewards()[Player.T.WHITE]
-
-            if white_reward == Reward.WIN:
-                value = minimax_maximizer_sign*OMEGA_2*(depth + 1)
-
-            elif white_reward == Reward.DRAW:
-                # >> no use of minimax_maximizer_sign because the DRAW applies to both WHITE and BLACK
-                value = OMEGA*(depth + 1)
-
-            else:
-                value = minimax_maximizer_sign*(-OMEGA_2)*(depth + 1)
-
-        else:
-
-            dmin_norm = 8
-            dave_norm = dmin_norm
-            cube_norm = 14
-            fighter_norm = 12
-            credit_norm = PijersiState.get_max_credit()
-
-            # white and black distances to goal
-            distances = pijersi_state.get_distances_to_goal()
-
-            if not distances[Player.T.WHITE]:
-                distances[Player.T.WHITE] = [dmin_norm]
-
-            if not distances[Player.T.BLACK]:
-                distances[Player.T.BLACK] = [dmin_norm]
-
-            white_min_distance = min(distances[Player.T.WHITE])
-            black_min_distance = min(distances[Player.T.BLACK])
-
-            white_ave_distance = mean(distances[Player.T.WHITE])
-            black_ave_distance = mean(distances[Player.T.BLACK])
-
-            dmin_difference = minimax_maximizer_sign*(black_min_distance - white_min_distance)
-            dave_difference = minimax_maximizer_sign*(black_ave_distance - white_ave_distance)
-
-
-            # white and black with alive cubes
-            cube_counts = pijersi_state.get_cube_counts()
-            cube_difference = minimax_maximizer_sign*(cube_counts[Player.T.WHITE] - cube_counts[Player.T.BLACK])
-
-            # white and black with alive fighters
-            fighter_counts = pijersi_state.get_fighter_counts()
-            fighter_difference = minimax_maximizer_sign*(fighter_counts[Player.T.WHITE] - fighter_counts[Player.T.BLACK])
-
-            # credit acts symmetrically for white and black
-            credit = pijersi_state.get_credit()
-
-            # normalize each feature in the intervall [-1, +1]
-
-            if self.__debug:
-                assert dmin_difference <= dmin_norm
-                assert -dmin_difference <= dmin_norm
-
-                assert dave_difference <= dave_norm
-                assert -dave_difference <= dave_norm
-
-                assert cube_difference <= cube_norm
-                assert -cube_difference <= cube_norm
-
-                assert fighter_difference <= fighter_norm
-                assert -fighter_difference <= fighter_norm
-
-                assert credit <= credit_norm
-                assert -credit <= credit_norm
-
-            dmin_difference = dmin_difference/dmin_norm
-            dave_difference = dave_difference/dave_norm
-            cube_difference = cube_difference/cube_norm
-            fighter_difference = fighter_difference/fighter_norm
-            credit = credit/credit_norm
-
-            # synthesis
-
-            value += self.__dmin_weight*dmin_difference
-            value += self.__dave_weight*dave_difference
-            value += self.__cube_weight*cube_difference
-            value += self.__fighter_weight*fighter_difference
-            value += self.__credit_weight*credit
-
-        return value
+        return self.__state_evaluator.evaluate_state_value(state, depth)
 
 
     def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None,
