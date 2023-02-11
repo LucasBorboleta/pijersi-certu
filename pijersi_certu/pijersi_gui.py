@@ -2311,8 +2311,13 @@ if __name__ == "__main__":
     main()
 
     # >> clean any residual process, not yet killed
-    print()
-    print(f"Killing {len(multiprocessing.active_children())} child processes ...")
-    for child_process in multiprocessing.active_children():
-        os.kill(child_process.pid, signal.SIGTERM)
-    print(f"Killing {len(multiprocessing.active_children())} child processes done")
+    if len(multiprocessing.active_children()) > 0:
+        print()
+        print(f"Killing {len(multiprocessing.active_children())} child processes ...")
+        for child_process in multiprocessing.active_children():
+            try:
+                os.kill(child_process.pid, signal.SIGTERM)
+            except:
+                pass
+        print(f"Killing {len(multiprocessing.active_children())} child processes done")
+

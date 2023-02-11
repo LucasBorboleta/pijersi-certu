@@ -2410,7 +2410,7 @@ class MinimaxSearcher():
 
                 state_value = max(state_value, child_value)
 
-                if state_value >= beta:
+                if state_value > beta:
                     if self.__debug:
                         self.__beta_cut_count.append(action_count)
                         print("--- beta cut-off")
@@ -2434,19 +2434,19 @@ class MinimaxSearcher():
 
                 state_value = min(state_value, child_value)
 
-                if state_value <= alpha:
+                if state_value < alpha:
                     if self.__debug:
                         self.__alpha_cut_count.append(action_count)
                         print("--- alpha cut-off")
 
-                    if depth == (self.__max_depth - 1):
-                        if state_value == alpha and (next_action is not None):
-                            # >> prevent final return of actions with falsely equal values due to cut-off
-                            # >> rationale: without cut-off it could be that state_value < alpha
-                            state_value -= 1/OMEGA
-                            assert state_value < alpha
-                            if self.__debug:
-                                print("--- force state_value < alpha")
+                    # if depth == (self.__max_depth - 1):
+                    #     if state_value == alpha and (next_action is not None):
+                    #         # >> prevent final return of actions with falsely equal values due to cut-off
+                    #         # >> rationale: without cut-off it could be that state_value < alpha
+                    #         state_value -= 1/OMEGA
+                    #         assert state_value < alpha
+                    #         if self.__debug:
+                    #             print("--- force state_value < alpha")
 
                     break
 

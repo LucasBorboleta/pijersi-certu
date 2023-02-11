@@ -2036,9 +2036,14 @@ class StateEvaluator():
                   dave_weight: Optional[float]=None,
                   credit_weight: Optional[int]=None):
 
-        default_weights = {'dmin_weight':16,
-                          'fighter_weight':8,
-                          'cube_weight':4,
+        # >> rationale:
+        # >> - order by importance from bottom to top
+        # >> - start at bottom with w_0 = 1
+        # >> - w_(i+1) > w_i with w_(i+1) - w_i >= 1
+        # >> - w_i = sum {w_k : k < i}
+        default_weights = {'dmin_weight':12,
+                          'fighter_weight':6,
+                          'cube_weight':3,
                           'dave_weight':2,
                           'credit_weight':1}
 
@@ -2395,7 +2400,41 @@ class MinimaxSearcher(Searcher):
             action_to_values = {}
 
         actions = state.get_actions()
+        
+        # >> A few heuristics for generating efficient alpha-beta cuts,
+        
+        # >> heuristic-1: sort actions according to the type of action
         actions.sort(key=score_action, reverse=True)
+
+        if depth >= 3:
+            # >> heuristic-2: sort actions using Minimax at depth=1
+            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax{1}", max_depth=1)
+            (_, pre_action_to_values) = pre_minimax_searcher.alphabeta(state=state, player=1, return_action_to_values=True)
+            assert len(pre_action_to_values) == len(actions)
+            actions = list(map(lambda pair: pair[0], sorted(pre_action_to_values.items(), key=lambda pair: pair[1], reverse=True)))
+            pre_minimax_searcher = None
+            pre_action_to_values = None
+
+        if return_action_to_values and depth >= 2:
+            # >> heuristic-3: compute Minimax best actions at (depth - 1)
+
+            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax{depth - 1}", max_depth=depth - 1)
+            (pre_best_value, pre_action_to_values) = pre_minimax_searcher.alphabeta(state=state, player=1, return_action_to_values=True)
+
+            pre_best_actions = []
+            for (action, action_value) in pre_action_to_values.items():
+                if action_value == pre_best_value:
+                    pre_best_actions.append(action)
+
+            new_actions = pre_best_actions
+            for action in actions:
+                if action not in new_actions:
+                    new_actions.append(action)
+
+            actions = new_actions
+            new_actions = None
+            pre_minimax_searcher = None
+            pre_action_to_values = None
 
         if player == 1:
 
@@ -2416,7 +2455,7 @@ class MinimaxSearcher(Searcher):
 
                 state_value = max(state_value, child_value)
 
-                if state_value >= beta:
+                if state_value > beta:
                     if self.__debug:
                         self.__beta_cuts.append(action_count/len(actions))
                         if self.__debug_level >= 2:
@@ -2440,22 +2479,12 @@ class MinimaxSearcher(Searcher):
 
                 state_value = min(state_value, child_value)
 
-                if state_value <= alpha:
+                if state_value < alpha:
 
                     if self.__debug:
                         self.__alpha_cuts.append(action_count/len(actions))
                         if self.__debug_level >= 2:
                             print("--- alpha cut-off")
-
-                    if depth == (self.__max_depth - 1):
-                        if state_value == alpha and (next_action is not None):
-                            # >> prevent final return of actions with falsely equal values due to cut-off
-                            # >> rationale: without cut-off it could be that state_value < alpha
-                            state_value -= 1/OMEGA
-                            assert state_value < alpha
-                            if self.__debug and self.__debug_level >= 2:
-                                print("--- force state_value < alpha")
-
                     break
 
                 beta = min(beta, state_value)
@@ -2746,15 +2775,13 @@ SEARCHER_CATALOG.add( RandomSearcher("random") )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
-
-SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
-                                   state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
-                                   time_limit=5*60_000,
-                                   exploration_constant=128) )
-
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
 
 if False:
-    SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
+    SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
+                                       state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
+                                       time_limit=5*60_000,
+                                       exploration_constant=128) )
 
     SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp", time_limit=5*60*1_000, rollout_policy=pijersiRandomPolicy) )
     SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd", iteration_limit=8_000, rollout_policy=mcts.randomPolicy) )
@@ -3767,13 +3794,13 @@ def verify():
 
 def main():
 
-    if True:
+    if False:
         test()
 
     if False:
         profile()
 
-    if False:
+    if True:
         benchmark() # against old implementation
 
     if False:
