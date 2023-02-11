@@ -3156,7 +3156,7 @@ def test():
         print("===============================================")
 
 
-    def test_game_between_minimax_players(max_depth: int=3, game_count: int=5, use_random_searcher: bool=True):
+    def test_game_between_minimax_players(min_depth: int=1, max_depth: int=3, game_count: int=5, use_random_searcher: bool=True):
 
         print("=====================================")
         print(" test_game_between_minimax_players ...")
@@ -3167,7 +3167,7 @@ def test():
         if use_random_searcher:
             searcher_dict["random"] = RandomSearcher("random")
 
-        minimax_depth_list = list(range(1, max_depth + 1))
+        minimax_depth_list = list(range(min_depth, max_depth + 1))
 
         for minimax_depth in minimax_depth_list:
             searcher_name = f"minimax{minimax_depth}"
@@ -3260,8 +3260,11 @@ def test():
     if True:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
-    if True:
+    if False:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
+
+    if True:
+        test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
 
 
 def profile():
