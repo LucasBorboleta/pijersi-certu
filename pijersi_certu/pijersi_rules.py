@@ -3238,17 +3238,17 @@ def test():
         print("=====================================")
 
 
-    if False:
+    if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
         PijersiState.print_tables()
         test_first_get_summary()
 
-    if False:
+    if True:
         test_game_between_random_players()
 
-    if False:
+    if True:
         test_game_between_mcts_players()
 
     if True:
@@ -3257,10 +3257,10 @@ def test():
     if False:
         test_game_between_random_and_human_players()
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
 
