@@ -1971,6 +1971,7 @@ class HumanSearcher(Searcher):
 
 
 class MinimaxState:
+    """Adaptater of PijersiState for MinixmaxSearcher"""
 
     Self = TypeVar("Self", bound="MinimaxState")
 
@@ -2022,11 +2023,11 @@ class MinimaxState:
 
 
 class StateEvaluator():
+    """State evaluator for MinimaxSearcher"""
 
     __slots__ = ('__cube_weight', '__fighter_weight',
                  '__dmin_weight', '__dave_weight', '__credit_weight',
                  '__debug')
-
 
 
     def __init__(self, cube_weight: Optional[float]=None,
@@ -2488,67 +2489,8 @@ class PijersiMcts(mcts.mcts):
         return bestActions
 
 
-class MctsMMState:
-    """Adaptater to mcts.StateInterface for PijersiState to Mcts-Minimax"""
-
-    Self = TypeVar("Self", bound="MctsMMState")
-
-    __slots__ = ('__pijersi_state', '__maximizer_player', '__depth_credit', '__state_evaluator')
-
-
-    def __init__(self, pijersi_state: PijersiState,
-                 maximizer_player: Player.T,
-                 depth_credit: int,
-                 state_evaluator: StateEvaluator):
-
-        assert depth_credit >= 0
-
-        self.__pijersi_state = pijersi_state
-        self.__maximizer_player = maximizer_player
-        self.__depth_credit = depth_credit
-        self.__state_evaluator = state_evaluator
-
-
-    def get_pijersi_state(self) -> PijersiState:
-        return self.__pijersi_state
-
-
-    def getCurrentPlayer(self) -> int:
-        """ Returns 1 if it is the maximizer player's turn to choose an action,
-        or -1 for the minimiser player"""
-        return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
-
-
-    def isTerminal(self) -> bool:
-        if self.__depth_credit == 0:
-            return True
-        else:
-            return self.__pijersi_state.is_terminal()
-
-
-    def getReward(self) -> float:
-        """Returns the reward for this state: 0 for a draw,
-        positive for a win by maximizer player or negative for a win by the minimizer player.
-        Only needed for terminal states."""
-
-        return self.__state_evaluator.evaluate_state_value(MinimaxState(self.__pijersi_state,
-                                                                        self.__maximizer_player),
-                                                           self.__depth_credit)
-
-    def getPossibleActions(self) -> Sequence[PijersiAction]:
-        return self.__pijersi_state.get_actions()
-
-
-    def takeAction(self, action: PijersiAction) -> Self:
-
-        return MctsMMState(pijersi_state=self.__pijersi_state.take_action(action),
-                           maximizer_player=self.__maximizer_player,
-                           depth_credit=self.__depth_credit - 1,
-                           state_evaluator=self.__state_evaluator)
-
-
 class MctsState:
-    """Adaptater to mcts.StateInterface for PijersiState"""
+    """Adaptater of PijersiState for MctsSearcher"""
 
     Self = TypeVar("Self", bound="MctsState")
 
@@ -2568,6 +2510,10 @@ class MctsState:
         """ Returns 1 if it is the maximizer player's turn to choose an action,
         or -1 for the minimiser player"""
         return 1 if self.__pijersi_state.get_current_player() == self.__maximizer_player else -1
+
+
+    def getCurrentMaximizerPlayer(self) -> Player.T:
+        return self.__maximizer_player
 
 
     def isTerminal(self) -> bool:
@@ -2601,108 +2547,81 @@ class MctsState:
         return MctsState(self.__pijersi_state.take_action(action), self.__maximizer_player)
 
 
-class MctsSearcher(Searcher):
+class MctsMinimaxState(MctsState):
+    """Adaptater of PijersState for MctsSearcher using credit depth and Minimax StateEvaluator"""
 
-    __slots__ = ('__time_limit', '__iteration_limit', '__searcher', '__exploration_constant', '__debug')
+    Self = TypeVar("Self", bound="MctsMinimaxState")
 
-
-    def __init__(self, name: str,
-                 time_limit: Optional[int]=None,
-                 iteration_limit: Optional[int]=None,
-                 exploration_constant: float=math.sqrt(2),
-                 rollout_policy: Callable[[MctsState], float]=mcts.randomPolicy):
-
-        super().__init__(name)
-        self.__debug = False
-
-        default_time_limit = 1_000
-
-        assert time_limit is None or iteration_limit is None
-
-        if time_limit is None and iteration_limit is None:
-            time_limit = default_time_limit
-
-        self.__time_limit = time_limit
-        self.__iteration_limit = iteration_limit
-
-        self.__exploration_constant = exploration_constant
+    __slots__ = ('__depth_credit', '__state_evaluator')
 
 
-        if self.__time_limit is not None:
-            # time in milli-seconds
-            self.__searcher = PijersiMcts(timeLimit=self.__time_limit,
-                                          rolloutPolicy=rollout_policy,
-                                          explorationConstant=self.__exploration_constant)
-
-        elif self.__iteration_limit is not None:
-            # number of mcts rounds
-            self.__searcher = PijersiMcts(iterationLimit=self.__iteration_limit,
-                                          rolloutPolicy=rollout_policy,
-                                          explorationConstant=self.__exploration_constant)
-
-
-    def is_interactive(self) -> bool:
-        return False
-
-
-    def search(self, state: PijersiState) -> PijersiAction:
-
-        # >> when search is done, ignore the automatically selected action
-        _ = self.__searcher.search(initialState=MctsState(state, state.get_current_player()))
-
-        best_actions = self.__searcher.getBestActions()
-        action = random.choice(best_actions)
-
-        statistics = MctsSearcher.extractStatistics(self.__searcher, action)
-        print("mcts statitics:" +
-              f" chosen action= {statistics['actionTotalReward']} total reward" +
-              f" over {statistics['actionNumVisits']} visits /"
-              f" all explored actions= {statistics['rootTotalReward']} total reward" +
-              f" over {statistics['rootNumVisits']} visits")
-
-        if self.__debug:
-            for (child_action, child) in self.__searcher.root.children.items():
-                print(f"    action {child_action} numVisits={child.numVisits} totalReward={child.totalReward}")
-
-        return action
-
-    @staticmethod
-    def extractStatistics(mcts_searcher: PijersiMcts, action: PijersiAction) -> Mapping[str, Union[int, float]]:
-        statistics = {}
-        statistics['rootNumVisits'] = mcts_searcher.root.numVisits
-        statistics['rootTotalReward'] = mcts_searcher.root.totalReward
-        statistics['actionNumVisits'] = mcts_searcher.root.children[action].numVisits
-        statistics['actionTotalReward'] = mcts_searcher.root.children[action].totalReward
-        return statistics
-
-
-class MctsMMSearcher(Searcher):
-
-    __slots__ = ('__depth_credit',
-                 '__state_evaluator',
-                 '__time_limit',
-                 '__iteration_limit',
-                 '__searcher',
-                 '__exploration_constant',
-                 '__debug')
-
-
-    def __init__(self, name: str,
+    def __init__(self, pijersi_state: PijersiState,
+                 maximizer_player: Player.T,
                  depth_credit: int,
-                 state_evaluator: StateEvaluator,
-                 time_limit: Optional[int]=None,
-                 iteration_limit: Optional[int]=None,
-                 exploration_constant: float=math.sqrt(2),
-                 rollout_policy: Callable[[MctsState], float]=mcts.randomPolicy):
+                 state_evaluator: StateEvaluator):
 
-        super().__init__(name)
-        self.__debug = False
+        super().__init__(pijersi_state, maximizer_player)
 
         assert depth_credit >= 0
         self.__depth_credit = depth_credit
 
         self.__state_evaluator = state_evaluator
 
+
+    def isTerminal(self) -> bool:
+        if self.__depth_credit == 0:
+            return True
+        else:
+            return self.get_pijersi_state().is_terminal()
+
+
+    def getReward(self) -> float:
+        return self.__state_evaluator.evaluate_state_value(MinimaxState(self.get_pijersi_state(),
+                                                                        self.getCurrentMaximizerPlayer()),
+                                                           self.__depth_credit)
+
+
+    def takeAction(self, action: PijersiAction) -> Self:
+
+        return MctsMinimaxState(pijersi_state=self.get_pijersi_state().take_action(action),
+                           maximizer_player=self.getCurrentMaximizerPlayer(),
+                           depth_credit=self.__depth_credit - 1,
+                           state_evaluator=self.__state_evaluator)
+
+
+class MctsMinimaxStateWrapper:
+
+    def __init__(self, depth_credit: int, state_evaluator: StateEvaluator):
+        assert depth_credit >= 0
+        self.__depth_credit = depth_credit
+
+        self.__state_evaluator = state_evaluator
+
+
+    def __call__(self, pijersi_state: PijersiState, maximizer_player: Player.T) -> MctsMinimaxState:
+        return MctsMinimaxState(pijersi_state=pijersi_state,
+                                maximizer_player=maximizer_player,
+                                depth_credit=self.__depth_credit,
+                                state_evaluator=self.__state_evaluator)
+
+
+class MctsSearcher(Searcher):
+
+    __slots__ = ('__state_wrapper', '__searcher', '__exploration_constant', '__debug')
+
+
+    def __init__(self, name: str,
+                 state_wrapper: Callable[[PijersiState], MctsState],
+                 time_limit: Optional[int]=None,
+                 iteration_limit: Optional[int]=None,
+                 exploration_constant: float=math.sqrt(2),
+                 rollout_policy: Callable[[MctsState], float]=mcts.randomPolicy):
+
+        super().__init__(name)
+        self.__debug = False
+
+        self.__state_wrapper = state_wrapper
+
         default_time_limit = 1_000
 
         assert time_limit is None or iteration_limit is None
@@ -2710,21 +2629,18 @@ class MctsMMSearcher(Searcher):
         if time_limit is None and iteration_limit is None:
             time_limit = default_time_limit
 
-        self.__time_limit = time_limit
-        self.__iteration_limit = iteration_limit
-
         self.__exploration_constant = exploration_constant
 
 
-        if self.__time_limit is not None:
+        if time_limit is not None:
             # time in milli-seconds
-            self.__searcher = PijersiMcts(timeLimit=self.__time_limit,
+            self.__searcher = PijersiMcts(timeLimit=time_limit,
                                           rolloutPolicy=rollout_policy,
                                           explorationConstant=self.__exploration_constant)
 
-        elif self.__iteration_limit is not None:
+        elif iteration_limit is not None:
             # number of mcts rounds
-            self.__searcher = PijersiMcts(iterationLimit=self.__iteration_limit,
+            self.__searcher = PijersiMcts(iterationLimit=iteration_limit,
                                           rolloutPolicy=rollout_policy,
                                           explorationConstant=self.__exploration_constant)
 
@@ -2736,10 +2652,7 @@ class MctsMMSearcher(Searcher):
     def search(self, state: PijersiState) -> PijersiAction:
 
         # >> when search is done, ignore the automatically selected action
-        _ = self.__searcher.search(initialState=MctsMMState(state,
-                                                            state.get_current_player(),
-                                                            self.__depth_credit,
-                                                            self.__state_evaluator))
+        _ = self.__searcher.search(initialState=self.__state_wrapper(state, state.get_current_player()))
 
         best_actions = self.__searcher.getBestActions()
         action = random.choice(best_actions)
@@ -2834,11 +2747,11 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
 
-SEARCHER_CATALOG.add( MctsMMSearcher("mcts-5mn-mm-4",
-                                       depth_credit=4,
-                                       state_evaluator=StateEvaluator(),
-                                       time_limit=5*60_000,
-                                       exploration_constant=128) )
+SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
+                                   state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
+                                   time_limit=5*60_000,
+                                   exploration_constant=128) )
+
 
 if False:
     SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
@@ -3157,8 +3070,14 @@ def test():
 
         game = Game()
 
-        game.set_white_searcher(MctsSearcher("mcts-500ms", time_limit=500, rollout_policy=pijersiRandomPolicy))
-        game.set_black_searcher(MctsSearcher("mcts-15i", iteration_limit=15))
+        game.set_white_searcher(MctsSearcher("mcts-500ms",
+                                             state_wrapper=MctsState,
+                                             time_limit=500,
+                                             rollout_policy=pijersiRandomPolicy))
+
+        game.set_black_searcher(MctsSearcher("mcts-15i",
+                                             state_wrapper=MctsState,
+                                             iteration_limit=15))
 
         game.start()
 
@@ -3172,11 +3091,11 @@ def test():
         print("===================================")
 
 
-    def test_mcts_mm_player():
+    def test_game_between_mcts_mm_and_minimax_players():
 
-        print("==================================")
-        print("test_mcts_mm_player ...")
-        print("==================================")
+        print("=================================================")
+        print("test_game_between_mcts_mm_and_minimax_players ...")
+        print("=================================================")
 
         default_max_credit = PijersiState.get_max_credit()
         PijersiState.set_max_credit(20)
@@ -3186,13 +3105,14 @@ def test():
         minimax_depth = 2
         mcts_mm_depth = 2
 
-        game.set_white_searcher(MctsMMSearcher(f"mcts-mm-{mcts_mm_depth}",
-                                               depth_credit=mcts_mm_depth,
-                                               state_evaluator=StateEvaluator(),
-                                               time_limit=2_000,
-                                               exploration_constant=128))
+        game.set_white_searcher(MctsSearcher(f"mcts-mm-{mcts_mm_depth}",
+                                              state_wrapper=MctsMinimaxStateWrapper(depth_credit=mcts_mm_depth,
+                                                                                    state_evaluator=StateEvaluator()),
+                                              time_limit=1_000,
+                                              exploration_constant=128))
 
-        game.set_black_searcher(MinimaxSearcher(f"minimax-{minimax_depth}", max_depth=minimax_depth))
+        game.set_black_searcher(MinimaxSearcher(f"minimax-{minimax_depth}",
+                                                max_depth=minimax_depth))
 
 
         game.start()
@@ -3202,9 +3122,9 @@ def test():
 
         PijersiState.set_max_credit(default_max_credit)
 
-        print("===================================")
-        print("test_mcts_mm_player done")
-        print("===================================")
+        print("==================================================")
+        print("test_game_between_mcts_mm_and_minimax_players done")
+        print("==================================================")
 
 
     def test_game_between_random_and_human_players():
@@ -3332,7 +3252,7 @@ def test():
         test_game_between_mcts_players()
 
     if True:
-        test_mcts_mm_player()
+        test_game_between_mcts_mm_and_minimax_players()
 
     if False:
         test_game_between_random_and_human_players()
