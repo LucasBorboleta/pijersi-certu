@@ -2839,7 +2839,6 @@ SEARCHER_CATALOG = SearcherCatalog()
 SEARCHER_CATALOG.add( HumanSearcher("human") )
 SEARCHER_CATALOG.add( RandomSearcher("random") )
 
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
