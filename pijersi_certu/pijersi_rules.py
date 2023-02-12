@@ -74,6 +74,8 @@ PathCode = NewType('PathCode', int)
 BoardCodes = Sequence[HexCode]
 PathCodes = Sequence[HexCode]
 
+_package_home = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(_package_home)
 
 @enum.unique
 class Reward(enum.IntEnum):
@@ -753,6 +755,7 @@ class PijersiAction:
     path_vertices: Optional[Path] = None
     capture_code: Optional[CaptureCode] = None
     move_code: Optional[MoveCode] = None
+    value: float = math.nan
 
     __TABLE_MOVE_CODE_TO_NAMES = [None for _ in range(4)]
     __TABLE_MOVE_CODE_TO_NAMES[0] = ['-', '']
@@ -784,6 +787,27 @@ class PijersiAction:
 
     def __hash__(self):
         return hash((*self.path_vertices, self.move_code))
+
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+
+    def __le__(self, other):
+        return self.value <= other.value
+
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+
+    def __ge__(self, other):
+        return self.value >= other.value
+
+
+    def __eq__(self, other):
+        return self.value == other.value and self.path_vertices == other.path_vertices
+
 
 
 class PijersiState:
@@ -2193,9 +2217,9 @@ class MinimaxSearcher(Searcher):
             self.__alpha_cuts = []
             self.__beta_cuts = []
 
-        (best_value, action_to_values) = self.alphabeta(state=initial_state,
-                                                    player=1,
-                                                    return_action_to_values=True)
+        (best_value, valued_actions) = self.alphabeta(state=initial_state,
+                                                      player=1,
+                                                      return_valued_actions=True)
 
         if self.__debug:
             if self.__alpha_cuts:
@@ -2218,17 +2242,17 @@ class MinimaxSearcher(Searcher):
                    f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
         if do_check:
-            self.check(initial_state, best_value, action_to_values)
+            self.check(initial_state, best_value, valued_actions)
 
         if self.__debug:
             print()
 
         best_actions = []
-        for (action, action_value) in action_to_values.items():
-            if action_value == best_value:
+        for action in valued_actions:
+            if action.value == best_value:
                 best_actions.append(action)
                 if self.__debug:
-                    print(f"MinimaxSearcher.search: best (action, value)=({action}, {action_value:.1f})")
+                    print(f"MinimaxSearcher.search: best (action, value)=({action}, {action.value:.1f})")
 
         print()
         print(f"{len(best_actions)} best_actions with best value {best_value:.1f}")
@@ -2238,11 +2262,11 @@ class MinimaxSearcher(Searcher):
         return action
 
 
-    def check(self, initial_state: PijersiState, best_value: float, action_to_values: Mapping[PijersiAction, float]):
+    def check(self, initial_state: PijersiState, best_value: float, valued_actions: Sequence[PijersiAction]):
 
-        (best_value_ref, action_values_ref) = self.minimax(state=initial_state,
-                                                    player=1,
-                                                    return_action_to_values=True)
+        (best_value_ref, valued_actions_ref) = self.minimax(state=initial_state,
+                                                           player=1,
+                                                           return_valued_actions=True)
 
         if self.__debug:
             print()
@@ -2251,28 +2275,28 @@ class MinimaxSearcher(Searcher):
             print()
 
         best_actions_ref = []
-        for (action_ref, action_value_ref) in action_values_ref.items():
-            if action_value_ref == best_value_ref:
+        for action_ref in valued_actions_ref():
+            if action_ref.value == best_value_ref:
                 best_actions_ref.append(action_ref)
                 if self.__debug:
-                    print(f"MinimaxSearcher.check: best (action_ref, action_value_ref)= ({action_ref}, {action_value_ref:.1f})")
+                    print(f"MinimaxSearcher.check: best (action_ref, action_value_ref)= ({action_ref}, {action_ref.value:.1f})")
 
         if self.__debug:
             print()
             print(f"{len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.1f}")
 
         best_actions = []
-        for (action, action_value) in action_to_values.items():
-            if action_value == best_value:
+        for action in valued_actions:
+            if action.value == best_value:
                 best_actions.append(action)
                 if self.__debug:
-                    print(f"MinimaxSearcher.check: best (action, action_value)= ({action}, {action_value:.1f})")
+                    print(f"MinimaxSearcher.check: best (action, action_value)= ({action}, {action.value:.1f})")
 
         if self.__debug:
             print()
 
-        action_names_ref = set(map(str, action_values_ref.keys()))
-        action_names = set(map(str, action_to_values.keys()))
+        action_names_ref = set(map(str, valued_actions_ref))
+        action_names = set(map(str, valued_actions))
 
         best_names_ref = set(best_actions_ref)
         best_names = set(best_actions)
@@ -2291,7 +2315,7 @@ class MinimaxSearcher(Searcher):
 
 
     def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None,
-                return_action_to_values: bool=False) -> Union[float, Mapping[PijersiAction, float]]:
+                return_valued_actions: bool=False) -> Union[float, Sequence[PijersiAction]]:
 
         if depth is None:
             depth = self.__max_depth
@@ -2312,11 +2336,8 @@ class MinimaxSearcher(Searcher):
 
         assert player in (-1, 1)
 
-        if player == -1:
-            assert not return_action_to_values
-
-        if return_action_to_values:
-            action_to_values = {}
+        if return_valued_actions:
+            valued_actions = []
 
         actions = state.get_actions()
 
@@ -2329,8 +2350,9 @@ class MinimaxSearcher(Searcher):
 
                 child_value = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if return_action_to_values:
-                    action_to_values[action] = child_value
+                if return_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
 
                 state_value = max(state_value, child_value)
 
@@ -2343,20 +2365,24 @@ class MinimaxSearcher(Searcher):
 
                 child_value = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
+                if return_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
                 state_value = min(state_value, child_value)
 
         if self.__debug and self.__debug_level >= 3:
             print()
             print(f"minimax at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
 
-        if return_action_to_values:
-            return (state_value, action_to_values)
+        if return_valued_actions:
+            return (state_value, valued_actions)
 
         return state_value
 
 
     def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
-                  return_action_to_values=False) -> Union[float, Mapping[PijersiAction, float]]:
+                  return_valued_actions=False) -> Union[float, Sequence[PijersiAction]]:
 
 
         def score_action(action):
@@ -2384,57 +2410,81 @@ class MinimaxSearcher(Searcher):
 
             return state_value
 
-        if return_action_to_values:
-            action_to_values = {}
-
         if self.__debug and self.__debug_level >= 3:
             print()
             print(f"alphabeta at depth {depth} evaluates state {id(state)} ...")
 
         assert player in(-1, 1)
 
-        if player == -1:
-            assert not return_action_to_values
-
-        if return_action_to_values:
-            action_to_values = {}
+        if return_valued_actions:
+            valued_actions = []
 
         actions = state.get_actions()
-        
-        # >> A few heuristics for generating efficient alpha-beta cuts,
-        
+
+        # Manage openings file
+
+        make_opening_file = False
+
+        if return_valued_actions and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
+            opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
+
+            if not os.path.isfile(opening_file_path):
+                make_opening_file = True
+
+            else:
+                print()
+                print(f"reading openings file {opening_file_path} ...")
+
+                with open(opening_file_path, 'r') as opening_stream:
+                    opening_lines = opening_stream.readlines()
+
+                for opening_line in opening_lines:
+                    opening_data = opening_line.split()
+                    assert len(opening_data) == 2
+
+                    state_value = float(opening_data[1])
+
+                    action_name = opening_data[0]
+                    action = None
+                    for action_candidate in actions:
+                        if str(action_candidate) == action_name:
+                            action = action_candidate
+                            break
+                    assert action is not None
+                    action.value = state_value
+
+                    valued_actions.append(action)
+
+                print(f"reading openings file {opening_file_path} done")
+                return (state_value, valued_actions)
+
+
+        # >> A few heuristics for generating efficient alpha-beta cuts
+
         # >> heuristic-1: sort actions according to the type of action
         actions.sort(key=score_action, reverse=True)
 
-        if depth >= 3:
-            # >> heuristic-2: sort actions using Minimax at depth=1
-            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax{1}", max_depth=1)
-            (_, pre_action_to_values) = pre_minimax_searcher.alphabeta(state=state, player=1, return_action_to_values=True)
-            assert len(pre_action_to_values) == len(actions)
-            actions = list(map(lambda pair: pair[0], sorted(pre_action_to_values.items(), key=lambda pair: pair[1], reverse=True)))
+        if return_valued_actions and depth >= 2:
+            # >> heuristic-2: compute Minimax best actions at (depth - 1)
+
+            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{depth - 1}", max_depth=depth - 1)
+            (pre_best_value, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, return_valued_actions=True)
+
+            if False:
+                # keep only the best pre_valued_actions
+                pre_valued_actions = [action for action in pre_valued_actions if action.value == pre_best_value]
+
+            else:
+                # sort all pre_valued_actions
+                pre_valued_actions.sort(reverse=True)
+
+            # add not pre_valued_actions at the tail
+            actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
+
             pre_minimax_searcher = None
-            pre_action_to_values = None
+            pre_valued_actions = None
+            pre_best_value = None
 
-        if return_action_to_values and depth >= 2:
-            # >> heuristic-3: compute Minimax best actions at (depth - 1)
-
-            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax{depth - 1}", max_depth=depth - 1)
-            (pre_best_value, pre_action_to_values) = pre_minimax_searcher.alphabeta(state=state, player=1, return_action_to_values=True)
-
-            pre_best_actions = []
-            for (action, action_value) in pre_action_to_values.items():
-                if action_value == pre_best_value:
-                    pre_best_actions.append(action)
-
-            new_actions = pre_best_actions
-            for action in actions:
-                if action not in new_actions:
-                    new_actions.append(action)
-
-            actions = new_actions
-            new_actions = None
-            pre_minimax_searcher = None
-            pre_action_to_values = None
 
         if player == 1:
 
@@ -2449,9 +2499,9 @@ class MinimaxSearcher(Searcher):
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
-                if return_action_to_values:
-                    assert action not in action_to_values
-                    action_to_values[action] = child_value
+                if return_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
 
                 state_value = max(state_value, child_value)
 
@@ -2477,6 +2527,10 @@ class MinimaxSearcher(Searcher):
 
                 child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
+                if return_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
                 state_value = min(state_value, child_value)
 
                 if state_value < alpha:
@@ -2493,8 +2547,21 @@ class MinimaxSearcher(Searcher):
             print()
             print(f"alphabeta at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
 
-        if return_action_to_values:
-            return (state_value, action_to_values)
+        # Manage openings file
+
+        if make_opening_file:
+            print()
+            print(f"writing openings file {opening_file_path} ...")
+
+            opening_lines = [str(action) + " " + str(state_value) + "\n" for action in valued_actions if action.value == state_value]
+            with open(opening_file_path, 'w') as opening_stream:
+                opening_stream.writelines(opening_lines)
+
+            print(f"writing openings file {opening_file_path} done")
+
+
+        if return_valued_actions:
+            return (state_value, valued_actions)
 
         return state_value
 
@@ -3287,7 +3354,7 @@ def test():
     if True:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
     if True:
@@ -3794,13 +3861,13 @@ def verify():
 
 def main():
 
-    if False:
+    if True:
         test()
 
     if False:
         profile()
 
-    if True:
+    if False:
         benchmark() # against old implementation
 
     if False:
