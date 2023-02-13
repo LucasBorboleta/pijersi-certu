@@ -2183,8 +2183,7 @@ class StateEvaluator():
 class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
-                 '__debug', '__debug_level',
-                 '__alpha_cuts', '__beta_cuts')
+                 '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
 
     def __init__(self, name: str, max_depth: int=1, state_evaluator: Optional[StateEvaluator]=None):
@@ -2196,11 +2195,10 @@ class MinimaxSearcher(Searcher):
 
         self.__state_evaluator = state_evaluator if state_evaluator is not None else StateEvaluator()
 
-        self.__debug = False
-        self.__debug_level = 1
-
+        self.__debug = True
         self.__alpha_cuts = []
         self.__beta_cuts = []
+        self.__evaluation_count = 0
 
 
     def is_interactive(self) -> bool:
@@ -2216,10 +2214,10 @@ class MinimaxSearcher(Searcher):
         if self.__debug:
             self.__alpha_cuts = []
             self.__beta_cuts = []
+            self.__evaluation_count = 0
 
-        (best_value, valued_actions) = self.alphabeta(state=initial_state,
-                                                      player=1,
-                                                      return_valued_actions=True)
+        (best_value, best_branch) = self.alphabeta(state=initial_state, player=1)
+        best_action = best_branch[0]
 
         if self.__debug:
             if self.__alpha_cuts:
@@ -2238,26 +2236,20 @@ class MinimaxSearcher(Searcher):
                 beta_cut_mean = 0
                 beta_cut_q95 = 0
 
-            print( f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
+            print( f"{self.__evaluation_count} state evaluations" + " / " +
+                   f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                    f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
         if do_check:
-            self.check(initial_state, best_value, valued_actions)
+            self.check(initial_state, best_value, [best_action])
+
 
         if self.__debug:
             print()
+            print(f"select action {best_action} with value {best_value:.1f}")
+            print(f"best branch {list(map(str,best_branch))}")
 
-        best_actions = []
-        for action in valued_actions:
-            if action.value == best_value:
-                best_actions.append(action)
-                if self.__debug:
-                    print(f"MinimaxSearcher.search: best (action, value)=({action}, {action.value:.1f})")
-
-        print()
-        print(f"{len(best_actions)} best_actions with best value {best_value:.1f}")
-
-        action = random.choice(best_actions)
+        action = best_action
 
         return action
 
@@ -2314,8 +2306,7 @@ class MinimaxSearcher(Searcher):
         return self.__state_evaluator.evaluate_state_value(state, depth)
 
 
-    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None,
-                return_valued_actions: bool=False) -> Union[float, Sequence[PijersiAction]]:
+    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None) -> Tuple[float, Sequence[PijersiAction]]:
 
         if depth is None:
             depth = self.__max_depth
@@ -2323,71 +2314,68 @@ class MinimaxSearcher(Searcher):
 
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
+            self.__evaluation_count += 1
+            return (state_value, [])
 
-            if self.__debug and self.__debug_level >= 3:
-                print()
-                print(f"minimax at depth {depth} evaluates leaf state {id(state)} with value {state_value:.1f}")
-
-            return state_value
-
-        if self.__debug and self.__debug_level >= 3:
-            print()
-            print(f"minimax at depth {depth} evaluates state {id(state)} ...")
 
         assert player in (-1, 1)
-
-        if return_valued_actions:
-            valued_actions = []
 
         actions = state.get_actions()
 
         if player == 1:
 
-            state_value = -math.inf
+            best_child_value = -math.inf
+            best_child_branch = None
+            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                child_value = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if return_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
-
-                state_value = max(state_value, child_value)
+                if child_value > best_child_value:
+                    best_child_value = child_value
+                    best_action = action
+                    best_child_branch = child_branch
 
         elif player == -1:
 
-            state_value = math.inf
+            best_child_value = math.inf
+            best_child_branch = None
+            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                child_value = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if return_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
+                if child_value < best_child_value:
+                    best_child_value = child_value
+                    best_action = action
+                    best_child_branch = child_branch
 
-                state_value = min(state_value, child_value)
-
-        if self.__debug and self.__debug_level >= 3:
-            print()
-            print(f"minimax at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
-
-        if return_valued_actions:
-            return (state_value, valued_actions)
-
-        return state_value
+        return (best_child_value, [best_action] + best_child_branch)
 
 
     def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
-                  return_valued_actions=False) -> Union[float, Sequence[PijersiAction]]:
+                  pre_best_branch: Optional[Sequence[PijersiAction]]=None) -> Union[float, Sequence[PijersiAction]]:
 
 
         def score_action(action):
             return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
 
+
+        if depth is None:
+            depth = self.__max_depth
+
+
+        if depth == 0 or state.is_terminal():
+            state_value = self.evaluate_state_value(state, depth)
+            self.__evaluation_count += 1
+            return (state_value, [])
+
+
+        assert player in (-1, 1)
 
         if alpha is None:
             alpha = -math.inf
@@ -2395,68 +2383,46 @@ class MinimaxSearcher(Searcher):
         if beta is None:
             beta = math.inf
 
-        if depth is None:
-            depth = self.__max_depth
-
         assert alpha <= beta
-
-
-        if depth == 0 or state.is_terminal():
-            state_value = self.evaluate_state_value(state, depth)
-
-            if self.__debug and self.__debug_level >= 3:
-                print()
-                print(f"alphabeta at depth {depth} evaluates leaf state {id(state)} with value {state_value:.1f}")
-
-            return state_value
-
-        if self.__debug and self.__debug_level >= 3:
-            print()
-            print(f"alphabeta at depth {depth} evaluates state {id(state)} ...")
-
-        assert player in(-1, 1)
-
-        if return_valued_actions:
-            valued_actions = []
 
         actions = state.get_actions()
 
         # Manage openings file
 
-        make_opening_file = False
+        # make_opening_file = False
 
-        if return_valued_actions and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
-            opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
+        # if return_valued_actions and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
+        #     opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
 
-            if not os.path.isfile(opening_file_path):
-                make_opening_file = True
+        #     if not os.path.isfile(opening_file_path):
+        #         make_opening_file = True
 
-            else:
-                print()
-                print(f"reading openings file {opening_file_path} ...")
+        #     else:
+        #         print()
+        #         print(f"reading openings file {opening_file_path} ...")
 
-                with open(opening_file_path, 'r') as opening_stream:
-                    opening_lines = opening_stream.readlines()
+        #         with open(opening_file_path, 'r') as opening_stream:
+        #             opening_lines = opening_stream.readlines()
 
-                for opening_line in opening_lines:
-                    opening_data = opening_line.split()
-                    assert len(opening_data) == 2
+        #         for opening_line in opening_lines:
+        #             opening_data = opening_line.split()
+        #             assert len(opening_data) == 2
 
-                    state_value = float(opening_data[1])
+        #             state_value = float(opening_data[1])
 
-                    action_name = opening_data[0]
-                    action = None
-                    for action_candidate in actions:
-                        if str(action_candidate) == action_name:
-                            action = action_candidate
-                            break
-                    assert action is not None
-                    action.value = state_value
+        #             action_name = opening_data[0]
+        #             action = None
+        #             for action_candidate in actions:
+        #                 if str(action_candidate) == action_name:
+        #                     action = action_candidate
+        #                     break
+        #             assert action is not None
+        #             action.value = state_value
 
-                    valued_actions.append(action)
+        #             valued_actions.append(action)
 
-                print(f"reading openings file {opening_file_path} done")
-                return (state_value, valued_actions)
+        #         print(f"reading openings file {opening_file_path} done")
+        #         return (state_value, valued_actions)
 
 
         # >> A few heuristics for generating efficient alpha-beta cuts
@@ -2464,31 +2430,31 @@ class MinimaxSearcher(Searcher):
         # >> heuristic-1: sort actions according to the type of action
         actions.sort(key=score_action, reverse=True)
 
-        if return_valued_actions and depth >= 2:
+        if not pre_best_branch and depth == self.__max_depth and depth >= 2:
             # >> heuristic-2: compute Minimax best actions at (depth - 1)
+            print(f"DEBUG: making heuristic-2 from depth {depth} ...")
 
             pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{depth - 1}", max_depth=depth - 1)
-            (pre_best_value, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, return_valued_actions=True)
-
-            if False:
-                # keep only the best pre_valued_actions
-                pre_valued_actions = [action for action in pre_valued_actions if action.value == pre_best_value]
-
-            else:
-                # sort all pre_valued_actions
-                pre_valued_actions.sort(reverse=True)
-
-            # add not pre_valued_actions at the tail
-            actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
-
+            (_, pre_best_branch) = pre_minimax_searcher.alphabeta(state=state, player=1)
+            print( f"DEBUG: making heuristic-2 from depth {depth} done => pre_best_branch = {list(map(str, pre_best_branch))}" + " / " +
+                    f"{pre_minimax_searcher.__evaluation_count} state evaluations at max_depth {depth - 1}")
             pre_minimax_searcher = None
-            pre_valued_actions = None
-            pre_best_value = None
+
+
+        if pre_best_branch:
+            actions = [pre_best_branch[0]] + actions
+            pre_best_sub_branch = pre_best_branch[1:]
+            print(f"DEBUG: at depth {depth} prepending {str(pre_best_branch[0])}")
+
+        else:
+            pre_best_sub_branch = None
 
 
         if player == 1:
 
-            state_value = -math.inf
+            best_child_value = -math.inf
+            best_child_branch = None
+            best_action = None
 
             action_count = 0
 
@@ -2497,73 +2463,65 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+                (child_value, child_branch) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                             alpha=alpha, beta=beta, pre_best_branch=pre_best_sub_branch)
 
-                if return_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
+                if child_value > best_child_value:
+                    best_child_value = child_value
+                    best_action = action
+                    best_child_branch = child_branch
 
-                state_value = max(state_value, child_value)
-
-                if state_value > beta:
+                if best_child_value > beta:
                     if self.__debug:
                         self.__beta_cuts.append(action_count/len(actions))
-                        if self.__debug_level >= 2:
-                            print("--- beta cut-off")
                     break
 
-                alpha = max(alpha, state_value)
+                alpha = max(alpha, best_child_value)
+                pre_best_sub_branch = None
 
         elif player == -1:
 
-            state_value = math.inf
+            best_child_value = math.inf
+            best_child_branch = None
+            best_action = None
 
             action_count = 0
 
-            for (action, next_action) in zip(actions, actions[1:] + [None]):
+            for action in actions:
                 action_count += 1
 
                 child_state = state.take_action(action)
 
-                child_value = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+                (child_value, child_branch) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                             alpha=alpha, beta=beta, pre_best_branch=pre_best_sub_branch)
 
-                if return_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
+                if child_value < best_child_value:
+                    best_child_value = child_value
+                    best_action = action
+                    best_child_branch = child_branch
 
-                state_value = min(state_value, child_value)
-
-                if state_value < alpha:
+                if best_child_value < alpha:
 
                     if self.__debug:
                         self.__alpha_cuts.append(action_count/len(actions))
-                        if self.__debug_level >= 2:
-                            print("--- alpha cut-off")
                     break
 
-                beta = min(beta, state_value)
-
-        if self.__debug and self.__debug_level >= 3:
-            print()
-            print(f"alphabeta at depth {depth} evaluates state {id(state)} with value {state_value:.1f}")
+                beta = min(beta, best_child_value)
+                pre_best_sub_branch = None
 
         # Manage openings file
 
-        if make_opening_file:
-            print()
-            print(f"writing openings file {opening_file_path} ...")
+        # if make_opening_file:
+        #     print()
+        #     print(f"writing openings file {opening_file_path} ...")
 
-            opening_lines = [str(action) + " " + str(state_value) + "\n" for action in valued_actions if action.value == state_value]
-            with open(opening_file_path, 'w') as opening_stream:
-                opening_stream.writelines(opening_lines)
+        #     opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
+        #     with open(opening_file_path, 'w') as opening_stream:
+        #         opening_stream.writelines(opening_lines)
 
-            print(f"writing openings file {opening_file_path} done")
+        #     print(f"writing openings file {opening_file_path} done")
 
-
-        if return_valued_actions:
-            return (state_value, valued_actions)
-
-        return state_value
+        return (best_child_value, [best_action] + best_child_branch)
 
 
 class PijersiMcts(mcts.mcts):
