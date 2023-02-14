@@ -60,6 +60,7 @@ ARRAY_TYPE_COUNTER = 'B'
 ARRAY_TYPE_STATE_1 = 'B'
 ARRAY_TYPE_STATE_2 = 'H'
 ARRAY_TYPE_STATE_3 = 'L'
+ARRAY_TYPE_DISTANCE = 'f'
 
 
 HexIndex = NewType('HexIndex', int)
@@ -837,6 +838,8 @@ class PijersiState:
     __TABLE_GOAL_INDICES = None
     __TABLE_GOAL_DISTANCES = None
 
+    __TABLE_CENTER_DISTANCES = None
+
     __TABLE_TRY_CUBE_PATH1_NEXT_CODE = None
     __TABLE_TRY_CUBE_PATH1_CAPTURE_CODE = None
 
@@ -1012,9 +1015,24 @@ class PijersiState:
             return [Hexagon.get_goal_indices(player) for player in Player.T]
 
 
-        def create_table_goal_distances() -> Sequence[Sequence[int]]:
+        def create_table_goal_distances() -> Sequence[Sequence[float]]:
             return [[Hexagon.get_distance_to_goal(hex_index, player)
                       for hex_index in Hexagon.get_all_indices()] for player in Player.T]
+
+
+        def create_table_center_distances() -> Sequence[float]:
+            table = array.array(ARRAY_TYPE_DISTANCE, [0 for _ in Hexagon.get_all_indices()])
+
+            center_names = ['d3', 'd4', 'd5']
+            center_indices = [Hexagon.get(hex_name).index for hex_name in center_names]
+
+            for hex_index in Hexagon.get_all_indices():
+                distances = []
+                for center_index in center_indices:
+                    distances.append(Hexagon.get_distance(hex_index, center_index))
+                table[hex_index] = min(distances)
+
+            return table
 
 
         def create_tables_try_cube_path1() -> Tuple[Sequence[PathCode], Sequence[CaptureCode]]:
@@ -1185,6 +1203,7 @@ class PijersiState:
 
             PijersiState.__TABLE_GOAL_INDICES = create_table_goal_indices()
             PijersiState.__TABLE_GOAL_DISTANCES = create_table_goal_distances()
+            PijersiState.__TABLE_CENTER_DISTANCES = create_table_center_distances()
 
             ( PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE,
               PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE ) =  create_tables_try_cube_path1()
@@ -1262,6 +1281,12 @@ class PijersiState:
             print(PijersiState.__TABLE_GOAL_DISTANCES)
 
 
+        def print_table_center_distances():
+            print()
+            print("-- print_table_center_distances --")
+            print(PijersiState.__TABLE_CENTER_DISTANCES)
+
+
         def print_tables_try_cube_path1():
             print()
             print("-- print_tables_try_cube_path1 --")
@@ -1295,6 +1320,7 @@ class PijersiState:
 
         print_table_goal_indices()
         print_table_goal_distances()
+        print_table_center_distances()
 
         print_tables_try_cube_path1()
         print_tables_try_stack_path1()
@@ -1439,6 +1465,23 @@ class PijersiState:
                     distances_to_goal[player].append(goal_distances[hex_index])
 
         return distances_to_goal
+
+
+    def get_distances_to_center(self) -> Sequence[Sequence[int]]:
+        """White and black distances to center"""
+
+        distances_to_center = [[] for player in Player.T]
+
+        center_distances = PijersiState.__TABLE_CENTER_DISTANCES
+
+        for player in Player.T:
+            cube_count = PijersiState.__TABLE_CUBE_COUNT[player]
+
+            for (hex_index, hex_code) in enumerate(self.__board_codes):
+                for _ in range(cube_count[hex_code]):
+                    distances_to_center[player].append(center_distances[hex_index])
+
+        return distances_to_center
 
 
     def get_show_text(self) -> str:
@@ -2050,33 +2093,36 @@ class StateEvaluator():
     """State evaluator for MinimaxSearcher"""
 
     __slots__ = ('__cube_weight', '__fighter_weight',
-                 '__dmin_weight', '__dave_weight', '__credit_weight',
+                 '__dg_min_weight', '__dg_ave_weight', '__dc_ave_weight', '__credit_weight',
                  '__debug')
 
 
     def __init__(self, cube_weight: Optional[float]=None,
                   fighter_weight: Optional[float]=None,
-                  dmin_weight: Optional[float]=None,
-                  dave_weight: Optional[float]=None,
-                  credit_weight: Optional[int]=None):
+                  dg_min_weight: Optional[float]=None,
+                  dg_ave_weight: Optional[float]=None,
+                  dc_ave_weight: Optional[float]=None,
+                  credit_weight: Optional[float]=None):
 
         # >> rationale:
         # >> - order by importance from bottom to top
         # >> - start at bottom with w_0 = 1
         # >> - w_(i+1) > w_i with w_(i+1) - w_i >= 1
         # >> - w_i = sum {w_k : k < i}
-        default_weights = {'dmin_weight':12,
-                          'fighter_weight':6,
-                          'cube_weight':3,
-                          'dave_weight':2,
-                          'credit_weight':1}
+        default_weights = {'dg_min_weight':24,
+                           'fighter_weight':12,
+                           'cube_weight':6,
+                           'dg_ave_weight':3,
+                           'dc_ave_weight':2,
+                           'credit_weight':1}
 
         self.__debug = False
 
-        self.__dmin_weight = dmin_weight if dmin_weight is not None else default_weights['dmin_weight']
-        self.__dave_weight = dave_weight if dave_weight is not None else default_weights['dave_weight']
+        self.__dg_min_weight = dg_min_weight if dg_min_weight is not None else default_weights['dg_min_weight']
+        self.__dg_ave_weight = dg_ave_weight if dg_ave_weight is not None else default_weights['dg_ave_weight']
         self.__cube_weight = cube_weight if cube_weight is not None else default_weights['cube_weight']
         self.__fighter_weight = fighter_weight if fighter_weight is not None else default_weights['fighter_weight']
+        self.__dc_ave_weight = dc_ave_weight if dc_ave_weight is not None else default_weights['dc_ave_weight']
         self.__credit_weight = credit_weight if credit_weight is not None else default_weights['credit_weight']
 
 
@@ -2109,29 +2155,44 @@ class StateEvaluator():
 
         else:
 
-            dmin_norm = 8
-            dave_norm = dmin_norm
+            dg_min_norm = 8
+            dg_ave_norm = dg_min_norm
+            dc_ave_norm = 3
             cube_norm = 14
             fighter_norm = 12
             credit_norm = PijersiState.get_max_credit()
 
             # white and black distances to goal
-            distances = pijersi_state.get_distances_to_goal()
+            distances_to_goal = pijersi_state.get_distances_to_goal()
 
-            if not distances[Player.T.WHITE]:
-                distances[Player.T.WHITE] = [dmin_norm]
+            if not distances_to_goal[Player.T.WHITE]:
+                distances_to_goal[Player.T.WHITE] = [dg_min_norm]
 
-            if not distances[Player.T.BLACK]:
-                distances[Player.T.BLACK] = [dmin_norm]
+            if not distances_to_goal[Player.T.BLACK]:
+                distances_to_goal[Player.T.BLACK] = [dg_min_norm]
 
-            white_min_distance = min(distances[Player.T.WHITE])
-            black_min_distance = min(distances[Player.T.BLACK])
+            white_dg_min = min(distances_to_goal[Player.T.WHITE])
+            black_dg_min = min(distances_to_goal[Player.T.BLACK])
 
-            white_ave_distance = mean(distances[Player.T.WHITE])
-            black_ave_distance = mean(distances[Player.T.BLACK])
+            white_ave_dg = mean(distances_to_goal[Player.T.WHITE])
+            black_ave_dg = mean(distances_to_goal[Player.T.BLACK])
 
-            dmin_difference = minimax_maximizer_sign*(black_min_distance - white_min_distance)
-            dave_difference = minimax_maximizer_sign*(black_ave_distance - white_ave_distance)
+            dg_min_difference = minimax_maximizer_sign*(black_dg_min - white_dg_min)
+            dg_ave_difference = minimax_maximizer_sign*(black_ave_dg - white_ave_dg)
+
+            # white and black distances to center
+            distances_to_center = pijersi_state.get_distances_to_center()
+
+            if not distances_to_center[Player.T.WHITE]:
+                distances_to_center[Player.T.WHITE] = [dc_ave_norm]
+
+            if not distances_to_center[Player.T.BLACK]:
+                distances_to_center[Player.T.BLACK] = [dc_ave_norm]
+
+            white_ave_dc = mean(distances_to_center[Player.T.WHITE])
+            black_ave_dc = mean(distances_to_center[Player.T.BLACK])
+
+            dc_ave_difference = minimax_maximizer_sign*(black_ave_dc - white_ave_dc)
 
 
             # white and black with alive cubes
@@ -2148,11 +2209,14 @@ class StateEvaluator():
             # normalize each feature in the intervall [-1, +1]
 
             if self.__debug:
-                assert dmin_difference <= dmin_norm
-                assert -dmin_difference <= dmin_norm
+                assert dg_min_difference <= dg_min_norm
+                assert -dg_min_difference <= dg_min_norm
 
-                assert dave_difference <= dave_norm
-                assert -dave_difference <= dave_norm
+                assert dg_ave_difference <= dg_ave_norm
+                assert -dg_ave_difference <= dg_ave_norm
+
+                assert dc_ave_difference <= dc_ave_norm
+                assert -dc_ave_difference <= dc_ave_norm
 
                 assert cube_difference <= cube_norm
                 assert -cube_difference <= cube_norm
@@ -2163,16 +2227,18 @@ class StateEvaluator():
                 assert credit <= credit_norm
                 assert -credit <= credit_norm
 
-            dmin_difference = dmin_difference/dmin_norm
-            dave_difference = dave_difference/dave_norm
+            dg_min_difference = dg_min_difference/dg_min_norm
+            dg_ave_difference = dg_ave_difference/dg_ave_norm
+            dc_ave_difference = dc_ave_difference/dc_ave_norm
             cube_difference = cube_difference/cube_norm
             fighter_difference = fighter_difference/fighter_norm
             credit = credit/credit_norm
 
             # synthesis
 
-            value += self.__dmin_weight*dmin_difference
-            value += self.__dave_weight*dave_difference
+            value += self.__dg_min_weight*dg_min_difference
+            value += self.__dg_ave_weight*dg_ave_difference
+            value += self.__dc_ave_weight*dc_ave_difference
             value += self.__cube_weight*cube_difference
             value += self.__fighter_weight*fighter_difference
             value += self.__credit_weight*credit
@@ -2182,7 +2248,7 @@ class StateEvaluator():
 
 class MinimaxSearcher(Searcher):
 
-    __slots__ = ('__max_depth', '__state_evaluator',
+    __slots__ = ('__max_depth', '__state_evaluator', '__extra_credit_heuristic_2',
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
 
@@ -2200,6 +2266,8 @@ class MinimaxSearcher(Searcher):
         self.__beta_cuts = []
         self.__evaluation_count = 0
 
+        self.__extra_credit_heuristic_2 = [0 for depth in range(self.__max_depth + 1)]
+
 
     def is_interactive(self) -> bool:
         return False
@@ -2216,8 +2284,10 @@ class MinimaxSearcher(Searcher):
             self.__beta_cuts = []
             self.__evaluation_count = 0
 
-        (best_value, best_branch) = self.alphabeta(state=initial_state, player=1)
-        best_action = best_branch[0]
+        self.__extra_credit_heuristic_2 = [0 for depth in range(self.__max_depth + 1)]
+        (best_value, valued_actions) = self.alphabeta(state=initial_state, player=1)
+        best_actions = [action for action in valued_actions if action.value == best_value]
+        best_action = random.choice(best_actions)
 
         if self.__debug:
             if self.__alpha_cuts:
@@ -2246,8 +2316,7 @@ class MinimaxSearcher(Searcher):
 
         if self.__debug:
             print()
-            print(f"select action {best_action} with value {best_value:.1f}")
-            print(f"best branch {list(map(str,best_branch))}")
+            print(f"select action {best_action} with value {best_value:.1f} amongst {len(best_actions)} best actions")
 
         action = best_action
 
@@ -2322,43 +2391,44 @@ class MinimaxSearcher(Searcher):
 
         actions = state.get_actions()
 
+        valued_actions = []
+        make_valued_actions = depth == self.__max_depth
+
         if player == 1:
 
             best_child_value = -math.inf
-            best_child_branch = None
-            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_branch) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if child_value > best_child_value:
-                    best_child_value = child_value
-                    best_action = action
-                    best_child_branch = child_branch
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = max(best_child_value, child_value)
 
         elif player == -1:
 
             best_child_value = math.inf
-            best_child_branch = None
-            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_branch) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
-                if child_value < best_child_value:
-                    best_child_value = child_value
-                    best_action = action
-                    best_child_branch = child_branch
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
 
-        return (best_child_value, [best_action] + best_child_branch)
+                best_child_value = min(best_child_value, child_value)
 
 
-    def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
-                  pre_best_branch: Optional[Sequence[PijersiAction]]=None) -> Union[float, Sequence[PijersiAction]]:
+        return (best_child_value, valued_actions)
+
+
+    def alphabeta(self, state, player, depth=None, alpha=None, beta=None, use_heuristic_2=True) -> Union[float, Sequence[PijersiAction]]:
 
 
         def score_action(action):
@@ -2387,42 +2457,45 @@ class MinimaxSearcher(Searcher):
 
         actions = state.get_actions()
 
+        valued_actions = []
+        make_valued_actions = depth == self.__max_depth
+
         # Manage openings file
 
-        # make_opening_file = False
+        make_opening_file = False
 
-        # if return_valued_actions and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
-        #     opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
+        if depth == self.__max_depth and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
+            opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
 
-        #     if not os.path.isfile(opening_file_path):
-        #         make_opening_file = True
+            if not os.path.isfile(opening_file_path):
+                make_opening_file = True
 
-        #     else:
-        #         print()
-        #         print(f"reading openings file {opening_file_path} ...")
+            else:
+                print()
+                print(f"reading openings file {opening_file_path} ...")
 
-        #         with open(opening_file_path, 'r') as opening_stream:
-        #             opening_lines = opening_stream.readlines()
+                with open(opening_file_path, 'r') as opening_stream:
+                    opening_lines = opening_stream.readlines()
 
-        #         for opening_line in opening_lines:
-        #             opening_data = opening_line.split()
-        #             assert len(opening_data) == 2
+                for opening_line in opening_lines:
+                    opening_data = opening_line.split()
+                    assert len(opening_data) == 2
 
-        #             state_value = float(opening_data[1])
+                    action_value = float(opening_data[1])
 
-        #             action_name = opening_data[0]
-        #             action = None
-        #             for action_candidate in actions:
-        #                 if str(action_candidate) == action_name:
-        #                     action = action_candidate
-        #                     break
-        #             assert action is not None
-        #             action.value = state_value
+                    action_name = opening_data[0]
+                    action = None
+                    for action_candidate in actions:
+                        if str(action_candidate) == action_name:
+                            action = action_candidate
+                            break
+                    assert action is not None
+                    action.value = action_value
 
-        #             valued_actions.append(action)
+                    valued_actions.append(action)
 
-        #         print(f"reading openings file {opening_file_path} done")
-        #         return (state_value, valued_actions)
+                print(f"reading openings file {opening_file_path} done")
+                return (action_value, valued_actions)
 
 
         # >> A few heuristics for generating efficient alpha-beta cuts
@@ -2430,31 +2503,25 @@ class MinimaxSearcher(Searcher):
         # >> heuristic-1: sort actions according to the type of action
         actions.sort(key=score_action, reverse=True)
 
-        if not pre_best_branch and depth == self.__max_depth and depth >= 2:
-            # >> heuristic-2: compute Minimax best actions at (depth - 1)
-            print(f"DEBUG: making heuristic-2 from depth {depth} ...")
+        if use_heuristic_2 and depth >= 2:
+            # >> heuristic-2: compute Minimax at (depth - 1)
+            pre_depth = depth - 1
+            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
+            (_, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_2=True)
 
-            pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{depth - 1}", max_depth=depth - 1)
-            (_, pre_best_branch) = pre_minimax_searcher.alphabeta(state=state, player=1)
-            print( f"DEBUG: making heuristic-2 from depth {depth} done => pre_best_branch = {list(map(str, pre_best_branch))}" + " / " +
-                    f"{pre_minimax_searcher.__evaluation_count} state evaluations at max_depth {depth - 1}")
-            pre_minimax_searcher = None
+            pre_valued_actions.sort(reverse=(player == 1))
+            actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
 
-
-        if pre_best_branch:
-            actions = [pre_best_branch[0]] + actions
-            pre_best_sub_branch = pre_best_branch[1:]
-            print(f"DEBUG: at depth {depth} prepending {str(pre_best_branch[0])}")
+            credit_heuristic_2 = int(0.20*len(actions)) + self.__extra_credit_heuristic_2[depth]
+            self.__extra_credit_heuristic_2[depth] = 0
 
         else:
-            pre_best_sub_branch = None
+            credit_heuristic_2 = 0
 
 
         if player == 1:
 
             best_child_value = -math.inf
-            best_child_branch = None
-            best_action = None
 
             action_count = 0
 
@@ -2463,13 +2530,14 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value, child_branch) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                             alpha=alpha, beta=beta, pre_best_branch=pre_best_sub_branch)
+                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                                     alpha=alpha, beta=beta, use_heuristic_2=(credit_heuristic_2 != 0))
 
-                if child_value > best_child_value:
-                    best_child_value = child_value
-                    best_action = action
-                    best_child_branch = child_branch
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = max(best_child_value, child_value)
 
                 if best_child_value > beta:
                     if self.__debug:
@@ -2477,13 +2545,11 @@ class MinimaxSearcher(Searcher):
                     break
 
                 alpha = max(alpha, best_child_value)
-                pre_best_sub_branch = None
+                credit_heuristic_2 = max(0, credit_heuristic_2 - 1)
 
         elif player == -1:
 
             best_child_value = math.inf
-            best_child_branch = None
-            best_action = None
 
             action_count = 0
 
@@ -2492,13 +2558,14 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value, child_branch) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                             alpha=alpha, beta=beta, pre_best_branch=pre_best_sub_branch)
+                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                                     alpha=alpha, beta=beta, use_heuristic_2=(credit_heuristic_2 != 0))
 
-                if child_value < best_child_value:
-                    best_child_value = child_value
-                    best_action = action
-                    best_child_branch = child_branch
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = min(best_child_value, child_value)
 
                 if best_child_value < alpha:
 
@@ -2507,21 +2574,24 @@ class MinimaxSearcher(Searcher):
                     break
 
                 beta = min(beta, best_child_value)
-                pre_best_sub_branch = None
+                credit_heuristic_2 = max(0, credit_heuristic_2 - 1)
 
         # Manage openings file
 
-        # if make_opening_file:
-        #     print()
-        #     print(f"writing openings file {opening_file_path} ...")
+        if make_opening_file:
+            print()
+            print(f"writing openings file {opening_file_path} ...")
 
-        #     opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
-        #     with open(opening_file_path, 'w') as opening_stream:
-        #         opening_stream.writelines(opening_lines)
+            opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
+            with open(opening_file_path, 'w') as opening_stream:
+                opening_stream.writelines(opening_lines)
 
-        #     print(f"writing openings file {opening_file_path} done")
+            print(f"writing openings file {opening_file_path} done")
 
-        return (best_child_value, [best_action] + best_child_branch)
+
+        self.__extra_credit_heuristic_2[depth] = credit_heuristic_2
+
+        return (best_child_value, valued_actions)
 
 
 class PijersiMcts(mcts.mcts):
