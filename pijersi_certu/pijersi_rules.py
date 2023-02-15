@@ -2528,7 +2528,7 @@ class MinimaxSearcher(Searcher):
             if not use_heuristic_2:
                 pre_depth = depth - 1
                 pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
-                (_, pre_best_branch, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
+                (_, _, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
 
             pre_valued_actions.sort(reverse=(player == 1))
             actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
@@ -2558,7 +2558,7 @@ class MinimaxSearcher(Searcher):
 
             action_count = 0
 
-            for (action_index, action) in enumerate(actions):
+            for action in actions:
                 action_count += 1
 
                 child_state = state.take_action(action)
@@ -2596,7 +2596,7 @@ class MinimaxSearcher(Searcher):
 
             action_count = 0
 
-            for (action_index, action) in enumerate(actions):
+            for action in actions:
                 action_count += 1
 
                 child_state = state.take_action(action)
