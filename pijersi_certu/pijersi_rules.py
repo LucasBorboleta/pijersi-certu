@@ -2104,16 +2104,11 @@ class StateEvaluator():
                   dc_ave_weight: Optional[float]=None,
                   credit_weight: Optional[float]=None):
 
-        # >> rationale:
-        # >> - order by importance from bottom to top
-        # >> - start at bottom with w_0 = 1
-        # >> - w_(i+1) > w_i with w_(i+1) - w_i >= 1
-        # >> - w_i = sum {w_k : k < i}
-        default_weights = {'dg_min_weight':24,
-                           'fighter_weight':12,
-                           'cube_weight':6,
-                           'dg_ave_weight':3,
+        default_weights = {'fighter_weight':8,
+                           'cube_weight':8,
+                           'dg_min_weight':4,
                            'dc_ave_weight':2,
+                           'dg_ave_weight':2,
                            'credit_weight':1}
 
         self.__debug = False
@@ -2248,7 +2243,7 @@ class StateEvaluator():
 
 class MinimaxSearcher(Searcher):
 
-    __slots__ = ('__max_depth', '__state_evaluator', '__extra_credit_heuristic_2',
+    __slots__ = ('__max_depth', '__state_evaluator', '__extra_credit_heuristic_3',
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
 
@@ -2266,7 +2261,7 @@ class MinimaxSearcher(Searcher):
         self.__beta_cuts = []
         self.__evaluation_count = 0
 
-        self.__extra_credit_heuristic_2 = [0 for depth in range(self.__max_depth + 1)]
+        self.__extra_credit_heuristic_3 = [0 for depth in range(self.__max_depth + 1)]
 
 
     def is_interactive(self) -> bool:
@@ -2284,8 +2279,8 @@ class MinimaxSearcher(Searcher):
             self.__beta_cuts = []
             self.__evaluation_count = 0
 
-        self.__extra_credit_heuristic_2 = [0 for depth in range(self.__max_depth + 1)]
-        (best_value, valued_actions) = self.alphabeta(state=initial_state, player=1)
+        self.__extra_credit_heuristic_3 = [0 for depth in range(self.__max_depth + 1)]
+        (best_value, best_branch, valued_actions) = self.alphabeta(state=initial_state, player=1)
         best_actions = [action for action in valued_actions if action.value == best_value]
         best_action = random.choice(best_actions)
 
@@ -2316,6 +2311,7 @@ class MinimaxSearcher(Searcher):
 
         if self.__debug:
             print()
+            print(f"best branch {list(map(str, best_branch))}")
             print(f"select action {best_action} with value {best_value:.1f} amongst {len(best_actions)} best actions")
 
         action = best_action
@@ -2375,7 +2371,8 @@ class MinimaxSearcher(Searcher):
         return self.__state_evaluator.evaluate_state_value(state, depth)
 
 
-    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None) -> Tuple[float, Sequence[PijersiAction]]:
+    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None
+                ) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
 
         if depth is None:
             depth = self.__max_depth
@@ -2384,7 +2381,7 @@ class MinimaxSearcher(Searcher):
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
             self.__evaluation_count += 1
-            return (state_value, [])
+            return (state_value, [], [])
 
 
         assert player in (-1, 1)
@@ -2397,38 +2394,52 @@ class MinimaxSearcher(Searcher):
         if player == 1:
 
             best_child_value = -math.inf
+            best_child_branch = None
+            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
                     valued_actions.append(action)
+
+                if child_value > best_child_value:
+                    best_action = action
+                    best_child_branch = child_branch
 
                 best_child_value = max(best_child_value, child_value)
 
         elif player == -1:
 
             best_child_value = math.inf
+            best_child_branch = None
+            best_action = None
 
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
                     valued_actions.append(action)
 
+                if child_value < best_child_value:
+                    best_action = action
+                    best_child_branch = child_branch
+
                 best_child_value = min(best_child_value, child_value)
 
 
-        return (best_child_value, valued_actions)
+        return (best_child_value, [best_action] + best_child_branch, valued_actions)
 
 
-    def alphabeta(self, state, player, depth=None, alpha=None, beta=None, use_heuristic_2=True) -> Union[float, Sequence[PijersiAction]]:
+    def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
+                  pre_best_branch: Optional[Sequence[PijersiAction]]=None,
+                  use_heuristic_3=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
 
 
         def score_action(action):
@@ -2442,7 +2453,7 @@ class MinimaxSearcher(Searcher):
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
             self.__evaluation_count += 1
-            return (state_value, [])
+            return (state_value, [], [])
 
 
         assert player in (-1, 1)
@@ -2458,7 +2469,7 @@ class MinimaxSearcher(Searcher):
         actions = state.get_actions()
 
         valued_actions = []
-        make_valued_actions = depth == self.__max_depth
+        make_valued_actions = (depth == self.__max_depth)
 
         # Manage openings file
 
@@ -2495,47 +2506,77 @@ class MinimaxSearcher(Searcher):
                     valued_actions.append(action)
 
                 print(f"reading openings file {opening_file_path} done")
-                return (action_value, valued_actions)
+                return (action_value, [], valued_actions)
 
 
         # >> A few heuristics for generating efficient alpha-beta cuts
 
-        # >> heuristic-1: sort actions according to the type of action
+        # >> heuristic_1: sort actions according to the type of action
         actions.sort(key=score_action, reverse=True)
 
-        if use_heuristic_2 and depth >= 2:
-            # >> heuristic-2: compute Minimax at (depth - 1)
+        # >> heuristic_2: compute pre_best_branch, i.e. principal variation at (depth - 1)
+        use_heuristic_2 = not pre_best_branch and depth == self.__max_depth and depth >= 2
+        if use_heuristic_2:
             pre_depth = depth - 1
             pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
-            (_, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_2=True)
+            (_, pre_best_branch, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
+
+        # >> heuristic_3: compute Minimax at (depth - 1) for sorting actions
+        if use_heuristic_3 and depth >= 2:
+
+            # >> avoid computing twice Minimax at (depth - 1)
+            if not use_heuristic_2:
+                pre_depth = depth - 1
+                pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
+                (_, pre_best_branch, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
 
             pre_valued_actions.sort(reverse=(player == 1))
             actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
 
-            credit_heuristic_2 = int(0.20*len(actions)) + self.__extra_credit_heuristic_2[depth]
-            self.__extra_credit_heuristic_2[depth] = 0
+            credit_heuristic_3 = int(0.20*len(actions)) + self.__extra_credit_heuristic_3[depth]
+            self.__extra_credit_heuristic_3[depth] = 0
 
         else:
-            credit_heuristic_2 = 0
+            credit_heuristic_3 = 0
 
+        # >> heuristic_2: start with first action of pre_best_branch
+        if pre_best_branch:
+            if pre_best_branch[0] in actions:
+                actions.remove(pre_best_branch[0])
+
+            actions = [pre_best_branch[0]] + actions
+            pre_best_sub_branch = pre_best_branch[1:]
+
+        else:
+            pre_best_sub_branch = None
 
         if player == 1:
 
             best_child_value = -math.inf
+            best_child_branch = None
+            best_action = None
 
             action_count = 0
 
-            for action in actions:
+            for (action_index, action) in enumerate(actions):
                 action_count += 1
 
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta, use_heuristic_2=(credit_heuristic_2 != 0))
+                (child_value,
+                 child_branch,
+                 child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                        alpha=alpha, beta=beta,
+                                                        pre_best_branch=pre_best_sub_branch,
+                                                        use_heuristic_3=(credit_heuristic_3 != 0))
 
                 if make_valued_actions:
                     action.value = child_value
                     valued_actions.append(action)
+
+                if child_value > best_child_value:
+                    best_action = action
+                    best_child_branch = child_branch
 
                 best_child_value = max(best_child_value, child_value)
 
@@ -2545,25 +2586,35 @@ class MinimaxSearcher(Searcher):
                     break
 
                 alpha = max(alpha, best_child_value)
-                credit_heuristic_2 = max(0, credit_heuristic_2 - 1)
+                credit_heuristic_3 = max(0, credit_heuristic_3 - 1)
 
         elif player == -1:
 
             best_child_value = math.inf
+            best_child_branch = None
+            best_action = None
 
             action_count = 0
 
-            for action in actions:
+            for (action_index, action) in enumerate(actions):
                 action_count += 1
 
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta, use_heuristic_2=(credit_heuristic_2 != 0))
+                (child_value,
+                 child_branch,
+                 child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
+                                                        alpha=alpha, beta=beta,
+                                                        pre_best_branch=pre_best_sub_branch,
+                                                        use_heuristic_3=(credit_heuristic_3 != 0))
 
                 if make_valued_actions:
                     action.value = child_value
                     valued_actions.append(action)
+
+                if child_value < best_child_value:
+                    best_action = action
+                    best_child_branch = child_branch
 
                 best_child_value = min(best_child_value, child_value)
 
@@ -2574,7 +2625,7 @@ class MinimaxSearcher(Searcher):
                     break
 
                 beta = min(beta, best_child_value)
-                credit_heuristic_2 = max(0, credit_heuristic_2 - 1)
+                credit_heuristic_3 = max(0, credit_heuristic_3 - 1)
 
         # Manage openings file
 
@@ -2589,9 +2640,9 @@ class MinimaxSearcher(Searcher):
             print(f"writing openings file {opening_file_path} done")
 
 
-        self.__extra_credit_heuristic_2[depth] = credit_heuristic_2
+        self.__extra_credit_heuristic_3[depth] = credit_heuristic_3
 
-        return (best_child_value, valued_actions)
+        return (best_child_value, [best_action] + best_child_branch, valued_actions)
 
 
 class PijersiMcts(mcts.mcts):
