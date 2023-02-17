@@ -476,7 +476,7 @@ class GameGui(ttk.Frame):
 
         self.__picture_timer_id = None
         self.__picture_timer_delay = 100
-        self.__picture_gif_duration = 2_000
+        self.__picture_gif_duration = 4_000
         self.__picture_turn_index = None
 
         self.__edit_actions = False
