@@ -3189,6 +3189,7 @@ SEARCHER_CATALOG.add( HumanSearcher("human") )
 
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-4mn", max_depth=4, time_limit=4*60) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 
@@ -4231,7 +4232,7 @@ if __name__ == "__main__":
     # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
     # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
     freeze_support()
-    
+
     print()
     print("Hello")
     print()
