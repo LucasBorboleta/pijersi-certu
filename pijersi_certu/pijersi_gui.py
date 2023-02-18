@@ -30,7 +30,6 @@ import tkinter as tk
 from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from multiprocessing import freeze_support
 import multiprocessing
-import signal
 
 from PIL import Image
 from PIL import ImageGrab
@@ -489,6 +488,8 @@ class GameGui(ttk.Frame):
         self.__game_terminated = False
         self.__pijersi_state = rules.PijersiState()
         self.__searcher = [None, None]
+        self.__searcher_max_time = None
+        self.__searcher_start_time = None
 
         self.__action_input = None
         self.__action_validated = False
@@ -532,7 +533,7 @@ class GameGui(ttk.Frame):
     def __create_widgets(self):
 
         searcher_catalog_names = rules.SEARCHER_CATALOG.get_names()
-        searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 4
+        searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 2
 
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
@@ -773,9 +774,6 @@ class GameGui(ttk.Frame):
 
     def __command_quit(self, *_):
         if self.__concurrent_executor is not None:
-            for backend_future in self.__backend_futures:
-                if backend_future is not None:
-                    backend_future.cancel()
             self.__backend_futures = [None for player in rules.Player.T]
             self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
             self.__concurrent_executor = None
@@ -1073,6 +1071,9 @@ class GameGui(ttk.Frame):
             self.__game.set_turn_start(time.time())
             self.__game.set_turn_end(None)
 
+            self.__searcher_max_time = None
+            self.__searcher_start_time = None
+
             self.__pijersi_state = self.__game.get_state()
             self.__legend = ""
 
@@ -1116,9 +1117,6 @@ class GameGui(ttk.Frame):
             self.__game_terminated = not self.__game.has_next_turn()
 
             if self.__concurrent_executor is not None:
-                for backend_future in self.__backend_futures:
-                    if backend_future is not None:
-                        backend_future.cancel()
                 self.__backend_futures = [None for player in rules.Player.T]
                 self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
                 self.__concurrent_executor = None
@@ -1234,6 +1232,9 @@ class GameGui(ttk.Frame):
 
         # prepare next turn
 
+        self.__searcher_max_time = None
+        self.__searcher_start_time = None
+
         self.__concurrent_executor = PoolExecutor(max_workers=1)
         self.__backend_futures = [None for player in rules.Player.T]
 
@@ -1318,14 +1319,22 @@ class GameGui(ttk.Frame):
                     self.__backend_futures[player] = self.__concurrent_executor.submit(search_task,
                                                                                        backend_searcher,
                                                                                        self.__pijersi_state)
-                    self.__progressbar['value'] = 10.
+
+                    self.__searcher_max_time = backend_searcher.get_time_limit()
+
+                    if self.__searcher_max_time is None:
+                        self.__progressbar['value'] = 10.
+
+                    else:
+                        self.__progressbar['value'] = 1.
+                        self.__searcher_start_time = time.time()
+
 
                 elif self.__backend_futures[player].done():
                     ready_for_next_turn = True
 
                     action_simple_name = self.__backend_futures[player].result()
                     frontend_searcher.set_action_simple_name(action_simple_name)
-                    self.__backend_futures[player].cancel()
                     self.__backend_futures[player] = None
 
                     self.__progressbar['value'] = 100.
@@ -1334,9 +1343,18 @@ class GameGui(ttk.Frame):
                     ready_for_next_turn = False
 
                     progressbar_value = self.__progressbar['value']
-                    progressbar_value += 10.
-                    if progressbar_value > 100.:
-                        progressbar_value = 10.
+
+                    if self.__searcher_max_time is None:
+                        progressbar_value += 10.
+                        if progressbar_value > 100.:
+                            progressbar_value = 10.
+
+                    else:
+                        progress_time = time.time() - self.__searcher_start_time
+                        progressbar_value = 100*progress_time/self.__searcher_max_time
+                        progressbar_value = min(100., progressbar_value)
+                        progressbar_value = max(1., progressbar_value)
+
                     self.__progressbar['value'] = progressbar_value
 
             if ready_for_next_turn:
@@ -2310,14 +2328,21 @@ if __name__ == "__main__":
 
     main()
 
-    # >> clean any residual process, not yet killed
+    # >> clean any residual process
     if len(multiprocessing.active_children()) > 0:
         print()
-        print(f"Killing {len(multiprocessing.active_children())} child processes ...")
+        print(f"{len(multiprocessing.active_children())} child processes are still alive")
+        print("Terminating child processes ...")
         for child_process in multiprocessing.active_children():
             try:
-                os.kill(child_process.pid, signal.SIGTERM)
+                child_process.terminate()
             except:
                 pass
-        print(f"Killing {len(multiprocessing.active_children())} child processes done")
+        print("Terminating child processes done")
+
+
+    print()
+    print("PIJERSI-CERTU: Please close this window which should have closed automatically. Sorry about that ...")
+
+    sys.exit()
 

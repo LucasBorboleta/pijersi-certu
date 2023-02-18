@@ -26,6 +26,9 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
+from concurrent.futures import ProcessPoolExecutor as PoolExecutor
+from multiprocessing import freeze_support
+
 import cProfile
 from pstats import SortKey
 
@@ -1952,15 +1955,26 @@ class PijersiState:
 
 class Searcher():
 
-    __slots__ = ('__name',)
+    __slots__ = ('__name', '__time_limit')
 
 
     def __init__(self, name):
         self.__name = name
+        self.__time_limit = None
 
 
     def get_name(self) -> str:
         return self.__name
+
+
+    def set_time_limit(self, time_limit: Optional[int]):
+        if time_limit is not None:
+            assert time_limit > 0
+        self.__time_limit = time_limit
+
+
+    def get_time_limit(self) -> Optional[int]:
+        return self.__time_limit
 
 
     def is_interactive(self) -> bool:
@@ -2058,6 +2072,10 @@ class MinimaxState:
         return self.__maximizer_player
 
 
+    def get_current_minimizer_player(self) -> Player.T:
+        return Player.T.BLACK if self.__maximizer_player == Player.T.WHITE else Player.T.WHITE
+
+
     def is_terminal(self) -> bool:
         return self.__pijersi_state.is_terminal()
 
@@ -2104,10 +2122,10 @@ class StateEvaluator():
                   dc_ave_weight: Optional[float]=None,
                   credit_weight: Optional[float]=None):
 
-        default_weights = {'fighter_weight':8,
+        default_weights = {'fighter_weight':16,
                            'cube_weight':8,
                            'dg_min_weight':4,
-                           'dc_ave_weight':2,
+                           'dc_ave_weight':4,
                            'dg_ave_weight':2,
                            'credit_weight':1}
 
@@ -2122,31 +2140,33 @@ class StateEvaluator():
 
 
     def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
-        # evaluate favorability for pijersi_maximizer_player
+        # evaluate favorability for maximizer
 
         assert depth >= 0
-
-        # evaluate as if pijersi_maximizer_player == Player.T.WHITE and use minimax_maximizer_sign
-        minimax_maximizer_sign = 1 if state.get_current_maximizer_player() == Player.T.WHITE else -1
 
         value = 0
 
         pijersi_state = state.get_pijersi_state()
 
+        maximizer = state.get_current_maximizer_player()
+        minimizer = state.get_current_minimizer_player()
+
+
         if pijersi_state.is_terminal():
+
             # >> amplify terminal value using the depth (rationale: winning faster is safer)
 
-            white_reward = pijersi_state.get_rewards()[Player.T.WHITE]
+            maximizer_reward = pijersi_state.get_rewards()[maximizer]
 
-            if white_reward == Reward.WIN:
-                value = minimax_maximizer_sign*OMEGA_2*(depth + 1)
+            if maximizer_reward == Reward.WIN:
+                value = OMEGA_2*(depth + 1)
 
-            elif white_reward == Reward.DRAW:
-                # >> no use of minimax_maximizer_sign because the DRAW applies to both WHITE and BLACK
+            elif maximizer_reward == Reward.LOSS:
+                value = (-OMEGA_2)*(depth + 1)
+
+            elif maximizer_reward == Reward.DRAW:
+                # >> no minus sign because the DRAW applies to both maximizer and minimizer
                 value = OMEGA*(depth + 1)
-
-            else:
-                value = minimax_maximizer_sign*(-OMEGA_2)*(depth + 1)
 
         else:
 
@@ -2157,46 +2177,46 @@ class StateEvaluator():
             fighter_norm = 12
             credit_norm = PijersiState.get_max_credit()
 
-            # white and black distances to goal
+            # maximizer and minimizer distances to goal
             distances_to_goal = pijersi_state.get_distances_to_goal()
 
-            if not distances_to_goal[Player.T.WHITE]:
-                distances_to_goal[Player.T.WHITE] = [dg_min_norm]
+            if not distances_to_goal[maximizer]:
+                distances_to_goal[maximizer] = [dg_min_norm]
 
-            if not distances_to_goal[Player.T.BLACK]:
-                distances_to_goal[Player.T.BLACK] = [dg_min_norm]
+            if not distances_to_goal[minimizer]:
+                distances_to_goal[minimizer] = [dg_min_norm]
 
-            white_dg_min = min(distances_to_goal[Player.T.WHITE])
-            black_dg_min = min(distances_to_goal[Player.T.BLACK])
+            maximizer_dg_min = min(distances_to_goal[maximizer])
+            minimizer_dg_min = min(distances_to_goal[minimizer])
 
-            white_ave_dg = mean(distances_to_goal[Player.T.WHITE])
-            black_ave_dg = mean(distances_to_goal[Player.T.BLACK])
+            maximizer_ave_dg = mean(distances_to_goal[maximizer])
+            minimizer_ave_dg = mean(distances_to_goal[minimizer])
 
-            dg_min_difference = minimax_maximizer_sign*(black_dg_min - white_dg_min)
-            dg_ave_difference = minimax_maximizer_sign*(black_ave_dg - white_ave_dg)
+            dg_min_difference = (minimizer_dg_min - maximizer_dg_min)
+            dg_ave_difference = (minimizer_ave_dg - maximizer_ave_dg)
 
-            # white and black distances to center
+            # maximizer and minimizer distances to center
             distances_to_center = pijersi_state.get_distances_to_center()
 
-            if not distances_to_center[Player.T.WHITE]:
-                distances_to_center[Player.T.WHITE] = [dc_ave_norm]
+            if not distances_to_center[maximizer]:
+                distances_to_center[maximizer] = [dc_ave_norm]
 
-            if not distances_to_center[Player.T.BLACK]:
-                distances_to_center[Player.T.BLACK] = [dc_ave_norm]
+            if not distances_to_center[minimizer]:
+                distances_to_center[minimizer] = [dc_ave_norm]
 
-            white_ave_dc = mean(distances_to_center[Player.T.WHITE])
-            black_ave_dc = mean(distances_to_center[Player.T.BLACK])
+            maximizer_ave_dc = mean(distances_to_center[maximizer])
+            minimizer_ave_dc = mean(distances_to_center[minimizer])
 
-            dc_ave_difference = minimax_maximizer_sign*(black_ave_dc - white_ave_dc)
+            dc_ave_difference = (minimizer_ave_dc - maximizer_ave_dc)
 
 
             # white and black with alive cubes
             cube_counts = pijersi_state.get_cube_counts()
-            cube_difference = minimax_maximizer_sign*(cube_counts[Player.T.WHITE] - cube_counts[Player.T.BLACK])
+            cube_difference = (cube_counts[maximizer] - cube_counts[minimizer])
 
             # white and black with alive fighters
             fighter_counts = pijersi_state.get_fighter_counts()
-            fighter_difference = minimax_maximizer_sign*(fighter_counts[Player.T.WHITE] - fighter_counts[Player.T.BLACK])
+            fighter_difference = (fighter_counts[maximizer] - fighter_counts[minimizer])
 
             # credit acts symmetrically for white and black
             credit = pijersi_state.get_credit()
@@ -2247,16 +2267,21 @@ class MinimaxSearcher(Searcher):
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
 
-    def __init__(self, name: str, max_depth: int=1, state_evaluator: Optional[StateEvaluator]=None):
+    def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None, state_evaluator: Optional[StateEvaluator]=None):
 
         super().__init__(name)
 
         assert max_depth >= 1
         self.__max_depth = max_depth
 
+        if time_limit is not None:
+            assert time_limit > 0
+            assert max_depth > 1
+            self.set_time_limit(time_limit)
+
         self.__state_evaluator = state_evaluator if state_evaluator is not None else StateEvaluator()
 
-        self.__debug = True
+        self.__debug = False
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
@@ -2279,51 +2304,87 @@ class MinimaxSearcher(Searcher):
             self.__beta_cuts = []
             self.__evaluation_count = 0
 
-        self.__extra_credit_heuristic_3 = [0 for depth in range(self.__max_depth + 1)]
-        (best_value, best_branch, valued_actions) = self.alphabeta(state=initial_state, player=1)
-        best_actions = [action for action in valued_actions if action.value == best_value]
-        best_action = random.choice(best_actions)
+        if self.get_time_limit() is None:
+            (best_value, valued_actions) = self.alphabeta(state=initial_state, player=1)
+            best_actions = [action for action in valued_actions if action.value == best_value]
+            best_action = random.choice(best_actions)
 
-        if self.__debug:
-            if self.__alpha_cuts:
-                alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
-                self.__alpha_cuts.sort()
-                alpha_cut_q95 = self.__alpha_cuts[int(0.95*len(self.__alpha_cuts))]
-            else:
-                alpha_cut_mean = 0
-                alpha_cut_q95 = 0
+            if self.__debug:
+                if self.__alpha_cuts:
+                    alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
+                    self.__alpha_cuts.sort()
+                    alpha_cut_q95 = self.__alpha_cuts[int(0.95*len(self.__alpha_cuts))]
+                else:
+                    alpha_cut_mean = 0
+                    alpha_cut_q95 = 0
 
-            if self.__beta_cuts:
-                beta_cut_mean = sum(self.__beta_cuts)/len(self.__beta_cuts)
-                self.__beta_cuts.sort()
-                beta_cut_q95 = self.__beta_cuts[int(0.95*len(self.__beta_cuts))]
-            else:
-                beta_cut_mean = 0
-                beta_cut_q95 = 0
+                if self.__beta_cuts:
+                    beta_cut_mean = sum(self.__beta_cuts)/len(self.__beta_cuts)
+                    self.__beta_cuts.sort()
+                    beta_cut_q95 = self.__beta_cuts[int(0.95*len(self.__beta_cuts))]
+                else:
+                    beta_cut_mean = 0
+                    beta_cut_q95 = 0
 
-            print( f"{self.__evaluation_count} state evaluations" + " / " +
-                   f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
-                   f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
+                print( f"{self.__evaluation_count} state evaluations" + " / " +
+                       f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
+                       f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
-        if do_check:
-            self.check(initial_state, best_value, [best_action])
+            if do_check:
+                self.check(initial_state, best_value, [best_action])
 
 
-        if self.__debug:
-            print()
-            print(f"best branch {list(map(str, best_branch))}")
-            print(f"select action {best_action} with value {best_value:.1f} amongst {len(best_actions)} best actions")
+            if self.__debug:
+                valued_actions. sort(reverse=True)
+                print()
+                print(f"select action {best_action} with value {best_value:.1f} amongst {len(best_actions)} best actions")
+                print(f"best actions: {[str(action) for action in best_actions]}")
+                print("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
 
-        action = best_action
+            action = best_action
+
+        else:
+            #-- submit minimax from depth 1 to depth self.__max_depth
+            search_count = self.__max_depth
+            concurrent_executor = PoolExecutor(max_workers=search_count)
+            search_futures = [None for search_index in range(search_count)]
+
+            for search_index in range(search_count):
+                search_futures[search_index] = concurrent_executor.submit(minimax_search_task, depth=search_index + 1, state=state)
+
+            #-- watch end of minimax of highest depth after each sleeping of "wait_slice" seconds
+            wait_slice_min = 0.5
+            wait_count = int(self.get_time_limit()/wait_slice_min) + 1
+            wait_slice = self.get_time_limit()/wait_count
+            for wait_index in range(wait_count):
+                time.sleep(wait_slice)
+                if search_futures[search_count - 1].done():
+                    break
+
+            #-- collect the answer of the highest depth minmax that is finished
+            action = None
+            action_search_index = None
+
+            for search_index in range(search_count):
+                if search_futures[search_index].done():
+                    action = search_futures[search_index].result()
+                    action_search_index = search_index
+
+            assert action is not None
+
+            if action_search_index != search_count - 1:
+                print()
+                print(f"time limit reached ; action returned by minimax at depth {action_search_index + 1}")
+
+            concurrent_executor.shutdown(wait=False, cancel_futures=True)
+            concurrent_executor = None
 
         return action
 
 
     def check(self, initial_state: PijersiState, best_value: float, valued_actions: Sequence[PijersiAction]):
 
-        (best_value_ref, valued_actions_ref) = self.minimax(state=initial_state,
-                                                           player=1,
-                                                           return_valued_actions=True)
+        (best_value_ref, valued_actions_ref) = self.minimax(state=initial_state, player=1)
 
         if self.__debug:
             print()
@@ -2332,7 +2393,7 @@ class MinimaxSearcher(Searcher):
             print()
 
         best_actions_ref = []
-        for action_ref in valued_actions_ref():
+        for action_ref in valued_actions_ref:
             if action_ref.value == best_value_ref:
                 best_actions_ref.append(action_ref)
                 if self.__debug:
@@ -2371,8 +2432,210 @@ class MinimaxSearcher(Searcher):
         return self.__state_evaluator.evaluate_state_value(state, depth)
 
 
-    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None
+    def minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None) -> Tuple[float, Sequence[PijersiAction]]:
+
+        if depth is None:
+            depth = self.__max_depth
+
+
+        if depth == 0 or state.is_terminal():
+            state_value = self.evaluate_state_value(state, depth)
+            self.__evaluation_count += 1
+            return (state_value, [])
+
+
+        actions = state.get_actions()
+
+        valued_actions = []
+        make_valued_actions = (depth == self.__max_depth)
+
+        if player == 1:
+
+            best_child_value = -math.inf
+
+            for action in actions:
+                child_state = state.take_action(action)
+
+                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = max(best_child_value, child_value)
+
+        elif player == -1:
+
+            best_child_value = math.inf
+
+            for action in actions:
+                child_state = state.take_action(action)
+
+                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = min(best_child_value, child_value)
+
+        else:
+            assert player in (-1, 1)
+
+
+        return (best_child_value, valued_actions)
+
+
+    def alphabeta(self, state, player, depth=None, alpha=None, beta=None) -> Tuple[float, Sequence[PijersiAction]]:
+
+
+        def score_action(action):
+            return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
+
+
+        if depth is None:
+            depth = self.__max_depth
+
+
+        if depth == 0 or state.is_terminal():
+            state_value = self.evaluate_state_value(state, depth)
+            self.__evaluation_count += 1
+            return (state_value, [])
+
+
+        if alpha is None:
+            alpha = -math.inf
+
+        if beta is None:
+            beta = math.inf
+
+        assert alpha <= beta
+
+        actions = state.get_actions()
+
+        valued_actions = []
+        make_valued_actions = (depth == self.__max_depth)
+
+        # Manage openings file
+
+        make_opening_file = False
+
+        if depth == self.__max_depth and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
+            opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
+
+            if not os.path.isfile(opening_file_path):
+                make_opening_file = True
+
+            else:
+                print()
+                print(f"reading openings file {opening_file_path} ...")
+
+                with open(opening_file_path, 'r') as opening_stream:
+                    opening_lines = opening_stream.readlines()
+
+                for opening_line in opening_lines:
+                    opening_data = opening_line.split()
+                    assert len(opening_data) == 2
+
+                    action_value = float(opening_data[1])
+
+                    action_name = opening_data[0]
+                    action = None
+                    for action_candidate in actions:
+                        if str(action_candidate) == action_name:
+                            action = action_candidate
+                            break
+                    assert action is not None
+                    action.value = action_value
+
+                    valued_actions.append(action)
+
+                print(f"reading openings file {opening_file_path} done")
+                return (action_value, valued_actions)
+
+
+        # >> for providing a bit of surprise
+        random.shuffle(actions)
+
+        # >> sort actions according to the type of action for earlier alpha-beta cuts
+        actions.sort(key=score_action, reverse=True)
+
+
+        if player == 1:
+
+            best_child_value = -math.inf
+
+            action_count = 0
+
+            for action in actions:
+                action_count += 1
+
+                child_state = state.take_action(action)
+
+                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = max(best_child_value, child_value)
+
+                if best_child_value > beta:
+                    if self.__debug:
+                        self.__beta_cuts.append(action_count/len(actions))
+                    break
+
+                alpha = max(alpha, best_child_value)
+
+        elif player == -1:
+
+            best_child_value = math.inf
+
+            action_count = 0
+
+            for action in actions:
+                action_count += 1
+
+                child_state = state.take_action(action)
+
+                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+
+                if make_valued_actions:
+                    action.value = child_value
+                    valued_actions.append(action)
+
+                best_child_value = min(best_child_value, child_value)
+
+                if best_child_value < alpha:
+                    if self.__debug:
+                        self.__alpha_cuts.append(action_count/len(actions))
+                    break
+
+                beta = min(beta, best_child_value)
+
+        else:
+            assert player in (-1, 1)
+
+
+        # Manage openings file
+
+        if make_opening_file:
+            print()
+            print(f"writing openings file {opening_file_path} ...")
+
+            opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
+            with open(opening_file_path, 'w') as opening_stream:
+                opening_stream.writelines(opening_lines)
+
+            print(f"writing openings file {opening_file_path} done")
+
+
+        return (best_child_value, valued_actions)
+
+
+    def extra_minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None
                 ) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
+        """minimax with extra future not finalized"""
 
         if depth is None:
             depth = self.__max_depth
@@ -2437,9 +2700,10 @@ class MinimaxSearcher(Searcher):
         return (best_child_value, [best_action] + best_child_branch, valued_actions)
 
 
-    def alphabeta(self, state, player, depth=None, alpha=None, beta=None,
+    def extra_alphabeta(self, state, player, depth=None, alpha=None, beta=None,
                   pre_best_branch: Optional[Sequence[PijersiAction]]=None,
                   use_heuristic_3=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
+        """alphabeta with extra future not finalized"""
 
 
         def score_action(action):
@@ -2643,6 +2907,11 @@ class MinimaxSearcher(Searcher):
         self.__extra_credit_heuristic_3[depth] = credit_heuristic_3
 
         return (best_child_value, [best_action] + best_child_branch, valued_actions)
+
+
+def minimax_search_task(depth, state):
+    minimax_searcher = MinimaxSearcher(f"minimax-{depth}", max_depth=depth)
+    return minimax_searcher.search(state)
 
 
 class PijersiMcts(mcts.mcts):
@@ -2916,13 +3185,14 @@ class SearcherCatalog:
 SEARCHER_CATALOG = SearcherCatalog()
 
 SEARCHER_CATALOG.add( HumanSearcher("human") )
-SEARCHER_CATALOG.add( RandomSearcher("random") )
 
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2", max_depth=2) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4", max_depth=4) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-4mn", max_depth=4, time_limit=4*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 
 if False:
+    SEARCHER_CATALOG.add( RandomSearcher("random") )
     SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
                                        state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
                                        time_limit=5*60_000,
@@ -3938,6 +4208,9 @@ def verify():
 
 
 def main():
+    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
+    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
+    freeze_support()
 
     if True:
         test()
