@@ -1326,7 +1326,7 @@ class GameGui(ttk.Frame):
                         self.__progressbar['value'] = 10.
 
                     else:
-                        self.__progressbar['value'] = 1.
+                        self.__progressbar['value'] = 5.
                         self.__searcher_start_time = time.time()
 
 
@@ -1353,7 +1353,7 @@ class GameGui(ttk.Frame):
                         progress_time = time.time() - self.__searcher_start_time
                         progressbar_value = 100*progress_time/self.__searcher_max_time
                         progressbar_value = min(100., progressbar_value)
-                        progressbar_value = max(1., progressbar_value)
+                        progressbar_value = max(5., progressbar_value)
 
                     self.__progressbar['value'] = progressbar_value
 
