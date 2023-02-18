@@ -28,6 +28,7 @@ from typing import Union
 
 from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from multiprocessing import freeze_support
+import multiprocessing
 
 import cProfile
 from pstats import SortKey
@@ -4208,9 +4209,6 @@ def verify():
 
 
 def main():
-    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
-    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
-    freeze_support()
 
     if True:
         test()
@@ -4230,6 +4228,10 @@ PijersiState.init()
 
 
 if __name__ == "__main__":
+    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
+    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
+    freeze_support()
+    
     print()
     print("Hello")
     print()
@@ -4239,6 +4241,18 @@ if __name__ == "__main__":
 
     print()
     print("Bye")
+
+    # >> clean any residual process
+    if len(multiprocessing.active_children()) > 0:
+        print()
+        print(f"{len(multiprocessing.active_children())} child processes are still alive")
+        print("Terminating child processes ...")
+        for child_process in multiprocessing.active_children():
+            try:
+                child_process.terminate()
+            except:
+                pass
+        print("Terminating child processes done")
 
     if True:
         print()
