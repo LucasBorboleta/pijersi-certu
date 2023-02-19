@@ -2634,9 +2634,8 @@ class MinimaxSearcher(Searcher):
         return (best_child_value, valued_actions)
 
 
-    def extra_minimax(self, state: MinimaxState, player: int, depth: Optional[int]=None
-                ) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
-        """minimax with extra future not finalized"""
+    def minimax_with_extra(self, state: MinimaxState, player: int, depth: Optional[int]=None) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
+        """minimax with extra features: compute the best branch"""
 
         if depth is None:
             depth = self.__max_depth
@@ -2701,11 +2700,13 @@ class MinimaxSearcher(Searcher):
         return (best_child_value, [best_action] + best_child_branch, valued_actions)
 
 
-    def extra_alphabeta(self, state, player, depth=None, alpha=None, beta=None,
-                  pre_best_branch: Optional[Sequence[PijersiAction]]=None,
-                  use_heuristic_3=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
-        """alphabeta with extra future not finalized"""
-
+    def alphabeta_with_extra(self, state, player, depth=None, alpha=None, beta=None,
+                        pre_best_branch: Optional[Sequence[PijersiAction]]=None,
+                        use_heuristic_3=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
+        """alphabeta with extra features: 
+            - compute the best branch ;
+            - heuristics for optimization, but not proven more effficient.
+        """
 
         def score_action(action):
             return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
@@ -2719,9 +2720,6 @@ class MinimaxSearcher(Searcher):
             state_value = self.evaluate_state_value(state, depth)
             self.__evaluation_count += 1
             return (state_value, [], [])
-
-
-        assert player in (-1, 1)
 
         if alpha is None:
             alpha = -math.inf
@@ -2774,6 +2772,9 @@ class MinimaxSearcher(Searcher):
                 return (action_value, [], valued_actions)
 
 
+        # >> for providing a bit of surprise
+        random.shuffle(actions)
+
         # >> A few heuristics for generating efficient alpha-beta cuts
 
         # >> heuristic_1: sort actions according to the type of action
@@ -2798,7 +2799,7 @@ class MinimaxSearcher(Searcher):
             pre_valued_actions.sort(reverse=(player == 1))
             actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
 
-            credit_heuristic_3 = int(0.20*len(actions)) + self.__extra_credit_heuristic_3[depth]
+            credit_heuristic_3 = int(0.10*len(actions)) + self.__extra_credit_heuristic_3[depth]
             self.__extra_credit_heuristic_3[depth] = 0
 
         else:
@@ -2891,6 +2892,9 @@ class MinimaxSearcher(Searcher):
 
                 beta = min(beta, best_child_value)
                 credit_heuristic_3 = max(0, credit_heuristic_3 - 1)
+
+        else:
+            assert player in (-1, 1)
 
         # Manage openings file
 
