@@ -15,6 +15,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version    | Hash   | Expected hash value                                          |
   | ---------- | ------ | ------------------------------------------------------------ |
+  | v1.1.0-rc4 | SHA256 | 01CEE922B7837ED638D7E69D47B0CE9DA54B4512C9D0059700AF7598B1EE1ECA |
+  | v1.1.0-rc4 | MD5    | 6D5DE57F23315355CE8CDE45FA4325C5                             |
   | v1.1.0-rc3 | SHA256 | C873A790A8F5FFC7FD5A4EE509F6A05EF9C581FBE29335E5047DECE8F7312C28 |
   | v1.1.0-rc3 | MD5    | A15F66E514F557D99516A42B05443111                             |
   | v1.1.0-rc2 | SHA256 | 7020FF967F3781BBF4C36F7FB45C77C1721212816F6879F63EB80A82D81EAACD |
