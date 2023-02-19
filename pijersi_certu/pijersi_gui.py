@@ -768,7 +768,7 @@ class GameGui(ttk.Frame):
             self.__cube_photos = {}
 
             for (key, file) in CubeConfig.CUBE_FILE_PATH.items():
-                cube_photo = Image.open(CubeConfig.CUBE_FILE_PATH[key])
+                cube_photo = Image.open(file)
                 cube_photo = cube_photo.resize((cube_photo_width, cube_photo_width))
                 cube_tk_photo = ImageTk.PhotoImage(cube_photo)
                 self.__cube_photos[key] = cube_tk_photo
@@ -1175,7 +1175,7 @@ class GameGui(ttk.Frame):
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
-        for (action_index, action) in enumerate(resume_actions):
+        for action in resume_actions:
 
             action = action.replace("!", "")
 

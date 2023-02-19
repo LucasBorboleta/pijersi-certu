@@ -2357,7 +2357,7 @@ class MinimaxSearcher(Searcher):
             wait_slice_min = 0.5
             wait_count = int(self.get_time_limit()/wait_slice_min) + 1
             wait_slice = self.get_time_limit()/wait_count
-            for wait_index in range(wait_count):
+            for _ in range(wait_count):
                 time.sleep(wait_slice)
                 if search_futures[search_count - 1].done():
                     break
@@ -2457,7 +2457,7 @@ class MinimaxSearcher(Searcher):
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, _) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2472,7 +2472,7 @@ class MinimaxSearcher(Searcher):
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, _) = self.minimax(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2573,7 +2573,7 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+                (child_value, _) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2599,7 +2599,7 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value, child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
+                (child_value, _) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2663,7 +2663,7 @@ class MinimaxSearcher(Searcher):
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_branch, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch, _) = self.minimax_with_extra(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2684,7 +2684,7 @@ class MinimaxSearcher(Searcher):
             for action in actions:
                 child_state = state.take_action(action)
 
-                (child_value, child_branch, child_valued_actions) = self.minimax(state=child_state, player=-player, depth=depth - 1)
+                (child_value, child_branch, _) = self.minimax_with_extra(state=child_state, player=-player, depth=depth - 1)
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2703,7 +2703,7 @@ class MinimaxSearcher(Searcher):
     def alphabeta_with_extra(self, state, player, depth=None, alpha=None, beta=None,
                         pre_best_branch: Optional[Sequence[PijersiAction]]=None,
                         use_heuristic_3=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
-        """alphabeta with extra features: 
+        """alphabeta with extra features:
             - compute the best branch ;
             - heuristics for optimization, but not proven more effficient.
         """
@@ -2785,7 +2785,7 @@ class MinimaxSearcher(Searcher):
         if use_heuristic_2:
             pre_depth = depth - 1
             pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
-            (_, pre_best_branch, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
+            (_, pre_best_branch, pre_valued_actions) = pre_minimax_searcher.alphabeta_with_extra(state=state, player=player, use_heuristic_3=True)
 
         # >> heuristic_3: compute Minimax at (depth - 1) for sorting actions
         if use_heuristic_3 and depth >= 2:
@@ -2794,7 +2794,7 @@ class MinimaxSearcher(Searcher):
             if not use_heuristic_2:
                 pre_depth = depth - 1
                 pre_minimax_searcher = MinimaxSearcher(f"pre-minimax-{pre_depth}", max_depth=pre_depth)
-                (_, _, pre_valued_actions) = pre_minimax_searcher.alphabeta(state=state, player=player, use_heuristic_3=True)
+                (_, _, pre_valued_actions) = pre_minimax_searcher.alphabeta_with_extra(state=state, player=player, use_heuristic_3=True)
 
             pre_valued_actions.sort(reverse=(player == 1))
             actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
@@ -2829,12 +2829,10 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value,
-                 child_branch,
-                 child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                        alpha=alpha, beta=beta,
-                                                        pre_best_branch=pre_best_sub_branch,
-                                                        use_heuristic_3=(credit_heuristic_3 != 0))
+                (child_value, child_branch, _) = self.alphabeta_with_extra(state=child_state, player=-player, depth=depth - 1,
+                                                                           alpha=alpha, beta=beta,
+                                                                           pre_best_branch=pre_best_sub_branch,
+                                                                           use_heuristic_3=(credit_heuristic_3 != 0))
 
                 if make_valued_actions:
                     action.value = child_value
@@ -2867,12 +2865,10 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
 
-                (child_value,
-                 child_branch,
-                 child_valued_actions) = self.alphabeta(state=child_state, player=-player, depth=depth - 1,
-                                                        alpha=alpha, beta=beta,
-                                                        pre_best_branch=pre_best_sub_branch,
-                                                        use_heuristic_3=(credit_heuristic_3 != 0))
+                (child_value, child_branch, _) = self.alphabeta_with_extra(state=child_state, player=-player, depth=depth - 1,
+                                                                           alpha=alpha, beta=beta,
+                                                                           pre_best_branch=pre_best_sub_branch,
+                                                                           use_heuristic_3=(credit_heuristic_3 != 0))
 
                 if make_valued_actions:
                     action.value = child_value
@@ -3200,13 +3196,23 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 
 if False:
     SEARCHER_CATALOG.add( RandomSearcher("random") )
+
+    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
+
     SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
                                        state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
                                        time_limit=5*60_000,
                                        exploration_constant=128) )
 
-    SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp", time_limit=5*60*1_000, rollout_policy=pijersiRandomPolicy) )
-    SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd", iteration_limit=8_000, rollout_policy=mcts.randomPolicy) )
+    SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-jrp",
+                                       state_wrapper=MctsState,
+                                       time_limit=5*60*1_000,
+                                       rollout_policy=pijersiRandomPolicy) )
+
+    SEARCHER_CATALOG.add( MctsSearcher("mcts-8ki-rnd",
+                                       state_wrapper=MctsState,
+                                       iteration_limit=8_000,
+                                       rollout_policy=mcts.randomPolicy) )
 
 
 class Game:
