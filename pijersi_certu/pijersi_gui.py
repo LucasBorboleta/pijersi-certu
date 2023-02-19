@@ -511,7 +511,8 @@ class GameGui(ttk.Frame):
         self.__root = tk.Tk()
 
         try:
-            self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents")
+            self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents" +
+                              " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi")
             self.__root.iconbitmap(AppConfig.ICON_FILE)
         except:
             pass
