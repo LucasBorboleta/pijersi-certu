@@ -2911,6 +2911,7 @@ class MinimaxSearcher(Searcher):
 
 
 def minimax_search_task(depth, state):
+    """A static wrapper function used for multiprocessing"""
     minimax_searcher = MinimaxSearcher(f"minimax-{depth}", max_depth=depth)
     return minimax_searcher.search(state)
 
