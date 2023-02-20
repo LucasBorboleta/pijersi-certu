@@ -509,6 +509,7 @@ class GameGui(ttk.Frame):
         # Create widgets
 
         self.__root = tk.Tk()
+        self.__root.resizable(width=False, height=False)
 
         try:
             self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents" +
