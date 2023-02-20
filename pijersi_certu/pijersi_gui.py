@@ -1144,6 +1144,10 @@ class GameGui(ttk.Frame):
             else:
                 self.__button_resume.config(state="disabled")
 
+            self.__cmc_reset()
+            self.__cmc_hightlight_played_hexagons()
+            self.__draw_state()
+
 
     def __command_resume(self):
 

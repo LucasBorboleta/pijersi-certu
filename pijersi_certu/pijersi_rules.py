@@ -40,7 +40,7 @@ sys.path.append(_package_home)
 import old_pijersi_rules as old_code
 
 
-__version__ = "1.1.0-rc4"
+__version__ = "1.1.0-rc5"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
