@@ -165,54 +165,72 @@ class TinyVector:
 
 class CanvasConfig:
 
-    # Canvas x-y dimensions in hexagon width units
-    # >> This complex formula is related to the construction of the background picture for the board
-    NX = 8
-    NY = (4 + 5/2)*2/math.sqrt(3)
+    def __init__(self):
+        # Canvas x-y dimensions in hexagon width units
+        # >> This complex formula is related to the construction of the background picture for the board
+        self.NX = 8
+        self.NY = (4 + 5/2)*2/math.sqrt(3)
 
-    # Canvas x-y dimensions in pixels
-    RATIO = NX/NY
-    HEIGHT = 640
-    WIDTH = HEIGHT*RATIO
+        # Canvas x-y dimensions in pixels
+        self.RATIO = self.NX/self.NY
+        self.HEIGHT = 640
+        self.WIDTH = self.HEIGHT*self.RATIO
 
-    # Canvas background
-    USE_BACKGROUND_PHOTO = True
-    BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
+        # Canvas background
+        self.USE_BACKGROUND_PHOTO = True
+        self.BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
 
-    # Hexagon geometrical data
-    HEXA_VERTEX_COUNT = 6
-    HEXA_SIDE_ANGLE = 2*math.pi/HEXA_VERTEX_COUNT
-    HEXA_WIDTH = WIDTH/NX
-    HEXA_SIDE = HEXA_WIDTH*math.tan(HEXA_SIDE_ANGLE/2)
-    HEXA_DELTA_Y = math.sqrt(HEXA_SIDE**2 - (HEXA_WIDTH/2)**2)
-    HEXA_COS_SIDE_ANGLE = math.cos(HEXA_SIDE_ANGLE)
-    HEXA_SIN_SIDE_ANGLE = math.sin(HEXA_SIDE_ANGLE)
+        # Hexagon geometrical data
+        self.HEXA_VERTEX_COUNT = 6
+        self.HEXA_SIDE_ANGLE = 2*math.pi/self.HEXA_VERTEX_COUNT
+        self.HEXA_WIDTH = self.WIDTH/self.NX
+        self.HEXA_SIDE = self.HEXA_WIDTH*math.tan(self.HEXA_SIDE_ANGLE/2)
+        self.HEXA_DELTA_Y = math.sqrt(self.HEXA_SIDE**2 - (self.HEXA_WIDTH/2)**2)
+        self.HEXA_COS_SIDE_ANGLE = math.cos(self.HEXA_SIDE_ANGLE)
+        self.HEXA_SIN_SIDE_ANGLE = math.sin(self.HEXA_SIDE_ANGLE)
 
-    # Cube (square) geometrical data
-    CUBE_VERTEX_COUNT = 4
-    CUBE_SIDE_ANGLE = math.pi/2
+        # Cube (square) geometrical data
+        self.CUBE_VERTEX_COUNT = 4
+        self.CUBE_SIDE_ANGLE = math.pi/2
 
-    # Font used for text in the canvas
-    FONT_FAMILY = 'Calibri'
-    FONT_LABEL_SIZE = int(0.30*HEXA_SIDE)  # size for 'e5', 'f5' ...
-    FONT_FACE_SIZE = int(0.50*HEXA_SIDE)  # size for 'K', 'F' ...
-    FONT_LEGEND_SIZE = int(0.60*HEXA_SIDE)  # size for 'a1-a2!=a3!' ...
-    FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((166, 109, 60))
+        # Font used for text in the canvas
+        self.FONT_FAMILY = 'Calibri'
+        self.FONT_LABEL_SIZE = int(0.30*self.HEXA_SIDE)  # size for 'e5', 'f5' ...
+        self.FONT_FACE_SIZE = int(0.50*self.HEXA_SIDE)  # size for 'K', 'F' ...
+        self.FONT_LEGEND_SIZE = int(0.60*self.HEXA_SIDE)  # size for 'a1-a2!=a3!' ...
+        self.FONT_LEGEND_COLOR = rgb_color_as_hexadecimal((166, 109, 60))
 
-    # Geometrical line widths
-    CUBE_LINE_WIDTH = 2
-    HEXA_LINE_WIDTH = 1
+        # Geometrical line widths
+        self.CUBE_LINE_WIDTH = 2
+        self.HEXA_LINE_WIDTH = 1
 
-    # Origin of the orthonormal x-y frame and the oblic u-v frame
-    ORIGIN = TinyVector((WIDTH/2, HEIGHT/2))
+        # Origin of the orthonormal x-y frame and the oblic u-v frame
+        self.ORIGIN = TinyVector((self.WIDTH/2, self.HEIGHT/2))
 
-    # Unit vectors of the orthonormal x-y frame
-    UNIT_X = TinyVector((1, 0))
-    UNIT_Y = TinyVector((0, -1))
+        # Unit vectors of the orthonormal x-y frame
+        self.UNIT_X = TinyVector((1, 0))
+        self.UNIT_Y = TinyVector((0, -1))
 
-    # Unit vectors of the oblic u-v frame
-    UNIT_U = UNIT_X
-    UNIT_V = HEXA_COS_SIDE_ANGLE*UNIT_X + HEXA_SIN_SIDE_ANGLE*UNIT_Y
+        # Unit vectors of the oblic u-v frame
+        self.UNIT_U = self.UNIT_X
+        self.UNIT_V = self.HEXA_COS_SIDE_ANGLE*self.UNIT_X + self.HEXA_SIN_SIDE_ANGLE*self.UNIT_Y
+
+    def update(self, height):
+        self.HEIGHT = height
+        self.WIDTH = self.HEIGHT*self.RATIO
+
+        # Hexagon geometrical data
+        self.HEXA_WIDTH = self.WIDTH/self.NX
+        self.HEXA_SIDE = self.HEXA_WIDTH*math.tan(self.HEXA_SIDE_ANGLE/2)
+        self.HEXA_DELTA_Y = math.sqrt(self.HEXA_SIDE**2 - (self.HEXA_WIDTH/2)**2)
+
+        # Font used for text in the canvas
+        self.FONT_LABEL_SIZE = int(0.30*self.HEXA_SIDE)  # size for 'e5', 'f5' ...
+        self.FONT_FACE_SIZE = int(0.50*self.HEXA_SIDE)  # size for 'K', 'F' ...
+        self.FONT_LEGEND_SIZE = int(0.60*self.HEXA_SIDE)  # size for 'a1-a2!=a3!' ...
+
+        # Origin of the orthonormal x-y frame and the oblic u-v frame
+        self.ORIGIN = TinyVector((self.WIDTH/2, self.HEIGHT/2))
 
 
 class CubeConfig:
@@ -297,16 +315,16 @@ class GraphicalHexagon:
 
         (u, v) = self.position_uv
 
-        self.center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH * (u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+        self.center = CANVAS_CONFIG.ORIGIN + CANVAS_CONFIG.HEXA_WIDTH * (u*CANVAS_CONFIG.UNIT_U + v*CANVAS_CONFIG.UNIT_V)
 
         self.vertex_data = list()
 
-        for vertex_index in range(CanvasConfig.HEXA_VERTEX_COUNT):
-            vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
+        for vertex_index in range(CANVAS_CONFIG.HEXA_VERTEX_COUNT):
+            vertex_angle = (1/2 + vertex_index)*CANVAS_CONFIG.HEXA_SIDE_ANGLE
 
             hexagon_vertex = self.center
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE * math.cos(vertex_angle)*CanvasConfig.UNIT_X
-            hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE * math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+            hexagon_vertex = hexagon_vertex + CANVAS_CONFIG.HEXA_SIDE * math.cos(vertex_angle)*CANVAS_CONFIG.UNIT_X
+            hexagon_vertex = hexagon_vertex + CANVAS_CONFIG.HEXA_SIDE * math.sin(vertex_angle)*CANVAS_CONFIG.UNIT_Y
 
             self.vertex_data.append(hexagon_vertex[0])
             self.vertex_data.append(hexagon_vertex[1])
@@ -328,23 +346,23 @@ class GraphicalHexagon:
         (point_x, point_y) = point
 
         # Compute the standardized point : translated and scaled regarding the actual hexagon
-        x = (point_x - hexagon_x)/(CanvasConfig.HEXA_WIDTH/2)
-        y = (point_y - hexagon_y)/(CanvasConfig.HEXA_WIDTH/2)
+        x = (point_x - hexagon_x)/(CANVAS_CONFIG.HEXA_WIDTH/2)
+        y = (point_y - hexagon_y)/(CANVAS_CONFIG.HEXA_WIDTH/2)
 
         if is_inside:
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
         if is_inside:
-            # first rotation by CanvasConfig.HEXA_SIDE_ANGLE
-            (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
-                      CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
+            # first rotation by CANVAS_CONFIG.HEXA_SIDE_ANGLE
+            (x, y) = (CANVAS_CONFIG.HEXA_COS_SIDE_ANGLE*x - CANVAS_CONFIG.HEXA_SIN_SIDE_ANGLE*y,
+                      CANVAS_CONFIG.HEXA_SIN_SIDE_ANGLE*x + CANVAS_CONFIG.HEXA_COS_SIDE_ANGLE*y)
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
         if is_inside:
-            # second rotation by CanvasConfig.HEXA_SIDE_ANGLE
-            (x, y) = (CanvasConfig.HEXA_COS_SIDE_ANGLE*x - CanvasConfig.HEXA_SIN_SIDE_ANGLE*y,
-                      CanvasConfig.HEXA_SIN_SIDE_ANGLE*x + CanvasConfig.HEXA_COS_SIDE_ANGLE*y)
+            # second rotation by CANVAS_CONFIG.HEXA_SIDE_ANGLE
+            (x, y) = (CANVAS_CONFIG.HEXA_COS_SIDE_ANGLE*x - CANVAS_CONFIG.HEXA_SIN_SIDE_ANGLE*y,
+                      CANVAS_CONFIG.HEXA_SIN_SIDE_ANGLE*x + CANVAS_CONFIG.HEXA_COS_SIDE_ANGLE*y)
 
             is_inside = math.fabs(x) < SAFE_RELATIVE_INSIDE_WIDTH
 
@@ -363,6 +381,12 @@ class GraphicalHexagon:
             GraphicalHexagon.__create_hexagons()
             GraphicalHexagon.__create_all_sorted_hexagons()
             GraphicalHexagon.__init_done = True
+
+    @staticmethod
+    def reset():
+        GraphicalHexagon.__all_sorted_hexagons = []
+        GraphicalHexagon.__init_done = False
+        GraphicalHexagon.__name_to_hexagon = {}
 
     @staticmethod
     def reset_highlights():
@@ -466,7 +490,7 @@ class GameGui(ttk.Frame):
         self.__cube_faces = self.__cube_faces_options[2]
 
         self.__background_tk_photo = None
-        self.__use_background_photo = CanvasConfig.USE_BACKGROUND_PHOTO
+        self.__use_background_photo = CANVAS_CONFIG.USE_BACKGROUND_PHOTO
 
         self.__legend = ""
 
@@ -509,7 +533,6 @@ class GameGui(ttk.Frame):
         # Create widgets
 
         self.__root = tk.Tk()
-        self.__root.resizable(width=False, height=False)
 
         try:
             self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents" +
@@ -528,6 +551,16 @@ class GameGui(ttk.Frame):
 
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
         self.__variable_summary.set("(c) 2022 Lucas Borboleta ; pijersi software license : GNU GPL ; pijersi rules license : CC-BY-NC-SA")
+
+        if False:
+            # Prepare the resizable feature
+            self.__root.resizable(width=True, height=True)
+            self.__finalize_timer_delay = 1
+            self.__root.after(self.__finalize_timer_delay, self.__finalize_widgets)
+
+        else:
+            # Disable the resizable feature
+            self.__root.resizable(width=False, height=False)
 
         # Wait events
         self.__root.mainloop()
@@ -657,8 +690,8 @@ class GameGui(ttk.Frame):
         # In __frame_board
 
         self.__canvas = tk.Canvas(self.__frame_board,
-                                  height=CanvasConfig.HEIGHT,
-                                  width=CanvasConfig.WIDTH)
+                                  height=CANVAS_CONFIG.HEIGHT,
+                                  width=CANVAS_CONFIG.WIDTH)
         self.__canvas.pack(side=tk.TOP)
 
         self.__canvas.bind('<Motion>', self.__cmc_update_mouse_over)
@@ -764,7 +797,7 @@ class GameGui(ttk.Frame):
     def __create_cube_photos(self):
         if self.__cube_photos is None:
 
-            cube_photo_width = int(CanvasConfig.HEXA_SIDE*math.cos(math.pi/4))
+            cube_photo_width = int(CANVAS_CONFIG.HEXA_SIDE*math.cos(math.pi/4))
 
             self.__cube_photos = {}
 
@@ -781,6 +814,65 @@ class GameGui(ttk.Frame):
             self.__concurrent_executor = None
 
         self.__root.destroy()
+
+    def __finalize_widgets(self, *_):
+
+        self.__initial_root_width = self.__root.winfo_width()
+        self.__initial_root_height = self.__root.winfo_height()
+
+        self.__initial_canvas_width = self.__canvas.winfo_width()
+        self.__initial_canvas_height = self.__canvas.winfo_height()
+
+        if ( math.fabs(self.__initial_canvas_width/CANVAS_CONFIG.WIDTH - 1) > 0.01  or
+              math.fabs(self.__initial_canvas_height/CANVAS_CONFIG.HEIGHT - 1) > 0.01):
+
+            self.__finalize_timer_delay = 100
+            self.__root.after(self.__finalize_timer_delay, self.__finalize_widgets)
+
+        print()
+        print(f"DEBUG: __initial_root_width = {self.__initial_root_width}")
+        print(f"DEBUG: __initial_root_height = {self.__initial_root_height}")
+
+        print()
+        print(f"DEBUG: __initial_canvas_width = {self.__initial_canvas_width}")
+        print(f"DEBUG: __initial_canvas_height = {self.__initial_canvas_height}")
+
+        self.__root.minsize(width=self.__initial_root_width, height=self.__initial_root_height)
+
+        # react if widget has changed size or position
+        self.__root.bind("<Configure>", self.__resize_widgets)
+
+
+    def __resize_widgets(self, *_):
+
+        current_root_width = self.__root.winfo_width()
+        current_root_height = self.__root.winfo_height()
+
+        if ( math.fabs(current_root_width/self.__initial_root_width - 1) > 0.01 or
+             math.fabs(current_root_height/self.__initial_root_height - 1) > 0.01):
+
+            scale_factor = min(current_root_width/self.__initial_root_width, current_root_height/self.__initial_root_height)
+
+            if scale_factor > 1.01:
+
+                print()
+                print(f"DEBUG: current_root_width = {current_root_width}")
+                print(f"DEBUG: current_root_height = {current_root_height}")
+                print(f"DEBUG: scale_factor = {scale_factor}")
+
+                new_canevas_width = scale_factor*self.__initial_canvas_width
+                new_canevas_height = scale_factor*self.__initial_canvas_height
+
+                self.__canvas.config(width=new_canevas_width, height=new_canevas_height)
+                CANVAS_CONFIG.update(height=new_canevas_width)
+
+                self.__background_tk_photo = None
+                self.__cube_photos = None
+
+                GraphicalHexagon.reset()
+                GraphicalHexagon.init()
+
+                self.__draw_state()
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = rules.SEARCHER_CATALOG.get(self.__variable_white_player.get())
@@ -2002,17 +2094,17 @@ class GameGui(ttk.Frame):
         if self.__background_tk_photo is None:
 
             # Create the background image
-            bg_photo = Image.open(CanvasConfig.BACKGROUND_PHOTO_PATH)
+            bg_photo = Image.open(CANVAS_CONFIG.BACKGROUND_PHOTO_PATH)
             (bg_width, bg_height) = bg_photo.size
 
-            bg_new_width = int(math.ceil(CanvasConfig.WIDTH))
-            bg_new_height = int(math.ceil(CanvasConfig.WIDTH*bg_height/bg_width))
+            bg_new_width = int(math.ceil(CANVAS_CONFIG.WIDTH))
+            bg_new_height = int(math.ceil(CANVAS_CONFIG.WIDTH*bg_height/bg_width))
 
             bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
             self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
 
-            self.__background_tk_photo_delta_x = (bg_new_width - CanvasConfig.WIDTH)/2
-            self.__background_tk_photo_delta_y = (bg_new_height - CanvasConfig.HEIGHT)/2
+            self.__background_tk_photo_delta_x = (bg_new_width - CANVAS_CONFIG.WIDTH)/2
+            self.__background_tk_photo_delta_y = (bg_new_height - CANVAS_CONFIG.HEIGHT)/2
 
         # Add the background image
         self.__canvas.create_image(self.__background_tk_photo_delta_x, self.__background_tk_photo_delta_y,
@@ -2022,21 +2114,21 @@ class GameGui(ttk.Frame):
     def __draw_legend(self):
 
         (u, v) = (2, -4)
-        hexagon_center = CanvasConfig.ORIGIN + CanvasConfig.HEXA_WIDTH*(u*CanvasConfig.UNIT_U + v*CanvasConfig.UNIT_V)
+        hexagon_center = CANVAS_CONFIG.ORIGIN + CANVAS_CONFIG.HEXA_WIDTH*(u*CANVAS_CONFIG.UNIT_U + v*CANVAS_CONFIG.UNIT_V)
 
         vertex_index = 1
-        vertex_angle = (1/2 + vertex_index)*CanvasConfig.HEXA_SIDE_ANGLE
+        vertex_angle = (1/2 + vertex_index)*CANVAS_CONFIG.HEXA_SIDE_ANGLE
 
         hexagon_vertex = hexagon_center
-        hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
-        hexagon_vertex = hexagon_vertex + CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+        hexagon_vertex = hexagon_vertex + CANVAS_CONFIG.HEXA_SIDE*math.cos(vertex_angle)*CANVAS_CONFIG.UNIT_X
+        hexagon_vertex = hexagon_vertex + CANVAS_CONFIG.HEXA_SIDE*math.sin(vertex_angle)*CANVAS_CONFIG.UNIT_Y
 
-        legend_position = hexagon_vertex - 1.0*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+        legend_position = hexagon_vertex - 1.0*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_Y
 
-        legend_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LEGEND_SIZE, weight='bold')
+        legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
 
         self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER,
-                                  font=legend_font, fill=CanvasConfig.FONT_LEGEND_COLOR)
+                                  font=legend_font, fill=CANVAS_CONFIG.FONT_LEGEND_COLOR)
 
     def __draw_all_cubes(self):
 
@@ -2094,7 +2186,7 @@ class GameGui(ttk.Frame):
     def __draw_hexagon(self, hexagon):
 
         label_position = (TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
-                          0.25*CanvasConfig.HEXA_SIDE*(CanvasConfig.UNIT_X + 0.75*CanvasConfig.UNIT_Y))
+                          0.25*CANVAS_CONFIG.HEXA_SIDE*(CANVAS_CONFIG.UNIT_X + 0.75*CANVAS_CONFIG.UNIT_Y))
 
         if self.__use_background_photo:
             polygon_line_color = ''
@@ -2138,11 +2230,11 @@ class GameGui(ttk.Frame):
         self.__canvas.create_polygon(hexagon.vertex_data,
                                      fill=fill_color,
                                      outline=polygon_line_color,
-                                     width=CanvasConfig.HEXA_LINE_WIDTH*line_width_scaling,
+                                     width=CANVAS_CONFIG.HEXA_LINE_WIDTH*line_width_scaling,
                                      joinstyle=tk.MITER)
 
         if hexagon.name:
-            label_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_LABEL_SIZE, weight='bold')
+            label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
 
             self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
 
@@ -2150,7 +2242,7 @@ class GameGui(ttk.Frame):
 
         hexagon = GraphicalHexagon.get(name)
 
-        shift_value = 0.20*CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y
+        shift_value = 0.20*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_Y
 
         top_shift = 0
         bottom_shift = 0
@@ -2164,21 +2256,21 @@ class GameGui(ttk.Frame):
 
         cube_vertices = list()
 
-        for vertex_index in range(CanvasConfig.CUBE_VERTEX_COUNT):
-            vertex_angle = (1/2 + vertex_index)*CanvasConfig.CUBE_SIDE_ANGLE
+        for vertex_index in range(CANVAS_CONFIG.CUBE_VERTEX_COUNT):
+            vertex_angle = (1/2 + vertex_index)*CANVAS_CONFIG.CUBE_SIDE_ANGLE
 
             if config == CubeLocation.MIDDLE:
                 cube_center = hexagon.center
 
             elif config == CubeLocation.BOTTOM:
-                cube_center = hexagon.center - 0.40 * CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + bottom_shift
+                cube_center = hexagon.center - 0.40 * CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_Y + bottom_shift
 
             elif config == CubeLocation.TOP:
-                cube_center = hexagon.center + 0.40 * CanvasConfig.HEXA_SIDE*CanvasConfig.UNIT_Y + top_shift
+                cube_center = hexagon.center + 0.40 * CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_Y + top_shift
 
             cube_vertex = cube_center
-            cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.cos(vertex_angle)*CanvasConfig.UNIT_X
-            cube_vertex = cube_vertex + 0.5*CanvasConfig.HEXA_SIDE*math.sin(vertex_angle)*CanvasConfig.UNIT_Y
+            cube_vertex = cube_vertex + 0.5*CANVAS_CONFIG.HEXA_SIDE*math.cos(vertex_angle)*CANVAS_CONFIG.UNIT_X
+            cube_vertex = cube_vertex + 0.5*CANVAS_CONFIG.HEXA_SIDE*math.sin(vertex_angle)*CANVAS_CONFIG.UNIT_Y
 
             cube_vertices.append(cube_vertex)
 
@@ -2219,7 +2311,7 @@ class GameGui(ttk.Frame):
                                            fill=fill_color,
                                            outline=line_color)
 
-            face_font = font.Font(family=CanvasConfig.FONT_FAMILY, size=CanvasConfig.FONT_FACE_SIZE, weight='bold')
+            face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
             self.__canvas.create_text(*cube_center,
                                       text=cube_label,
@@ -2237,7 +2329,7 @@ class GameGui(ttk.Frame):
         self.__canvas.create_rectangle(*face_vertex_NW, *face_vertex_SE,
                                        fill='',
                                        outline=face_color,
-                                       width=CanvasConfig.CUBE_LINE_WIDTH)
+                                       width=CANVAS_CONFIG.CUBE_LINE_WIDTH)
 
     def __draw_rock_face(self, cube_center, cube_vertices, face_color):
 
@@ -2247,7 +2339,7 @@ class GameGui(ttk.Frame):
         self.__canvas.create_oval(*face_vertex_NW, *face_vertex_SE,
                                   fill='',
                                   outline=face_color,
-                                  width=CanvasConfig.CUBE_LINE_WIDTH)
+                                  width=CANVAS_CONFIG.CUBE_LINE_WIDTH)
 
     def __draw_scissors_face(self, cube_center, cube_vertices, face_color):
 
@@ -2258,12 +2350,12 @@ class GameGui(ttk.Frame):
 
         self.__canvas.create_line(*face_vertex_NE, *face_vertex_SW,
                                   fill=face_color,
-                                  width=CanvasConfig.CUBE_LINE_WIDTH,
+                                  width=CANVAS_CONFIG.CUBE_LINE_WIDTH,
                                   capstyle=tk.ROUND)
 
         self.__canvas.create_line(*face_vertex_NW, *face_vertex_SE,
                                   fill=face_color,
-                                  width=CanvasConfig.CUBE_LINE_WIDTH,
+                                  width=CANVAS_CONFIG.CUBE_LINE_WIDTH,
                                   capstyle=tk.ROUND)
 
     def __draw_wise_face(self, cube_center, cube_vertices, face_color):
@@ -2312,10 +2404,11 @@ class GameGui(ttk.Frame):
         self.__canvas.create_polygon(wise_data,
                                      fill='',
                                      outline=face_color,
-                                     width=CanvasConfig.CUBE_LINE_WIDTH,
+                                     width=CANVAS_CONFIG.CUBE_LINE_WIDTH,
                                      joinstyle=tk.ROUND,
                                      smooth=True)
 
+CANVAS_CONFIG = CanvasConfig()
 
 GraphicalHexagon.init()
 
