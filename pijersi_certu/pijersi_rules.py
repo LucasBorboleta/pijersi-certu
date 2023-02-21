@@ -2126,7 +2126,7 @@ class StateEvaluator():
         default_weights = {'fighter_weight':16,
                            'cube_weight':8,
                            'dg_min_weight':4,
-                           'dc_ave_weight':4,
+                           'dc_ave_weight':2,
                            'dg_ave_weight':2,
                            'credit_weight':1}
 
