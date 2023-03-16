@@ -2282,7 +2282,7 @@ class MinimaxSearcher(Searcher):
 
         self.__state_evaluator = state_evaluator if state_evaluator is not None else StateEvaluator()
 
-        self.__debug = False
+        self.__debug = True
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
@@ -3188,19 +3188,44 @@ SEARCHER_CATALOG = SearcherCatalog()
 
 SEARCHER_CATALOG.add( HumanSearcher("human") )
 
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-4mn", max_depth=4, time_limit=4*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
+state_evaluator_mm1 = StateEvaluator(fighter_weight=41.885392174432646,
+                                     cube_weight=26.143263284220737,
+                                     dg_min_weight=-5.88263321226207,
+                                     dg_ave_weight=-44.32882404147753,
+                                     dc_ave_weight=19.73724041099422,
+                                     credit_weight=-18.583746217767935)
+
+state_evaluator_mm2 = StateEvaluator(fighter_weight=44.63728045969825,
+                                     cube_weight=21.408271707785577,
+                                     dg_min_weight=7.447181775997062,
+                                     dg_ave_weight=14.154256204653036,
+                                     dc_ave_weight=3.9277270467740597,
+                                     credit_weight=-2.1733667445890497)
+
+state_evaluator_mm3 = StateEvaluator(fighter_weight=65.52573448992278,
+                                     cube_weight=4.616227996911011,
+                                     dg_min_weight=14.424683698727392,
+                                     dg_ave_weight=19.619155464089044,
+                                     dc_ave_weight=2.5543281621200737,
+                                     credit_weight=-1.202172844784375)
+
+state_evaluator_mm4 = state_evaluator_mm3
+
+
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10, state_evaluator=state_evaluator_mm2) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2, state_evaluator=state_evaluator_mm2) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60, state_evaluator=state_evaluator_mm3) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3, state_evaluator=state_evaluator_mm3) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-4mn", max_depth=4, time_limit=4*60, state_evaluator=state_evaluator_mm4) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4, state_evaluator=state_evaluator_mm4) )
 
 if False:
     SEARCHER_CATALOG.add( RandomSearcher("random") )
 
-    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
+    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1, state_evaluator=state_evaluator_mm1) )
 
     SEARCHER_CATALOG.add( MctsSearcher("mcts-5mn-mm-4",
-                                       state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=StateEvaluator()),
+                                       state_wrapper=MctsMinimaxStateWrapper(depth_credit=4, state_evaluator=state_evaluator_mm4),
                                        time_limit=5*60_000,
                                        exploration_constant=128) )
 
@@ -3718,7 +3743,7 @@ def test():
     if True:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
-    if True:
+    if False:
         test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
 
 
