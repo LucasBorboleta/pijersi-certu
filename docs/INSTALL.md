@@ -7,7 +7,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
 ## Installing as single executable for Windows platform
 
-- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. The latest version is `v1.1.0-rc3`.
+- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. The latest version is `v1.1.0-rc4`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
@@ -33,7 +33,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
 ## Installing from Python sources for Linux and Windows platforms
 
-Latest version of *pijersi_certu* has been developed using Python 3.9.13. So it is better to have installed such version or some higher version.
+Latest version of *pijersi_certu* has been developed using Python 3.9. So it is better to have installed such version or some higher version.
 
 The following instructions might also work on other platforms, but only Windows and Linux have been tested.
 
@@ -56,4 +56,4 @@ The following instructions might also work on other platforms, but only Windows 
 For information, *pijersi_certu* relies on the following packages:
 
 - *Pillow* : for converting and resizing images used in the GUI;
-- *MCTS*  : for implementing experimental AI agents;
+- *Mcts* is no longer used.
