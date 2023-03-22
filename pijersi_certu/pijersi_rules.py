@@ -14,7 +14,6 @@ import re
 from statistics import mean
 import sys
 import time
-import timeit
 from typing import Callable
 from typing import Iterable
 from typing import Mapping
@@ -34,10 +33,6 @@ import cProfile
 from pstats import SortKey
 
 import mcts
-
-_package_home = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(_package_home)
-import old_pijersi_rules as old_code
 
 
 __version__ = "1.1.0-rc5"
@@ -2279,6 +2274,30 @@ class StateEvaluator():
         return value
 
 
+STATE_EVALUATOR_MM1 = StateEvaluator(fighter_weight=41.885392174432646,
+                                     cube_weight=26.143263284220737,
+                                     dg_min_weight=-5.88263321226207,
+                                     dg_ave_weight=-44.32882404147753,
+                                     dc_ave_weight=19.73724041099422,
+                                     credit_weight=-18.583746217767935)
+
+STATE_EVALUATOR_MM2 = StateEvaluator(fighter_weight=44.63728045969825,
+                                     cube_weight=21.408271707785577,
+                                     dg_min_weight=7.447181775997062,
+                                     dg_ave_weight=14.154256204653036,
+                                     dc_ave_weight=3.9277270467740597,
+                                     credit_weight=-2.1733667445890497)
+
+STATE_EVALUATOR_MM3 = StateEvaluator(fighter_weight=65.52573448992278,
+                                     cube_weight=4.616227996911011,
+                                     dg_min_weight=14.424683698727392,
+                                     dg_ave_weight=19.619155464089044,
+                                     dc_ave_weight=2.5543281621200737,
+                                     credit_weight=-1.202172844784375)
+
+STATE_EVALUATOR_MM4 = STATE_EVALUATOR_MM3
+
+
 class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
@@ -2302,16 +2321,16 @@ class MinimaxSearcher(Searcher):
             self.__state_evaluator = state_evaluator
 
         elif self.__max_depth == 1:
-            self.__state_evaluator = state_evaluator_mm1
+            self.__state_evaluator = STATE_EVALUATOR_MM1
 
         elif self.__max_depth == 2:
-            self.__state_evaluator = state_evaluator_mm2
+            self.__state_evaluator = STATE_EVALUATOR_MM2
 
         elif self.__max_depth == 3:
-            self.__state_evaluator = state_evaluator_mm3
+            self.__state_evaluator = STATE_EVALUATOR_MM3
 
         elif self.__max_depth == 4:
-            self.__state_evaluator = state_evaluator_mm4
+            self.__state_evaluator = STATE_EVALUATOR_MM4
 
         else:
             self.__state_evaluator = StateEvaluator()
@@ -2371,9 +2390,9 @@ class MinimaxSearcher(Searcher):
                 self.check(initial_state, best_value, [best_action])
 
             if self.__debug:
-                valued_actions. sort(reverse=True)
+                valued_actions.sort(reverse=True)
                 print()
-                print(f"select action {best_action} with value {best_value:.1f} amongst {len(best_actions)} best actions")
+                print(f"select action {best_action} with value {best_value:.2f} amongst {len(best_actions)} best actions")
                 print(f"best actions: {[str(action) for action in best_actions]}")
                 print(f"best branch: {[str(action) for action in best_branch]}")
                 print("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
@@ -2425,8 +2444,8 @@ class MinimaxSearcher(Searcher):
 
         if self.__debug:
             print()
-            print(f"MinimaxSearcher.check: best_value_ref={best_value_ref:.1f}")
-            print(f"MinimaxSearcher.check: best_value={best_value:.1f}")
+            print(f"MinimaxSearcher.check: best_value_ref={best_value_ref:.2f}")
+            print(f"MinimaxSearcher.check: best_value={best_value:.2f}")
             print()
 
         best_actions_ref = []
@@ -2434,18 +2453,18 @@ class MinimaxSearcher(Searcher):
             if action_ref.value == best_value_ref:
                 best_actions_ref.append(action_ref)
                 if self.__debug:
-                    print(f"MinimaxSearcher.check: best (action_ref, action_value_ref)= ({action_ref}, {action_ref.value:.1f})")
+                    print(f"MinimaxSearcher.check: best (action_ref, action_value_ref)= ({action_ref}, {action_ref.value:.2f})")
 
         if self.__debug:
             print()
-            print(f"{len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.1f}")
+            print(f"{len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.2f}")
 
         best_actions = []
         for action in valued_actions:
             if action.value == best_value:
                 best_actions.append(action)
                 if self.__debug:
-                    print(f"MinimaxSearcher.check: best (action, action_value)= ({action}, {action.value:.1f})")
+                    print(f"MinimaxSearcher.check: best (action, action_value)= ({action}, {action.value:.2f})")
 
         if self.__debug:
             print()
@@ -2518,153 +2537,6 @@ class MinimaxSearcher(Searcher):
 
         else:
             assert player in (-1, 1)
-
-
-        return (best_child_value, valued_actions)
-
-
-    def alphabeta(self, state, player, depth=None, alpha=None, beta=None) -> Tuple[float, Sequence[PijersiAction]]:
-
-
-        def score_action_1(action):
-            return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
-
-
-        if depth is None:
-            depth = self.__max_depth
-
-
-        if depth == 0 or state.is_terminal():
-            state_value = self.evaluate_state_value(state, depth)
-            self.__evaluation_count += 1
-            return (state_value, [])
-
-
-        if alpha is None:
-            alpha = -math.inf
-
-        if beta is None:
-            beta = math.inf
-
-        assert alpha <= beta
-
-        actions = state.get_actions()
-
-        valued_actions = []
-        make_valued_actions = (depth == self.__max_depth)
-
-        # Manage openings file
-
-        make_opening_file = False
-
-        if depth == self.__max_depth and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
-            opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
-
-            if not os.path.isfile(opening_file_path):
-                make_opening_file = True
-
-            else:
-                print()
-                print(f"reading openings file {opening_file_path} ...")
-
-                with open(opening_file_path, 'r') as opening_stream:
-                    opening_lines = opening_stream.readlines()
-
-                for opening_line in opening_lines:
-                    opening_data = opening_line.split()
-                    assert len(opening_data) == 2
-
-                    action_value = float(opening_data[1])
-
-                    action_name = opening_data[0]
-                    action = None
-                    for action_candidate in actions:
-                        if str(action_candidate) == action_name:
-                            action = action_candidate
-                            break
-                    assert action is not None
-                    action.value = action_value
-
-                    valued_actions.append(action)
-
-                print(f"reading openings file {opening_file_path} done")
-                return (action_value, valued_actions)
-
-
-        # >> for providing a bit of surprise
-        random.shuffle(actions)
-
-        # >> sort actions according to the type of action for earlier alpha-beta cuts
-        actions.sort(key=score_action_1, reverse=True)
-
-
-        if player == 1:
-
-            best_child_value = -math.inf
-
-            action_count = 0
-
-            for action in actions:
-                action_count += 1
-
-                child_state = state.take_action(action)
-
-                (child_value, _) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
-
-                if make_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
-
-                best_child_value = max(best_child_value, child_value)
-
-                if best_child_value > beta:
-                    if self.__debug:
-                        self.__beta_cuts.append(action_count/len(actions))
-                    break
-
-                alpha = max(alpha, best_child_value)
-
-        elif player == -1:
-
-            best_child_value = math.inf
-
-            action_count = 0
-
-            for action in actions:
-                action_count += 1
-
-                child_state = state.take_action(action)
-
-                (child_value, _) = self.alphabeta(state=child_state, player=-player, depth=depth - 1, alpha=alpha, beta=beta)
-
-                if make_valued_actions:
-                    action.value = child_value
-                    valued_actions.append(action)
-
-                best_child_value = min(best_child_value, child_value)
-
-                if best_child_value < alpha:
-                    if self.__debug:
-                        self.__alpha_cuts.append(action_count/len(actions))
-                    break
-
-                beta = min(beta, best_child_value)
-
-        else:
-            assert player in (-1, 1)
-
-
-        # Manage openings file
-
-        if make_opening_file:
-            print()
-            print(f"writing openings file {opening_file_path} ...")
-
-            opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
-            with open(opening_file_path, 'w') as opening_stream:
-                opening_stream.writelines(opening_lines)
-
-            print(f"writing openings file {opening_file_path} done")
 
 
         return (best_child_value, valued_actions)
@@ -3150,30 +3022,6 @@ class SearcherCatalog:
 SEARCHER_CATALOG = SearcherCatalog()
 
 SEARCHER_CATALOG.add( HumanSearcher("human") )
-
-state_evaluator_mm1 = StateEvaluator(fighter_weight=41.885392174432646,
-                                     cube_weight=26.143263284220737,
-                                     dg_min_weight=-5.88263321226207,
-                                     dg_ave_weight=-44.32882404147753,
-                                     dc_ave_weight=19.73724041099422,
-                                     credit_weight=-18.583746217767935)
-
-state_evaluator_mm2 = StateEvaluator(fighter_weight=44.63728045969825,
-                                     cube_weight=21.408271707785577,
-                                     dg_min_weight=7.447181775997062,
-                                     dg_ave_weight=14.154256204653036,
-                                     dc_ave_weight=3.9277270467740597,
-                                     credit_weight=-2.1733667445890497)
-
-state_evaluator_mm3 = StateEvaluator(fighter_weight=65.52573448992278,
-                                     cube_weight=4.616227996911011,
-                                     dg_min_weight=14.424683698727392,
-                                     dg_ave_weight=19.619155464089044,
-                                     dc_ave_weight=2.5543281621200737,
-                                     credit_weight=-1.202172844784375)
-
-state_evaluator_mm4 = state_evaluator_mm3
-
 
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
@@ -3706,7 +3554,7 @@ def test():
     if True:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
-    if False:
+    if True:
         test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
 
 
@@ -3758,456 +3606,6 @@ def profile_fun_is_terminal():
         assert not pijersi_state.is_terminal(use_cache=False)
 
 
-def benchmark():
-
-
-    def benchmark_first_get_actions():
-
-        print()
-        print("-- benchmark_first_get_actions --")
-
-        new_state = PijersiState()
-        new_actions = new_state.get_actions()
-        new_actions_id = id(new_actions)
-
-        old_state = old_code.PijersiState()
-        old_actions = old_state.get_actions()
-        old_actions_id = id(old_actions)
-
-        assert len(new_actions) == len(old_actions)
-        assert new_actions_id != old_actions_id
-
-
-        def do_new():
-            new_actions = new_state.get_actions(use_cache=False)
-            assert id(new_actions) != new_actions_id
-
-
-        def do_old():
-            old_actions = old_state.get_actions(use_cache=False)
-            assert id(old_actions) != old_actions_id
-
-
-        time_new = timeit.timeit(do_new, number=1_000)
-        time_old = timeit.timeit(do_old, number=1_000)
-        print("do_new() => ", time_new)
-        print("do_old() => ", time_old,
-              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
-              ', time_old/time_new = ', time_old/time_new)
-
-
-    def benchmark_first_is_terminal():
-
-        print()
-        print("-- benchmark_first_is_terminal --")
-
-        new_state = PijersiState()
-        old_state = old_code.PijersiState()
-
-
-        def do_new():
-            assert not new_state.is_terminal(use_cache=False)
-
-
-        def do_old():
-            assert not old_state.is_terminal(use_cache=False)
-
-
-        time_new = timeit.timeit(do_new, number=1_000)
-        time_old = timeit.timeit(do_old, number=1_000)
-        print("do_new() => ", time_new)
-        print("do_old() => ", time_old,
-              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
-              ', time_old/time_new = ', time_old/time_new)
-
-
-    def benchmark_game_between_random_players():
-
-        print()
-        print("-- benchmark_game_between_random_players --")
-
-        test_seed = random.randint(1, 1_000)
-        test_max_credit_limits = (20, 1_000)
-        game_count = 10
-        game_enabled_log = False
-
-        def do_new():
-            random.seed(a=test_seed)
-
-            for _ in range(game_count):
-
-                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-
-                default_max_credit = PijersiState.get_max_credit()
-                PijersiState.set_max_credit(test_max_credit)
-
-                new_game = Game()
-                new_game.enable_log(game_enabled_log)
-
-                new_game.set_white_searcher(RandomSearcher("random"))
-                new_game.set_black_searcher(RandomSearcher("random"))
-
-                new_game.start()
-
-                while new_game.has_next_turn():
-                    new_game.next_turn()
-
-                PijersiState.set_max_credit(default_max_credit)
-
-
-        def do_old():
-            random.seed(a=test_seed)
-
-            for _ in range(game_count):
-
-                test_max_credit = random.randint(test_max_credit_limits[0], test_max_credit_limits[1])
-
-                default_max_credit = old_code.PijersiState.get_max_credit()
-                old_code.PijersiState.set_max_credit(test_max_credit)
-
-                old_game = old_code.Game()
-                old_game.enable_log(game_enabled_log)
-
-                old_game.set_white_searcher(RandomSearcher("random"))
-                old_game.set_black_searcher(RandomSearcher("random"))
-
-                old_game.start()
-
-                while old_game.has_next_turn():
-                    old_game.next_turn()
-
-                old_code.PijersiState.set_max_credit(default_max_credit)
-
-
-        time_new = timeit.timeit(do_new, number=1)
-        time_old = timeit.timeit(do_old, number=1)
-        print("do_new() => ", time_new)
-        print("do_old() => ", time_old,
-              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
-              ', time_old/time_new = ', time_old/time_new)
-
-
-    def benchmark_game_between_minimax2_players():
-
-        print()
-        print("-- benchmark_game_between_minimax2_players --")
-
-        test_seed = random.randint(1, 1_000)
-        game_count = 1
-        game_enabled_log = False
-
-        def do_new():
-            random.seed(a=test_seed)
-
-            for _ in range(game_count):
-
-                new_game = Game()
-                new_game.enable_log(game_enabled_log)
-
-                new_game.set_white_searcher(MinimaxSearcher("white-minimax2", max_depth=2))
-                new_game.set_black_searcher(MinimaxSearcher("black-minimax2", max_depth=2))
-
-                new_game.start()
-
-                while new_game.has_next_turn():
-                    new_game.next_turn()
-
-
-        def do_old():
-            random.seed(a=test_seed)
-
-            for _ in range(game_count):
-
-                old_game = old_code.Game()
-                old_game.enable_log(game_enabled_log)
-
-                old_game.set_white_searcher(old_code.MinimaxSearcher("white-minimax2", max_depth=2))
-                old_game.set_black_searcher(old_code.MinimaxSearcher("black-minimax2", max_depth=2))
-
-                old_game.start()
-
-                while old_game.has_next_turn():
-                    old_game.next_turn()
-
-
-        time_new = timeit.timeit(do_new, number=1)
-        time_old = timeit.timeit(do_old, number=1)
-        print("do_new() => ", time_new)
-        print("do_old() => ", time_old,
-              ', (time_new/time_old - 1)*100 =', (time_new/time_old -1)*100,
-              ', time_old/time_new = ', time_old/time_new)
-
-    if True:
-        benchmark_first_get_actions()
-        benchmark_first_is_terminal()
-
-    if True:
-        benchmark_game_between_random_players()
-
-    if True:
-        benchmark_game_between_minimax2_players()
-
-
-def verify():
-
-
-    def verify_first_get_show_text():
-
-        print()
-        print("-- verify_first_get_show_text --")
-
-        new_state = PijersiState()
-        new_show_text = new_state.get_show_text()
-
-        old_state = old_code.PijersiState()
-        old_show_text = old_state.get_show_text()
-
-        print()
-        print(f"new_show_text = \n {new_show_text}")
-
-        print()
-        print(f"old_show_text = \n {old_show_text}")
-        assert new_show_text == old_show_text
-
-
-    def verify_first_get_actions():
-
-        print()
-        print("-- verify_first_get_actions --")
-
-        new_state = PijersiState()
-
-        new_action_names = new_state.get_action_names()
-        new_action_name_set = set(new_action_names)
-
-        old_state = old_code.PijersiState()
-        old_action_names = old_state.get_action_names()
-        old_action_name_set = set(old_action_names)
-
-        print(f"len(new_action_name_set) = {len(new_action_name_set)} ; len(old_action_name_set) = {len(old_action_name_set)}")
-        assert len(new_action_name_set) == len(old_action_name_set)
-        assert new_action_name_set == old_action_name_set
-
-
-    def verify_game_between_random_players():
-
-        print()
-        print("-- verify_game_between_random_players --")
-
-        game_count = 10
-        game_enabled_log = False
-
-        for game_index in range(game_count):
-
-            test_seed = random.randint(1, 1_000)
-            test_max_credit = random.randint(10, 100)
-
-            #-- Run new games
-
-            default_max_credit = PijersiState.get_max_credit()
-            PijersiState.set_max_credit(test_max_credit)
-
-            random.seed(a=test_seed)
-            new_show_texts = []
-            new_action_sets = []
-            new_summaries = []
-            new_game = Game()
-            new_game.enable_log(game_enabled_log)
-
-            new_game.set_white_searcher(RandomSearcher("random"))
-            new_game.set_black_searcher(RandomSearcher("random"))
-
-            new_game.start()
-            new_show_texts.append(new_game.get_state().get_show_text())
-            new_action_sets.append(set(new_game.get_state().get_action_names()))
-            new_summaries.append(new_game.get_state().get_summary())
-
-            while new_game.has_next_turn():
-                new_game.next_turn()
-                new_show_texts.append(new_game.get_state().get_show_text())
-                new_action_sets.append(set(new_game.get_state().get_action_names()))
-                new_summaries.append(new_game.get_state().get_summary())
-
-            new_rewards = new_game.get_state().get_rewards()
-
-            PijersiState.set_max_credit(default_max_credit)
-
-            #-- Run old games
-
-            default_max_credit = old_code.PijersiState.get_max_credit()
-            old_code.PijersiState.set_max_credit(test_max_credit)
-
-            random.seed(a=test_seed)
-            old_show_texts = []
-            old_action_sets = []
-            old_summaries = []
-            old_game = old_code.Game()
-            old_game.enable_log(game_enabled_log)
-
-            old_game.set_white_searcher(RandomSearcher("random"))
-            old_game.set_black_searcher(RandomSearcher("random"))
-
-            old_game.start()
-            old_show_texts.append(old_game.get_state().get_show_text())
-            old_action_sets.append(set(old_game.get_state().get_action_names()))
-            old_summaries.append(old_game.get_state().get_summary())
-
-            while old_game.has_next_turn():
-                old_game.next_turn()
-                old_show_texts.append(old_game.get_state().get_show_text())
-                old_action_sets.append(set(old_game.get_state().get_action_names()))
-                old_summaries.append(old_game.get_state().get_summary())
-
-            old_rewards = old_game.get_state().get_rewards()
-
-            old_code.PijersiState.set_max_credit(default_max_credit)
-
-            #-- Compare new games to old games
-
-            print()
-
-            print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
-            assert len(new_show_texts) == len(old_show_texts)
-            for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
-                assert new_show_text == old_show_text
-
-            print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
-            assert len(new_action_sets) == len(old_action_sets)
-            for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
-                assert new_action_set == old_action_set
-
-            print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
-            assert len(new_summaries) == len(old_summaries)
-            for (new_summary, old_summary) in zip(new_summaries, old_summaries):
-                assert new_summary == old_summary
-
-            print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
-            assert new_rewards == old_rewards
-
-            print(f"game {game_index} from {list(range(game_count))} OK")
-
-
-    def verify_game_between_minimax_players(minimax_depth: int, turn_max: Optional[int]=None, game_count: int=1):
-
-        print()
-        print(f"-- verify_game_between_minimax_players  minimax_depth={minimax_depth} --")
-
-        game_enabled_log = True
-
-        for game_index in range(game_count):
-
-            test_seed = random.randint(1, 1_000)
-
-            #-- Run new games
-
-            random.seed(a=test_seed)
-            new_show_texts = []
-            new_action_sets = []
-            new_summaries = []
-            new_distances = []
-            new_game = Game()
-            new_game.enable_log(game_enabled_log)
-
-            new_game.set_white_searcher(MinimaxSearcher(f"new-white-minimax{minimax_depth}", max_depth=minimax_depth))
-            new_game.set_black_searcher(MinimaxSearcher(f"new-black-minimax{minimax_depth}", max_depth=minimax_depth))
-
-            new_game.start()
-            new_show_texts.append(new_game.get_state().get_show_text())
-            new_action_sets.append(set(new_game.get_state().get_action_names()))
-            new_summaries.append(new_game.get_state().get_summary())
-
-            while new_game.has_next_turn():
-                new_game.next_turn()
-                new_show_texts.append(new_game.get_state().get_show_text())
-                new_action_sets.append(set(new_game.get_state().get_action_names()))
-                new_summaries.append(new_game.get_state().get_summary())
-                new_distances.append(new_game.get_state().get_distances_to_goal())
-                if turn_max is not None and new_game.get_turn() >= turn_max:
-                    break
-
-            new_rewards = new_game.get_state().get_rewards() if turn_max is None else None
-
-
-            #-- Run old games
-
-            random.seed(a=test_seed)
-            old_show_texts = []
-            old_action_sets = []
-            old_summaries = []
-            old_distances = []
-            old_game = old_code.Game()
-            old_game.enable_log(game_enabled_log)
-
-            old_game.set_white_searcher(old_code.MinimaxSearcher(f"old-white-minimax{minimax_depth}", max_depth=minimax_depth))
-            old_game.set_black_searcher(old_code.MinimaxSearcher(f"old-black-minimax{minimax_depth}", max_depth=minimax_depth))
-
-            old_game.start()
-            old_show_texts.append(old_game.get_state().get_show_text())
-            old_action_sets.append(set(old_game.get_state().get_action_names()))
-            old_summaries.append(old_game.get_state().get_summary())
-
-            while old_game.has_next_turn():
-                old_game.next_turn()
-                old_show_texts.append(old_game.get_state().get_show_text())
-                old_action_sets.append(set(old_game.get_state().get_action_names()))
-                old_summaries.append(old_game.get_state().get_summary())
-                old_distances.append(old_game.get_state().get_distances_to_goal())
-                if turn_max is not None and old_game.get_turn() >= turn_max:
-                    break
-
-            old_rewards = old_game.get_state().get_rewards() if turn_max is None else None
-
-            #-- Compare new games to old games
-
-            print()
-
-            print(f"len(new_distances) = {len(new_distances)} / len(old_distances) = {len(old_distances)}")
-            assert len(new_distances) == len(old_distances)
-            for (new_distance, old_distance) in zip(new_distances, old_distances):
-                for x in new_distance:
-                    x.sort()
-                for x in old_distance:
-                    x.sort()
-                assert new_distance == old_distance
-
-            print(f"len(new_show_texts) = {len(new_show_texts)} / len(old_show_texts) = {len(old_show_texts)}")
-            assert len(new_show_texts) == len(old_show_texts)
-            for (new_show_text, old_show_text) in zip(new_show_texts, old_show_texts):
-                if new_show_text != old_show_text:
-                    print()
-                    print("new_show_text:")
-                    print(new_show_text)
-                    print()
-                    print("old_show_text:")
-                    print(old_show_text)
-                assert new_show_text == old_show_text
-
-            print(f"len(new_action_sets) = {len(new_action_sets)} / len(old_action_sets) = {len(old_action_sets)}")
-            assert len(new_action_sets) == len(old_action_sets)
-            for (new_action_set, old_action_set) in zip(new_action_sets, old_action_sets):
-                assert new_action_set == old_action_set
-
-            print(f"len(new_summaries) = {len(new_summaries)} / len(old_summaries) = {len(old_summaries)}")
-            assert len(new_summaries) == len(old_summaries)
-            for (new_summary, old_summary) in zip(new_summaries, old_summaries):
-                assert new_summary == old_summary
-
-            print(f"new_rewards = {new_rewards} / old_rewards = {old_rewards}")
-            assert new_rewards == old_rewards
-
-            print(f"game {game_index} from {list(range(game_count))} OK")
-
-
-    verify_first_get_show_text()
-    verify_first_get_actions()
-
-    verify_game_between_random_players()
-
-    verify_game_between_minimax_players(minimax_depth=1, game_count=3)
-    verify_game_between_minimax_players(minimax_depth=2, game_count=1)
-    verify_game_between_minimax_players(minimax_depth=3, turn_max=1, game_count=1)
-
-
 def main():
 
     if True:
@@ -4215,12 +3613,6 @@ def main():
 
     if False:
         profile()
-
-    if False:
-        benchmark() # against old implementation
-
-    if False:
-        verify() # against old implementation
 
 
 Hexagon.init()
