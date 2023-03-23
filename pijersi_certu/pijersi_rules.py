@@ -2775,7 +2775,6 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 
 if False:
     SEARCHER_CATALOG.add( RandomSearcher("random") )
-
     SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 
 
