@@ -2298,7 +2298,7 @@ class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
                  '__board_values', '__board_values_max_size',
-                 '__alpha_cuts', '__beta_cuts', '__evaluation_count')
+                 '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
 
     def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None, state_evaluator: Optional[StateEvaluator]=None):
@@ -2331,6 +2331,7 @@ class MinimaxSearcher(Searcher):
         else:
             self.__state_evaluator = StateEvaluator()
 
+        self.__debug = False
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
@@ -2359,27 +2360,29 @@ class MinimaxSearcher(Searcher):
             best_actions = [action for action in valued_actions if action.value == best_value]
             best_action = random.choice(best_actions)
 
-            if self.__alpha_cuts:
-                alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
-                self.__alpha_cuts.sort()
-                alpha_cut_q95 = self.__alpha_cuts[int(0.95*len(self.__alpha_cuts))]
-            else:
-                alpha_cut_mean = 0
-                alpha_cut_q95 = 0
+            if self.__debug:
 
-            if self.__beta_cuts:
-                beta_cut_mean = sum(self.__beta_cuts)/len(self.__beta_cuts)
-                self.__beta_cuts.sort()
-                beta_cut_q95 = self.__beta_cuts[int(0.95*len(self.__beta_cuts))]
-            else:
-                beta_cut_mean = 0
-                beta_cut_q95 = 0
+                if self.__alpha_cuts:
+                    alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
+                    self.__alpha_cuts.sort()
+                    alpha_cut_q95 = self.__alpha_cuts[int(0.95*len(self.__alpha_cuts))]
+                else:
+                    alpha_cut_mean = 0
+                    alpha_cut_q95 = 0
 
-            print( f"{self.__evaluation_count} state evaluations" + " / " +
-                   f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
-                   f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
+                if self.__beta_cuts:
+                    beta_cut_mean = sum(self.__beta_cuts)/len(self.__beta_cuts)
+                    self.__beta_cuts.sort()
+                    beta_cut_q95 = self.__beta_cuts[int(0.95*len(self.__beta_cuts))]
+                else:
+                    beta_cut_mean = 0
+                    beta_cut_q95 = 0
 
-            print(f"{len(self.__board_values)} hashed board values")
+                print( f"{self.__evaluation_count} state evaluations" + " / " +
+                       f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
+                       f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
+
+                print(f"{len(self.__board_values)} hashed board values")
 
             if do_check:
                 self.check(initial_state, best_value, [best_action])
@@ -2622,22 +2625,34 @@ class MinimaxSearcher(Searcher):
         if self.__max_depth >= 2 and depth == self.__max_depth:
 
             pre_depth = self.__max_depth - 1
-            print(f"heuristic_2: iterative deepening at depth {pre_depth} ...")
+
+            if self.__debug:
+                print(f"heuristic_2: iterative deepening at depth {pre_depth} ...")
+
             pre_minimax_searcher = MinimaxSearcher(f"minimax-pre-{pre_depth}", max_depth=pre_depth)
             (_, _, pre_valued_actions) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
+
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
 
             pre_valued_actions.sort(reverse=(player == 1))
             actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
-            print(f"heuristic_2: iterative deepening at depth {pre_depth} done")
 
-            print(f"heuristic_3: updating board values at depth {depth} from depth {pre_depth}")
+            if self.__debug:
+                print(f"heuristic_2: iterative deepening at depth {pre_depth} done")
+
+            if self.__debug:
+                print(f"heuristic_3: updating board values at depth {depth} from depth {pre_depth}")
+
             self.__board_values.update(pre_minimax_searcher.__board_values)
 
         if len(self.__board_values) > self.__board_values_max_size:
-            print(f"heuristic_3: removing old board values at depth {depth} ; size before = {len(self.__board_values)}")
+            if self.__debug:
+                print(f"heuristic_3: removing old board values at depth {depth} ; size before = {len(self.__board_values)}")
+
             self.__board_values = dict(list(self.__board_values.items())[-self.__board_values_max_size//2:])
-            print(f"heuristic_3: removing old board values at depth {depth} ; size after = {len(self.__board_values)}")
+
+            if self.__debug:
+                print(f"heuristic_3: removing old board values at depth {depth} ; size after = {len(self.__board_values)}")
 
 
         # >> heuristic_3: sort actions according to previous evaluations
@@ -2673,7 +2688,8 @@ class MinimaxSearcher(Searcher):
                 best_child_value = max(best_child_value, child_value)
 
                 if best_child_value > beta:
-                    self.__beta_cuts.append(action_count/len(actions))
+                    if self.__debug:
+                        self.__beta_cuts.append(action_count/len(actions))
                     break
 
                 alpha = max(alpha, best_child_value)
@@ -2708,7 +2724,8 @@ class MinimaxSearcher(Searcher):
                 best_child_value = min(best_child_value, child_value)
 
                 if best_child_value < alpha:
-                    self.__alpha_cuts.append(action_count/len(actions))
+                    if self.__debug:
+                        self.__alpha_cuts.append(action_count/len(actions))
                     break
 
                 beta = min(beta, best_child_value)
@@ -2770,7 +2787,7 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-4mn", max_depth=4, time_limit=4*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-6mn", max_depth=4, time_limit=6*60) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 
 if False:

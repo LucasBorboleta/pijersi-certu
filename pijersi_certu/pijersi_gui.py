@@ -879,7 +879,6 @@ class GameGui(ttk.Frame):
         self.__searcher[rules.Player.T.BLACK] = rules.SEARCHER_CATALOG.get(self.__variable_black_player.get())
 
     def __command_protect_action(self, *_):
-
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
 
