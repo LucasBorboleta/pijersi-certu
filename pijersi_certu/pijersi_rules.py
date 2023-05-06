@@ -2297,9 +2297,11 @@ STATE_EVALUATOR_MM4 = STATE_EVALUATOR_MM3
 class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
-                 '__board_values', '__board_values_max_size',
+                 '__board_values',
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
+    __board_values_max_size = 1_000_000
+    
 
     def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None, state_evaluator: Optional[StateEvaluator]=None):
 
@@ -2337,8 +2339,7 @@ class MinimaxSearcher(Searcher):
         self.__evaluation_count = 0
 
         self.__board_values = {}
-        self.__board_values_max_size = 1_000_000
-
+            
 
     def is_interactive(self) -> bool:
         return False
@@ -2777,22 +2778,6 @@ class SearcherCatalog:
     def get(self, name: str) -> Searcher:
         assert name in self.__catalog
         return self.__catalog[name]
-
-
-SEARCHER_CATALOG = SearcherCatalog()
-
-SEARCHER_CATALOG.add( HumanSearcher("human") )
-
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-6mn", max_depth=4, time_limit=6*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
-
-if False:
-    SEARCHER_CATALOG.add( RandomSearcher("random") )
-    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 
 
 class Game:
@@ -3287,6 +3272,19 @@ def main():
 
 Hexagon.init()
 PijersiState.init()
+
+
+SEARCHER_CATALOG = SearcherCatalog()
+SEARCHER_CATALOG.add( HumanSearcher("human") )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-6mn", max_depth=4, time_limit=6*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
+if False:
+    SEARCHER_CATALOG.add( RandomSearcher("random") )
+    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 
 
 if __name__ == "__main__":
