@@ -7,7 +7,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
 ## Installing as single executable for Windows platform
 
-- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. The latest version is `v1.1.0-rc5`.
+- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. The latest version is `v1.1.0`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
@@ -15,19 +15,25 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version    | Hash   | Expected hash value                                              |
   | ---------- | ------ | ---------------------------------------------------------------- |
-  | v1.1.0-rc5 | SHA256 | 77A927D80F1335BAC0E0B898BEAF015878D838A4CF0E395805C121FC65C56BA0 |
-  | v1.1.0-rc5 | MD5    | 5C48C83228F9D90621AB108717C403A3                                 |
-  | v1.1.0-rc4 | SHA256 | 01CEE922B7837ED638D7E69D47B0CE9DA54B4512C9D0059700AF7598B1EE1ECA |
-  | v1.1.0-rc4 | MD5    | 6D5DE57F23315355CE8CDE45FA4325C5                                 |
-  | v1.1.0-rc3 | SHA256 | C873A790A8F5FFC7FD5A4EE509F6A05EF9C581FBE29335E5047DECE8F7312C28 |
-  | v1.1.0-rc3 | MD5    | A15F66E514F557D99516A42B05443111                                 |
-  | v1.1.0-rc2 | SHA256 | 7020FF967F3781BBF4C36F7FB45C77C1721212816F6879F63EB80A82D81EAACD |
-  | v1.1.0-rc2 | MD5    | E083FC94DB4E8381E10213C6E2E520FE                                 |
-  | v1.1.0-rc1 | SHA256 | 0EA219C70E075C253A1B974797D9CCB92531778A7F9FFF4205BEB21F8FA45E28 |
-  | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
+  | v1.1.0     | SHA256 | 62245ffd476791e12bdfbbf03006edecbd9742a6faa2c14917eee37126e9dbd4 |
+  | v1.1.0     | MD5    | 5dbf2450e54a7520d8ed8c72f863c80a                                 |
   | v1.0.0     | SHA256 | 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36 |
   | v1.0.0     | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                                 |
-
+  
+  - The release candidates are still available, but the latest releases should be prefered:
+  
+   | Version    | Hash   | Expected hash value                                              |
+   | ---------- | ------ | ---------------------------------------------------------------- |
+   | v1.1.0-rc5 | SHA256 | 77A927D80F1335BAC0E0B898BEAF015878D838A4CF0E395805C121FC65C56BA0 |
+   | v1.1.0-rc5 | MD5    | 5C48C83228F9D90621AB108717C403A3                                 |
+   | v1.1.0-rc4 | SHA256 | 01CEE922B7837ED638D7E69D47B0CE9DA54B4512C9D0059700AF7598B1EE1ECA |
+   | v1.1.0-rc4 | MD5    | 6D5DE57F23315355CE8CDE45FA4325C5                                 |
+   | v1.1.0-rc3 | SHA256 | C873A790A8F5FFC7FD5A4EE509F6A05EF9C581FBE29335E5047DECE8F7312C28 |
+   | v1.1.0-rc3 | MD5    | A15F66E514F557D99516A42B05443111                                 |
+   | v1.1.0-rc2 | SHA256 | 7020FF967F3781BBF4C36F7FB45C77C1721212816F6879F63EB80A82D81EAACD |
+   | v1.1.0-rc2 | MD5    | E083FC94DB4E8381E10213C6E2E520FE                                 |
+   | v1.1.0-rc1 | SHA256 | 0EA219C70E075C253A1B974797D9CCB92531778A7F9FFF4205BEB21F8FA45E28 |
+   | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
 
 
 - To start `pijersi-certu` : double-click on the icon of the downloaded executable
@@ -58,4 +64,6 @@ The following instructions might also work on other platforms, but only Windows 
 For information, *pijersi_certu* relies on the following packages:
 
 - *Pillow* : for converting and resizing images used in the GUI;
-- *Mcts* is no longer used.
+
+The package *Mcts* is no longer used.
+

@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.1.0-rc5"
+__version__ = "1.1.0"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -2301,7 +2301,7 @@ class MinimaxSearcher(Searcher):
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
     __board_values_max_size = 1_000_000
-    
+
 
     def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None, state_evaluator: Optional[StateEvaluator]=None):
 
@@ -2339,7 +2339,7 @@ class MinimaxSearcher(Searcher):
         self.__evaluation_count = 0
 
         self.__board_values = {}
-            
+
 
     def is_interactive(self) -> bool:
         return False
