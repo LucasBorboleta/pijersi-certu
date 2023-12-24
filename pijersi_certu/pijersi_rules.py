@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -746,12 +746,14 @@ BoardStates = Sequence[HexState]
 @dataclass
 class PijersiAction:
     Self = TypeVar("Self", bound="PijersiAction")
+    PijersiState = TypeVar("PijersiState", bound="PijersiState")
 
     next_board_codes: Optional[(BoardCodes)] = None
     path_vertices: Optional[Path] = None
     capture_code: Optional[CaptureCode] = None
     move_code: Optional[MoveCode] = None
-    value: float = math.nan
+    value: Optional[float] = None
+    next_state: Optional[PijersiState] = None
 
     __TABLE_MOVE_CODE_TO_NAMES = [None for _ in range(4)]
     __TABLE_MOVE_CODE_TO_NAMES[0] = ['-', '']
@@ -805,7 +807,6 @@ class PijersiAction:
         return self.value == other.value and self.path_vertices == other.path_vertices
 
 
-
 class PijersiState:
 
     Self = TypeVar("Self", bound="PijersiState")
@@ -850,7 +851,6 @@ class PijersiState:
                  player: Player.T=Player.T.WHITE,
                  credit: Optional[int]=None,
                  turn: int=1):
-
 
         self.__board_codes = board_codes if board_codes is not None else PijersiState.__make_default_board_codes()
         self.__player = player
@@ -1394,6 +1394,7 @@ class PijersiState:
 
         if not use_cache or self.__actions is None:
             self.__actions = self.__find_all_actions()
+
         return self.__actions
 
 
@@ -1422,11 +1423,13 @@ class PijersiState:
 
 
     def take_action(self, action: PijersiAction) -> Self:
+        if action.next_state is None:
+            action.next_state = PijersiState(board_codes=action.next_board_codes, 
+                                 player=self.get_other_player(),
+                                 credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
+                                 turn=self.__turn + 1)
 
-        return PijersiState(board_codes=action.next_board_codes,
-                            player=self.get_other_player(),
-                            credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
-                            turn=self.__turn + 1)
+        return action.next_state
 
 
     def take_action_by_name(self, action_name: str) -> Self:
@@ -1546,7 +1549,6 @@ class PijersiState:
 
     @staticmethod
     def decode_path_code(code: PathCode, path_length: int) -> PathCodes:
-
         assert code >= 0
         assert path_length >= 0
 
@@ -1579,7 +1581,7 @@ class PijersiState:
             shift *= code_base
 
         return code
-
+    
 
     @staticmethod
     def decode_path_codes(path_codes: PathCodes) -> PathStates:
@@ -2297,7 +2299,6 @@ STATE_EVALUATOR_MM4 = STATE_EVALUATOR_MM3
 class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
-                 '__board_values',
                  '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
     __board_values_max_size = 1_000_000
@@ -2337,8 +2338,6 @@ class MinimaxSearcher(Searcher):
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
-
-        self.__board_values = {}
 
 
     def is_interactive(self) -> bool:
@@ -2382,8 +2381,6 @@ class MinimaxSearcher(Searcher):
                 print( f"{self.__evaluation_count} state evaluations" + " / " +
                        f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                        f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
-
-                print(f"{len(self.__board_values)} hashed board values")
 
             if do_check:
                 self.check(initial_state, best_value, [best_action])
@@ -2542,16 +2539,8 @@ class MinimaxSearcher(Searcher):
             - memoization of board values.
         """
 
-        def score_action_1(action):
+        def score_action_type(action):
             return 2*(action.capture_code//2 + action.capture_code%2) + action.move_code//2 + action.move_code%2
-
-
-        def score_action_3(action):
-            try :
-                score = self.__board_values[hash((*action.next_board_codes, player))]
-            except:
-                score = 0
-            return score
 
 
         if depth is None:
@@ -2613,61 +2602,53 @@ class MinimaxSearcher(Searcher):
                 print(f"reading openings file {opening_file_path} done")
                 return (action_value, [], valued_actions)
 
-
-        # >> for providing a bit of surprise
-        random.shuffle(actions)
-
         # >> A few heuristics for generating efficient alpha-beta cuts
 
-        # >> heuristic_1: sort actions according to the type of action
-        actions.sort(key=score_action_1, reverse=True)
+        # >> HA: sort actions according to the type of action
+        actions.sort(key=score_action_type, reverse=True)
 
-        # >> heuristic_2: compute Minimax at inferior depth for sorting actions
+        # >> HB: compute Minimax at inferior depth for sorting actions
         if self.__max_depth >= 2 and depth == self.__max_depth:
 
             pre_depth = self.__max_depth - 1
 
             if self.__debug:
-                print(f"heuristic_2: iterative deepening at depth {pre_depth} ...")
+                print(f"HB: iterative deepening at depth {pre_depth} ...")
 
             pre_minimax_searcher = MinimaxSearcher(f"minimax-pre-{pre_depth}", max_depth=pre_depth)
-            (_, _, pre_valued_actions) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
+            (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
 
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
 
-            pre_valued_actions.sort(reverse=(player == 1))
-            actions = pre_valued_actions + [action for action in actions if action not in pre_valued_actions]
-
             if self.__debug:
-                print(f"heuristic_2: iterative deepening at depth {pre_depth} done")
+                print(f"HB: iterative deepening at depth {pre_depth} done")
 
-            if self.__debug:
-                print(f"heuristic_3: updating board values at depth {depth} from depth {pre_depth}")
-
-            self.__board_values.update(pre_minimax_searcher.__board_values)
-
-        if len(self.__board_values) > self.__board_values_max_size:
-            if self.__debug:
-                print(f"heuristic_3: removing old board values at depth {depth} ; size before = {len(self.__board_values)}")
-
-            self.__board_values = dict(list(self.__board_values.items())[-self.__board_values_max_size//2:])
-
-            if self.__debug:
-                print(f"heuristic_3: removing old board values at depth {depth} ; size after = {len(self.__board_values)}")
-
-
-        # >> heuristic_3: sort actions according to previous evaluations
-        actions.sort(key=score_action_3, reverse=(player == 1))
+        if self.__max_depth >= 2:
+            # >> HB: sort actions according to Minimax at inferior depth
+            actions_with_value = [action for action in actions if action.value is not None]
+            actions_without_value = [action for action in actions if action.value is None]
+            
+            if len(actions_with_value) != 0:
+                if self.__debug:
+                    print(f"HB: sorting {len(actions_with_value)} actions with value at depth {depth}/{self.__max_depth} for player {player}")
+                actions_with_value.sort(reverse=(player == 1))
+            
+        else:
+            actions_with_value = actions
+            actions_without_value = []
+            
 
         if player == 1:
 
             best_child_value = -math.inf
             best_child_branch = None
             best_action = None
+            best_child_break = False
 
             action_count = 0
 
-            for action in actions:
+            for action in actions_with_value:
+
                 action_count += 1
 
                 child_state = state.take_action(action)
@@ -2675,11 +2656,10 @@ class MinimaxSearcher(Searcher):
                 (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
 
-                # >> heuristic_3: store evaluation
-                self.__board_values[hash((*action.next_board_codes, -player))] = child_value
+                # >> HB: require book-keeping alpha-beta value
+                action.value = child_value
 
                 if make_valued_actions:
-                    action.value = child_value
                     valued_actions.append(action)
 
                 if child_value > best_child_value:
@@ -2689,21 +2669,67 @@ class MinimaxSearcher(Searcher):
                 best_child_value = max(best_child_value, child_value)
 
                 if best_child_value > beta:
+                    best_child_break = True
                     if self.__debug:
                         self.__beta_cuts.append(action_count/len(actions))
                     break
 
                 alpha = max(alpha, best_child_value)
+                
+            if not best_child_break and len(actions_without_value) != 0:
+                
+                if depth >= 2:
+                    if self.__debug:
+                        print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
+
+                    for action in actions_without_value:
+                        child_state = state.take_action(action)
+                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth)
+                    
+                    self.__evaluation_count += len(actions_without_value)
+                    
+                    actions_without_value.sort(reverse=(player == 1))
+
+    
+                for action in actions_without_value:
+                    action_count += 1
+    
+                    child_state = state.take_action(action)
+    
+                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
+    
+                    # >> HB: require book-keeping alpha-beta value
+                    action.value = child_value
+    
+                    if make_valued_actions:
+                        valued_actions.append(action)
+    
+                    if child_value > best_child_value:
+                        best_action = action
+                        best_child_branch = child_branch
+    
+                    best_child_value = max(best_child_value, child_value)
+    
+                    if best_child_value > beta:
+                        if self.__debug:
+                            self.__beta_cuts.append(action_count/len(actions))
+                        break
+    
+                    alpha = max(alpha, best_child_value)
+                
 
         elif player == -1:
 
             best_child_value = math.inf
             best_child_branch = None
             best_action = None
+            best_child_break = False
 
             action_count = 0
 
-            for action in actions:
+            for action in actions_with_value:
+
                 action_count += 1
 
                 child_state = state.take_action(action)
@@ -2711,11 +2737,10 @@ class MinimaxSearcher(Searcher):
                 (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
 
-                # >> heuristic_3: store evaluation
-                self.__board_values[hash((*action.next_board_codes, -player))] = child_value
+                # >> HB: require book-keeping alpha-beta value
+                action.value = child_value
 
                 if make_valued_actions:
-                    action.value = child_value
                     valued_actions.append(action)
 
                 if child_value < best_child_value:
@@ -2727,9 +2752,51 @@ class MinimaxSearcher(Searcher):
                 if best_child_value < alpha:
                     if self.__debug:
                         self.__alpha_cuts.append(action_count/len(actions))
+                    best_child_break = True
                     break
 
                 beta = min(beta, best_child_value)
+
+            if not best_child_break and len(actions_without_value) != 0:
+                
+                if depth >= 2:
+                    if self.__debug:
+                        print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
+
+                    for action in actions_without_value:
+                        child_state = state.take_action(action)
+                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth)
+                    
+                    self.__evaluation_count += len(actions_without_value)
+                    
+                    actions_without_value.sort(reverse=(player == 1))
+
+                for action in actions_without_value:
+                    action_count += 1
+    
+                    child_state = state.take_action(action)
+    
+                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
+    
+                    # >> HB: require book-keeping alpha-beta value
+                    action.value = child_value
+    
+                    if make_valued_actions:
+                        valued_actions.append(action)
+    
+                    if child_value < best_child_value:
+                        best_action = action
+                        best_child_branch = child_branch
+    
+                    best_child_value = min(best_child_value, child_value)
+    
+                    if best_child_value < alpha:
+                        if self.__debug:
+                            self.__alpha_cuts.append(action_count/len(actions))
+                        break
+    
+                    beta = min(beta, best_child_value)
 
         else:
             assert player in (-1, 1)
@@ -3276,6 +3343,7 @@ PijersiState.init()
 
 SEARCHER_CATALOG = SearcherCatalog()
 SEARCHER_CATALOG.add( HumanSearcher("human") )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
