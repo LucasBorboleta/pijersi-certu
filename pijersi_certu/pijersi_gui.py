@@ -2136,7 +2136,7 @@ class GameGui(ttk.Frame):
         else:
             pijersi_state = self.__pijersi_state
 
-        hex_states = pijersi_state.get_hexStates()
+        hex_states = pijersi_state.get_hex_states()
 
         for hexagon in rules.Hexagon.all:
 
