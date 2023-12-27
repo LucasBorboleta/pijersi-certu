@@ -2106,7 +2106,7 @@ class StateEvaluator():
 
     __slots__ = ('__cube_weight', '__fighter_weight',
                  '__dg_min_weight', '__dg_ave_weight', '__dc_ave_weight', '__credit_weight',
-                 '__debug')
+                 '__debugging')
 
 
     def __init__(self, cube_weight: Optional[float]=None,
@@ -2123,7 +2123,7 @@ class StateEvaluator():
                            'dg_ave_weight':2,
                            'credit_weight':1}
 
-        self.__debug = False
+        self.__debugging = False
 
         self.__dg_min_weight = dg_min_weight if dg_min_weight is not None else default_weights['dg_min_weight']
         self.__dg_ave_weight = dg_ave_weight if dg_ave_weight is not None else default_weights['dg_ave_weight']
@@ -2234,7 +2234,7 @@ class StateEvaluator():
 
             # normalize each feature in the intervall [-1, +1]
 
-            if self.__debug:
+            if self.__debugging:
                 assert dg_min_difference <= dg_min_norm
                 assert -dg_min_difference <= dg_min_norm
 
@@ -2300,12 +2300,12 @@ class MinimaxSearcher(Searcher):
     
     MinimaxSearcher = TypeVar("MinimaxSearcher", bound="MinimaxSearcher")
 
-    __slots__ = ('__max_depth', '__state_evaluator', '__searcher_parent',
-                 '__debug', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
+    __slots__ = ('__max_depth', '__state_evaluator', '__searcher_parent', '__transposition_table',
+                 '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
-    __board_values_max_size = 1_000_000
+    __TRANSPOSITION_TABLE_MAX_SIZE = 1_000_000
     
-    __LOW_ALPHA_BETA_CUT = 0.25
+    __LOW_ALPHA_BETA_CUT = 0.50
     __LOW_ACTION_COUNT = int(1/__LOW_ALPHA_BETA_CUT)
     
     __NULL_ALPHA_BETA_WINDOW = 0.001
@@ -2344,12 +2344,15 @@ class MinimaxSearcher(Searcher):
             self.__state_evaluator = StateEvaluator()
             
         self.__searcher_parent = searcher_parent
+        self.__transposition_table = {}
 
-        self.__debug = True
+        self.__debugging = False
+        self.__counting = True
+        
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
-
+        
 
     def is_interactive(self) -> bool:
         return False
@@ -2371,7 +2374,7 @@ class MinimaxSearcher(Searcher):
             best_actions = [action for action in valued_actions if action.value == best_value]
             best_action = random.choice(best_actions)
 
-            if self.__debug:
+            if self.__counting:
 
                 if self.__alpha_cuts:
                     alpha_cut_mean = sum(self.__alpha_cuts)/len(self.__alpha_cuts)
@@ -2392,6 +2395,8 @@ class MinimaxSearcher(Searcher):
                 print( f"{self.__evaluation_count} state evaluations" + " / " +
                        f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                        f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
+
+                print(f"{len(self.__transposition_table)} values in transposition table")
 
             if do_check:
                 self.check(initial_state, best_value, [best_action])
@@ -2623,15 +2628,15 @@ class MinimaxSearcher(Searcher):
 
             pre_depth = self.__max_depth - 1
 
-            if self.__debug:
+            if self.__debugging:
                 print(f"HB: iterative deepening at depth {pre_depth} ...")
 
             pre_minimax_searcher = MinimaxSearcher(f"minimax-pre-{pre_depth}", max_depth=pre_depth, searcher_parent=self)
             (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
 
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
-
-            if self.__debug:
+            
+            if self.__debugging:
                 print(f"HB: iterative deepening at depth {pre_depth} done")
 
         if self.__max_depth >= 2:
@@ -2640,14 +2645,15 @@ class MinimaxSearcher(Searcher):
             actions_without_value = [action for action in actions if action.value is None]
             
             if len(actions_with_value) != 0:
-                if self.__debug:
+                if self.__debugging:
                     print(f"HB: sorting {len(actions_with_value)} actions with value at depth {depth}/{self.__max_depth} for player {player}")
                 actions_with_value.sort(reverse=(player == 1))
             
         else:
             actions_with_value = actions
             actions_without_value = []
-            
+
+        do_null_window_search = self.__max_depth >= 3 and depth >= 2     
 
         if player == 1:
 
@@ -2666,22 +2672,53 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
                 
-                if first_action:
-                    first_action = False                    
-                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                child_credit = child_state.get_pijersi_state().get_credit()
+                child_tt_key = (depth - 1, -player, child_credit, *action.next_board_codes)
+                       
+                if not do_null_window_search or first_action:
+                    first_action = False 
+
+                    try:
+                        child_tt_value = self.__transposition_table[child_tt_key]
+                        child_value = child_tt_value
+                        child_branch = ['?']
+                        if self.__debugging:
+                            print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
                 
+                    except:
+                        if self.__debugging:
+                            print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+                        
+                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
+                
+                        # >> HE: store evaluation
+                        self.__transposition_table[child_tt_key] = child_value
+                    
                 else:
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=alpha + self.__NULL_ALPHA_BETA_WINDOW)
                     if alpha < child_value < beta:
-                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                        try:
+                            child_tt_value = self.__transposition_table[child_tt_key]
+                            child_value = child_tt_value
+                            child_branch = ['?']
+                            if self.__debugging:
+                                print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+                    
+                        except:
+                            if self.__debugging:
+                                print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+                            
+                            (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                             alpha=alpha, beta=beta)
+                            # >> HE: store evaluation
+                            self.__transposition_table[child_tt_key] = child_value
 
-                        if self.__debug:
+                        if False and self.__debugging:
                             print(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
-                        if self.__debug:
+                        if False and self.__debugging:
                             print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
 
                 # >> HB: require book-keeping alpha-beta value
@@ -2701,10 +2738,13 @@ class MinimaxSearcher(Searcher):
                 best_child_value = max(best_child_value, child_value)
 
                 if best_child_value > beta:
-                    if self.__debug:
+                    if self.__counting:
                         self.__beta_cuts.append(action_count/len(actions))
+                        
+                    if self.__debugging:
                         if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                             print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+
                     best_child_break = True
                     break
 
@@ -2713,12 +2753,12 @@ class MinimaxSearcher(Searcher):
             if not best_child_break and len(actions_without_value) != 0:
                 
                 if depth >= 2:
-                    if self.__debug:
+                    if self.__debugging:
                         print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
                         child_state = state.take_action(action)
-                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth)
+                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
                     
                     self.__evaluation_count += len(actions_without_value)
                     
@@ -2728,9 +2768,26 @@ class MinimaxSearcher(Searcher):
                     action_count += 1
     
                     child_state = state.take_action(action)
-               
-                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                
+                    child_credit = child_state.get_pijersi_state().get_credit()
+                    child_tt_key = (depth - 1, -player, child_credit, *action.next_board_codes)
+
+                    try:
+                        child_tt_value = self.__transposition_table[child_tt_key]
+                        child_value = child_tt_value
+                        child_branch = ['?']
+                        if self.__debugging:
+                            print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+                    
+                    except:
+                        if self.__debugging:
+                            print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+
+                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
+                
+                        # >> HE: store evaluation
+                        self.__transposition_table[child_tt_key] = child_value
     
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
@@ -2749,18 +2806,20 @@ class MinimaxSearcher(Searcher):
                     best_child_value = max(best_child_value, child_value)
     
                     if best_child_value > beta:
-                        if self.__debug:
+                        if self.__counting:
                             self.__beta_cuts.append(action_count/len(actions))
+                            
+                        if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                                 print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                        
                         best_child_break = True
                         break
     
                     alpha = max(alpha, best_child_value)
-        
-            if self.__debug:
+
+            if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    self.__beta_cuts.append(action_count/len(actions))
                     print(f"no beta-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")                
 
         elif player == -1:
@@ -2780,23 +2839,54 @@ class MinimaxSearcher(Searcher):
 
                 child_state = state.take_action(action)
                 
-                if first_action:
-                    first_action = False                    
-                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                child_credit = child_state.get_pijersi_state().get_credit()
+                child_tt_key = (depth - 1, -player, child_credit, *action.next_board_codes)
+
+                if not do_null_window_search or first_action:
+                    first_action = False   
+                    
+                    try:
+                        child_tt_value = self.__transposition_table[child_tt_key]
+                        child_value = child_tt_value
+                        child_branch = ['?']
+                        if self.__debugging:
+                            print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+                    
+                    except:
+                        if self.__debugging:
+                            print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+                            
+                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
+                        # >> HE: store evaluation
+                        self.__transposition_table[child_tt_key] = child_value
                 
                 else:
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=beta - self.__NULL_ALPHA_BETA_WINDOW, beta=beta)
                     if alpha < child_value < beta:
-                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                        try:
+                            child_tt_value = self.__transposition_table[child_tt_key]
+                            child_value = child_tt_value
+                            child_branch = ['?']
+                            if self.__debugging:
+                                print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+                        
+                        except:
+                            if self.__debugging:
+                                print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+                                
+                            (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                             alpha=alpha, beta=beta)
+                            # >> HE: store evaluation
+                            self.__transposition_table[child_tt_key] = child_value
 
-                        if self.__debug:
+                        if False and self.__debugging:
                             print(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
-                        if self.__debug:
+                        if False and self.__debugging:
                             print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
+            
 
                 # >> HB: require book-keeping alpha-beta value
                 action.value = child_value
@@ -2815,24 +2905,27 @@ class MinimaxSearcher(Searcher):
                 best_child_value = min(best_child_value, child_value)
 
                 if best_child_value < alpha:
-                    if self.__debug:
+                    if self.__counting:
                         self.__alpha_cuts.append(action_count/len(actions))
+
+                    if self.__debugging:
                         if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                             print(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+
                     best_child_break = True
                     break
 
                 beta = min(beta, best_child_value)
 
             if not best_child_break and len(actions_without_value) != 0:
-                
+
                 if depth >= 2:
-                    if self.__debug:
+                    if self.__debugging:
                         print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
                         child_state = state.take_action(action)
-                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth)
+                        action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
                     
                     self.__evaluation_count += len(actions_without_value)
                     
@@ -2843,9 +2936,26 @@ class MinimaxSearcher(Searcher):
     
                     child_state = state.take_action(action)
                 
-                    (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                    child_credit = child_state.get_pijersi_state().get_credit()
+                    child_tt_key = (depth - 1, -player, child_credit, *action.next_board_codes)
+
+                    try:
+                        child_tt_value = self.__transposition_table[child_tt_key]
+                        child_value = child_tt_value
+                        child_branch = ['?']
+                        if self.__debugging:
+                            print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+                    
+                    except:
+                        if self.__debugging:
+                            print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+
+                        (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
+                                                                         alpha=alpha, beta=beta)
                 
+                        # >> HE: store evaluation
+                        self.__transposition_table[child_tt_key] = child_value
+                                
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
                  
@@ -2863,18 +2973,20 @@ class MinimaxSearcher(Searcher):
                     best_child_value = min(best_child_value, child_value)
     
                     if best_child_value < alpha:
-                        if self.__debug:
+                        if self.__counting:
                             self.__alpha_cuts.append(action_count/len(actions))
+                            
+                        if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                                 print(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                        
                         best_child_break = True
                         break
     
                     beta = min(beta, best_child_value)
-        
-            if self.__debug:
+
+            if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    self.__alpha_cuts.append(action_count/len(actions))
                     print(f"no alpha-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")                
 
         else:
