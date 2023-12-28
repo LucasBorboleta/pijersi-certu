@@ -2601,6 +2601,21 @@ class MinimaxSearcher(Searcher):
         assert alpha <= beta
 
         actions = state.get_actions()
+        
+        # Keep actions making unique states
+        unique_actions = []
+        unique_keys = set()
+        
+        for action in actions:
+            action_key = (*action.next_board_codes,)
+            if action_key not in unique_keys:
+                unique_keys.add(action_key)
+                unique_actions.append(action)
+                
+        actions = unique_actions
+        unique_actions = None
+        unique_keys = None
+
 
         valued_actions = []
         make_valued_actions = (depth == self.__max_depth)
