@@ -3525,7 +3525,7 @@ SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-10s", max_depth=2, time_limit=10
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-1mn", max_depth=3, time_limit=1*60) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-6mn", max_depth=4, time_limit=6*60) )
+SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-10mn", max_depth=4, time_limit=10*60) )
 SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
 if False:
     SEARCHER_CATALOG.add( RandomSearcher("random") )
