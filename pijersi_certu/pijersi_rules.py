@@ -1424,7 +1424,7 @@ class PijersiState:
 
     def take_action(self, action: PijersiAction) -> Self:
         if action.next_state is None:
-            action.next_state = PijersiState(board_codes=action.next_board_codes, 
+            action.next_state = PijersiState(board_codes=action.next_board_codes,
                                  player=self.get_other_player(),
                                  credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
                                  turn=self.__turn + 1)
@@ -1585,7 +1585,7 @@ class PijersiState:
             shift *= code_base
 
         return code
-    
+
 
     @staticmethod
     def decode_path_codes(path_codes: PathCodes) -> PathStates:
@@ -2301,20 +2301,20 @@ STATE_EVALUATOR_MM4 = STATE_EVALUATOR_MM3
 
 
 class MinimaxSearcher(Searcher):
-    
+
     MinimaxSearcher = TypeVar("MinimaxSearcher", bound="MinimaxSearcher")
 
-    __slots__ = ('__max_depth', '__state_evaluator', 
+    __slots__ = ('__max_depth', '__state_evaluator',
                  '__searcher_parent', '__transposition_table',
                  '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
-   
+
     __LOW_ALPHA_BETA_CUT = 0.50
     __LOW_ACTION_COUNT = int(1/__LOW_ALPHA_BETA_CUT)
-    
+
     __NULL_ALPHA_BETA_WINDOW = 0.001
 
 
-    def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None, 
+    def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None,
                  state_evaluator: Optional[StateEvaluator]=None,
                  searcher_parent: Optional[MinimaxSearcher]=None):
 
@@ -2345,17 +2345,17 @@ class MinimaxSearcher(Searcher):
 
         else:
             self.__state_evaluator = StateEvaluator()
-            
+
         self.__searcher_parent = searcher_parent
         self.__transposition_table = {}
 
         self.__debugging = False
         self.__counting = True
-        
+
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
-        
+
 
     def is_interactive(self) -> bool:
         return False
@@ -2494,27 +2494,27 @@ class MinimaxSearcher(Searcher):
 
 
     def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
-        
+
         player = state.get_current_maximizer_player()
 
         pijersi_state = state.get_pijersi_state()
         credit = pijersi_state.get_credit()
         board_codes = pijersi_state.get_board_codes()
-        
+
         key = (depth, player, credit, *board_codes)
 
         try:
             value = self.__transposition_table[key]
             if self.__debugging:
                 print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
-    
+
         except:
             if self.__debugging:
                 print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
 
             value = self.__state_evaluator.evaluate_state_value(state, depth)
             self.__transposition_table[key] = value
-        
+
         return value
 
 
@@ -2601,21 +2601,6 @@ class MinimaxSearcher(Searcher):
         assert alpha <= beta
 
         actions = state.get_actions()
-        
-        # Keep actions making unique states
-        unique_actions = []
-        unique_keys = set()
-        
-        for action in actions:
-            action_key = (*action.next_board_codes,)
-            if action_key not in unique_keys:
-                unique_keys.add(action_key)
-                unique_actions.append(action)
-                
-        actions = unique_actions
-        unique_actions = None
-        unique_keys = None
-
 
         valued_actions = []
         make_valued_actions = (depth == self.__max_depth)
@@ -2659,6 +2644,24 @@ class MinimaxSearcher(Searcher):
 
         # >> A few heuristics for generating efficient alpha-beta cuts
 
+        # Keep actions making unique states
+        unique_actions = []
+        unique_action_keys = set()
+
+        for action in actions:
+            action_key = (*action.next_board_codes,)
+            if action_key not in unique_action_keys:
+                unique_action_keys.add(action_key)
+                unique_actions.append(action)
+
+        if self.__debugging:
+            print(f"HF: keeping {len(unique_actions)} unique actions over {len(actions)} actions at {depth}/{self.__max_depth} for player {player}")
+
+        actions = unique_actions
+        unique_actions = None
+        unique_action_keys = None
+
+
         # >> HA: sort actions according to the type of action
         actions.sort(key=score_action_type, reverse=True)
 
@@ -2674,7 +2677,7 @@ class MinimaxSearcher(Searcher):
             (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
 
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
-            
+
             if self.__debugging:
                 print(f"HB: iterative deepening at depth {pre_depth} done")
 
@@ -2682,17 +2685,17 @@ class MinimaxSearcher(Searcher):
             # >> HB: sort actions according to Minimax at inferior depth
             actions_with_value = [action for action in actions if action.value is not None]
             actions_without_value = [action for action in actions if action.value is None]
-            
+
             if len(actions_with_value) != 0:
                 if self.__debugging:
                     print(f"HB: sorting {len(actions_with_value)} actions with value at depth {depth}/{self.__max_depth} for player {player}")
                 actions_with_value.sort(reverse=(player == 1))
-            
+
         else:
             actions_with_value = actions
             actions_without_value = []
 
-        do_null_window_search = self.__max_depth >= 3 and depth >= 2     
+        do_null_window_search = self.__max_depth >= 3 and depth >= 2
 
         if player == 1:
 
@@ -2702,7 +2705,7 @@ class MinimaxSearcher(Searcher):
             best_child_break = False
 
             action_count = 0
-            
+
             first_action = True
 
             for action in actions_with_value:
@@ -2710,12 +2713,12 @@ class MinimaxSearcher(Searcher):
                 action_count += 1
 
                 child_state = state.take_action(action)
-                                       
+
                 if not do_null_window_search or first_action:
-                    first_action = False 
+                    first_action = False
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
-                    
+
                 else:
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=alpha + self.__NULL_ALPHA_BETA_WINDOW)
@@ -2730,7 +2733,7 @@ class MinimaxSearcher(Searcher):
 
                 # >> HB: require book-keeping alpha-beta value
                 action.value = child_value
-                
+
                 # >> free some memory once action is valued and will never be explored  by any searcher
                 if self.__searcher_parent is None:
                     action.next_state = None
@@ -2747,7 +2750,7 @@ class MinimaxSearcher(Searcher):
                 if best_child_value > beta:
                     if self.__counting:
                         self.__beta_cuts.append(action_count/len(actions))
-                        
+
                     if self.__debugging:
                         if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                             print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
@@ -2756,9 +2759,9 @@ class MinimaxSearcher(Searcher):
                     break
 
                 alpha = max(alpha, best_child_value)
-                
+
             if not best_child_break and len(actions_without_value) != 0:
-                
+
                 if depth >= 2:
                     if self.__debugging:
                         print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
@@ -2766,51 +2769,51 @@ class MinimaxSearcher(Searcher):
                     for action in actions_without_value:
                         child_state = state.take_action(action)
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
-                    
+
                     self.__evaluation_count += len(actions_without_value)
-                    
+
                     actions_without_value.sort(reverse=(player == 1))
-   
+
                 for action in actions_without_value:
                     action_count += 1
-    
+
                     child_state = state.take_action(action)
-                
+
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
-                    
+
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
-                    
+
                     # >> free some memory once action is valued and will never be explored  by any searcher
                     if self.__searcher_parent is None:
                         action.next_state = None
-    
+
                     if make_valued_actions:
                         valued_actions.append(action)
-    
+
                     if child_value > best_child_value:
                         best_action = action
                         best_child_branch = child_branch
-    
+
                     best_child_value = max(best_child_value, child_value)
-    
+
                     if best_child_value > beta:
                         if self.__counting:
                             self.__beta_cuts.append(action_count/len(actions))
-                            
+
                         if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                                 print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
-                        
+
                         best_child_break = True
                         break
-    
+
                     alpha = max(alpha, best_child_value)
 
             if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    print(f"no beta-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")                
+                    print(f"no beta-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
 
         elif player == -1:
 
@@ -2821,19 +2824,19 @@ class MinimaxSearcher(Searcher):
 
             action_count = 0
 
-            first_action = True                    
+            first_action = True
 
             for action in actions_with_value:
 
                 action_count += 1
 
                 child_state = state.take_action(action)
-                
+
                 if not do_null_window_search or first_action:
-                    first_action = False   
+                    first_action = False
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
-                
+
                 else:
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=beta - self.__NULL_ALPHA_BETA_WINDOW, beta=beta)
@@ -2846,10 +2849,10 @@ class MinimaxSearcher(Searcher):
                     else:
                         if False and self.__debugging:
                             print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
-            
+
                 # >> HB: require book-keeping alpha-beta value
                 action.value = child_value
-                
+
                 # >> free some memory once action is valued and will never be explored  by any searcher
                 if self.__searcher_parent is None:
                     action.next_state = None
@@ -2885,51 +2888,51 @@ class MinimaxSearcher(Searcher):
                     for action in actions_without_value:
                         child_state = state.take_action(action)
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
-                    
+
                     self.__evaluation_count += len(actions_without_value)
-                    
+
                     actions_without_value.sort(reverse=(player == 1))
 
                 for action in actions_without_value:
                     action_count += 1
-    
+
                     child_state = state.take_action(action)
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
-                                                
+
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
-                 
+
                     # >> free some memory once action is valued and will never be explored  by any searcher
                     if self.__searcher_parent is None:
                         action.next_state = None
-   
+
                     if make_valued_actions:
                         valued_actions.append(action)
-    
+
                     if child_value < best_child_value:
                         best_action = action
                         best_child_branch = child_branch
-    
+
                     best_child_value = min(best_child_value, child_value)
-    
+
                     if best_child_value < alpha:
                         if self.__counting:
                             self.__alpha_cuts.append(action_count/len(actions))
-                            
+
                         if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
                                 print(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
-                        
+
                         best_child_break = True
                         break
-    
+
                     beta = min(beta, best_child_value)
 
             if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    print(f"no alpha-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")                
+                    print(f"no alpha-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
 
         else:
             assert player in (-1, 1)
