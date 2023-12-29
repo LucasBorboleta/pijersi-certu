@@ -2305,7 +2305,7 @@ class MinimaxSearcher(Searcher):
     MinimaxSearcher = TypeVar("MinimaxSearcher", bound="MinimaxSearcher")
 
     __slots__ = ('__max_depth', '__state_evaluator',
-                 '__searcher_parent', '__transposition_table',
+                 '__searcher_parent', '__transposition_table_depth_0', '__transposition_table_depth_n', '__null_windowing_count',
                  '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
 
     __LOW_ALPHA_BETA_CUT = 0.50
@@ -2347,10 +2347,12 @@ class MinimaxSearcher(Searcher):
             self.__state_evaluator = StateEvaluator()
 
         self.__searcher_parent = searcher_parent
-        self.__transposition_table = {}
+        self.__transposition_table_depth_0 = {}
+        self.__transposition_table_depth_n = {}
+        self.__null_windowing_count = 0
 
         self.__debugging = False
-        self.__counting = True
+        self.__counting = False
 
         self.__alpha_cuts = []
         self.__beta_cuts = []
@@ -2399,7 +2401,8 @@ class MinimaxSearcher(Searcher):
                        f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                        f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
-                print(f"{len(self.__transposition_table)} values in transposition table")
+                print(f"{len(self.__transposition_table_depth_0)} values in transposition table depth-0")
+                print(f"{len(self.__transposition_table_depth_n)} values in transposition table depth-n")
 
             if do_check:
                 self.check(initial_state, best_value, [best_action])
@@ -2495,25 +2498,24 @@ class MinimaxSearcher(Searcher):
 
     def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
 
-        player = state.get_current_maximizer_player()
-
         pijersi_state = state.get_pijersi_state()
         credit = pijersi_state.get_credit()
         board_codes = pijersi_state.get_board_codes()
 
-        key = (depth, player, credit, *board_codes)
+        key = (depth, credit, *board_codes)
 
         try:
-            value = self.__transposition_table[key]
-            if self.__debugging:
-                print(f"HE: succeeded transposition table depth {depth}/{self.__max_depth} for player {player}")
+            value = self.__transposition_table_depth_0[key]
+            if False and self.__debugging:
+                player = state.get_current_maximizer_player()
+                print(f"HE: succeeded transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
 
         except:
-            if self.__debugging:
-                print(f"HE: failed transposition table depth {depth}/{self.__max_depth} for player {player}")
+            if False and self.__debugging:
+                print(f"HE: failed transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
 
             value = self.__state_evaluator.evaluate_state_value(state, depth)
-            self.__transposition_table[key] = value
+            self.__transposition_table_depth_0[key] = value
 
         return value
 
@@ -2591,6 +2593,21 @@ class MinimaxSearcher(Searcher):
             state_value = self.evaluate_state_value(state, depth)
             self.__evaluation_count += 1
             return (state_value, [], [])
+
+
+        state_key = (depth, state.get_pijersi_state().get_credit(), *state.get_pijersi_state().get_board_codes())
+        try:
+            state_value = self.__transposition_table_depth_n[state_key]
+            if False and self.__debugging:
+                player = state.get_current_maximizer_player()
+                print(f"HG: succeeded transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
+            return (state_value, [], [])
+
+        except:
+            if False and self.__debugging:
+                player = state.get_current_maximizer_player()
+                print(f"HG: failed transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
+
 
         if alpha is None:
             alpha = -math.inf
@@ -2720,8 +2737,13 @@ class MinimaxSearcher(Searcher):
                                                                      alpha=alpha, beta=beta)
 
                 else:
+                    self.__null_windowing_count += 1
+
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=alpha + self.__NULL_ALPHA_BETA_WINDOW)
+
+                    self.__null_windowing_count -= 1
+
                     if alpha < child_value < beta:
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                          alpha=alpha, beta=beta)
@@ -2733,6 +2755,10 @@ class MinimaxSearcher(Searcher):
 
                 # >> HB: require book-keeping alpha-beta value
                 action.value = child_value
+
+                if self.__null_windowing_count == 0:
+                    child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
+                    self.__transposition_table_depth_n[child_key] = child_value
 
                 # >> free some memory once action is valued and will never be explored  by any searcher
                 if self.__searcher_parent is None:
@@ -2784,6 +2810,10 @@ class MinimaxSearcher(Searcher):
 
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
+
+                    if self.__null_windowing_count == 0:
+                        child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
+                        self.__transposition_table_depth_n[child_key] = child_value
 
                     # >> free some memory once action is valued and will never be explored  by any searcher
                     if self.__searcher_parent is None:
@@ -2838,8 +2868,11 @@ class MinimaxSearcher(Searcher):
                                                                      alpha=alpha, beta=beta)
 
                 else:
+                    self.__null_windowing_count += 1
+
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=beta - self.__NULL_ALPHA_BETA_WINDOW, beta=beta)
+                    self.__null_windowing_count -= 1
 
                     if alpha < child_value < beta:
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
@@ -2852,6 +2885,10 @@ class MinimaxSearcher(Searcher):
 
                 # >> HB: require book-keeping alpha-beta value
                 action.value = child_value
+
+                if self.__null_windowing_count == 0:
+                    child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
+                    self.__transposition_table_depth_n[child_key] = child_value
 
                 # >> free some memory once action is valued and will never be explored  by any searcher
                 if self.__searcher_parent is None:
@@ -2903,6 +2940,10 @@ class MinimaxSearcher(Searcher):
 
                     # >> HB: require book-keeping alpha-beta value
                     action.value = child_value
+
+                    if self.__null_windowing_count == 0:
+                        child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
+                        self.__transposition_table_depth_n[child_key] = child_value
 
                     # >> free some memory once action is valued and will never be explored  by any searcher
                     if self.__searcher_parent is None:
