@@ -1,0 +1,334 @@
+
+   1 a5-b6=d5             2 g4-f5=e4        
+   3 d5=c5-c6             4 g5-f6=d7        
+   5 b5-c5=d5             6 e4=e5-d6        
+   7 d5=e4-f5             8 g6-f7=f5!       
+   9 c6-b6               10 d6-e5=c6        
+  11 a4-a5               12 c6=b6!-b7!      
+  13 b1-b2=d3            14 b6-a6! 
+----------------------------------------
+Player black-minimax2-inf wins against white-minimax2-inf ; 24 versus 29 seconds
+----------------------------------------
+Hello from PIJERSI-CERTU-v1.2.0
+
+PIJERSI-CERTU implements a GUI and a rule engine for the PIJERSI boardgame.
+
+Copyright (C) 2022 Lucas Borboleta (lucas.borboleta@free.fr).
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
+
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+reading openings file C:\Users\leandre\AppData\Local\Temp\_MEI140762\openings-minimax-2.txt ...
+reading openings file C:\Users\leandre\AppData\Local\Temp\_MEI140762\openings-minimax-2.txt done
+
+select action a5-b6=d5 with value -2.67 amongst 1 best actions
+best actions: ['a5-b6=d5']
+best branch: []
+first actions:  ['a5-b6=d5:-2.67']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 1.6 seconds
+Turn 1 : after 1.6 seconds white-minimax2-inf selects a5-b6=d5 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5PR    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action g4-f5=e4 with value -6.40 amongst 4 best actions
+best actions: ['g4-f5=e5', 'g4-f5=e4', 'g5-f5=e5', 'g5-f5=e4']
+best branch: ['g4-f5=e5', 'a1-b2=d3']
+first actions:  ['g4-f5=e5:-6.40', 'g4-f5=e4:-6.40', 'g5-f5=e5:-6.40', 'g5-f5=e4:-6.40', 'f6-f5=e5:-6.75', 'g4-f5:-8.43']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 2.1 seconds
+Turn 2 : after 2.1 seconds black-minimax2-inf selects g4-f5=e4 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6.s    f7.p
+    e1..    e2..    e3..    e4sr    e5..    e6..
+d1..    d2..    d3..    d4..    d5PR    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action d5=c5-c6 with value -5.69 amongst 1 best actions
+best actions: ['d5=c5-c6']
+best branch: ['d5=c5-c6', 'g5-f6=d5']
+first actions:  ['d5=c5-c6:-5.69', 'd5=c5-b6:-5.90', 'd5=c5-b5:-5.90', 'd5=e5-f5:-6.14', 'd5=b6-b7:-8.17', 'd5=b6-a6:-8.38']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 2.6 seconds
+Turn 3 : after 2.6 seconds white-minimax2-inf selects d5=c5-c6 amongst 188 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6.s    f7.p
+    e1..    e2..    e3..    e4sr    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.R    c6.P
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 4 / player black / credit 17 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action g5-f6=d7 with value -3.81 amongst 1 best actions
+best actions: ['g5-f6=d7']
+best branch: ['g5-f6=d7', 'b7-c6=e5']
+first actions:  ['g5-f6=d7:-3.81', 'f7-f6=d7:-4.02', 'f1-f2=d3:-4.60', 'f3-g3=g4:-4.71', 'f4=f5-g4:-4.71', 'f7-f6=f7:-4.71']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 6.1 seconds
+Turn 4 : after 6.1 seconds black-minimax2-inf selects g5-f6=d7 amongst 211 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7.p
+    e1..    e2..    e3..    e4sr    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5.R    c6.P
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 5 / player white / credit 16 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action b5-c5=d5 with value -4.28 amongst 1 best actions
+best actions: ['b5-c5=d5']
+best branch: ['b5-c5=d5', 'd7=d6-c5']
+first actions:  ['b5-c5=d5:-4.28', 'b4=d5-d6:-6.17', 'b5-c5:-6.22', 'b7-c6=e5:-11.61', 'b5-c5=e6:-12.19', 'b7-c6=d6:-13.40']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 2.1 seconds
+Turn 5 : after 2.1 seconds white-minimax2-inf selects b5-c5=d5 amongst 177 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7.p
+    e1..    e2..    e3..    e4sr    e5..    e6..
+d1..    d2..    d3..    d4..    d5SR    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6.P
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 6 / player black / credit 15 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action e4=e5-d6 with value -3.25 amongst 1 best actions
+best actions: ['e4=e5-d6']
+best branch: ['e4=e5-d6', 'a1-b2=d3']
+first actions:  ['e4=e5-d6:-3.25', 'd7=f6-f7:-6.85', 'd7=f6-g5:-7.06', 'd7=f6-g6:-7.06', 'd7-d6:-10.72', 'e4=c3-c4:-11.71']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 2.1 seconds
+Turn 6 : after 2.1 seconds black-minimax2-inf selects e4=e5-d6 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7.p
+    e1..    e2..    e3..    e4..    e5.r    e6..
+d1..    d2..    d3..    d4..    d5SR    d6.s    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6.P
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 7 / player white / credit 14 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action d5=e4-f5 with value -12.72 amongst 1 best actions
+best actions: ['d5=e4-f5']
+best branch: ['d5=e4-f5', 'g6-f7=f5!']
+first actions:  ['d5=e4-f5:-12.72', 'd5=e4-d5:-13.42', 'd5-e4:-13.42', 'd5=e4:-13.57', 'd5=e4-e3:-13.80', 'd5=e4-d4:-13.83']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 2.0 seconds
+Turn 7 : after 2.0 seconds white-minimax2-inf selects d5=e4-f5 amongst 185 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.S    f6..    f7.p
+    e1..    e2..    e3..    e4.R    e5.r    e6..
+d1..    d2..    d3..    d4..    d5..    d6.s    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6.P
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 8 / player black / credit 13 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+select action g6-f7=f5! with value 4.77 amongst 1 best actions
+best actions: ['g6-f7=f5!']
+best branch: ['g6-f7=f5!', 'a1-b2=d3']
+first actions:  ['g6-f7=f5!:4.77', 'd6-e5=c6!:4.57', 'e5-d6=f5!:4.51', 'e5-f5!:4.32', 'd6-c6!:4.28', 'f4=g4-g5:-8.06']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 9.6 seconds
+Turn 8 : after 9.6 seconds black-minimax2-inf selects g6-f7=f5! amongst 156 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5.r    e6..
+d1..    d2..    d3..    d4..    d5..    d6.s    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6.P
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 9 / player white / credit 20 / alive P:4 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action c6-b6 with value -14.61 amongst 1 best actions
+best actions: ['c6-b6']
+best branch: ['c6-b6', 'e5-d6=c5']
+first actions:  ['c6-b6:-14.61', 'b7-c6=b6:-15.68', 'c6-b7=b5:-15.80', 'b7-c6=b7:-16.09', 'b7-c6=a5:-16.41', 'a1-b2=d3:-20.48']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 1.6 seconds
+Turn 9 : after 1.6 seconds white-minimax2-inf selects c6-b6 amongst 151 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5.r    e6..
+d1..    d2..    d3..    d4..    d5..    d6.s    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6.P    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 10 / player black / credit 19 / alive P:4 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action d6-e5=c6 with value 7.01 amongst 1 best actions
+best actions: ['d6-e5=c6']
+best branch: ['d6-e5=c6', 'a1-b2=d3']
+first actions:  ['d6-e5=c6:7.01', 'd7=c6-d6:6.99', 'd7=c6-d7:6.86', 'd6-c6:6.72', 'd7-e6:5.10', 'd7=e6-e5:5.02']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 1.5 seconds
+Turn 10 : after 1.5 seconds black-minimax2-inf selects d6-e5=c6 amongst 179 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6sr
+b1.P    b2.S    b3.R    b4WW    b5..    b6.P    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 11 / player white / credit 18 / alive P:4 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action a4-a5 with value -31.93 amongst 3 best actions
+best actions: ['a3-a4=a5', 'a4-a3=a5', 'a4-a5']
+best branch: ['a3-a4=a5', 'c6=b7!-b6!']
+first actions:  ['a3-a4=a5:-31.93', 'a4-a3=a5:-31.93', 'a4-a5:-31.93', 'a2-b2=a2:-32.10', 'a3-b3=a3:-32.10', 'b4=b5-a5:-32.10']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 8.1 seconds
+Turn 11 : after 8.1 seconds white-minimax2-inf selects a4-a5 amongst 153 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6sr
+b1.P    b2.S    b3.R    b4WW    b5..    b6.P    b7.P
+    a1.R    a2.P    a3.S    a4..    a5.R    a6.S
+
+
+Turn 12 / player black / credit 17 / alive P:4 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action c6=b6!-b7! with value 16.78 amongst 1 best actions
+best actions: ['c6=b6!-b7!']
+best branch: ['c6=b6!-b7!', 'a5-a6=b7!']
+first actions:  ['c6=b6!-b7!:16.78', 'c6=b7!-b6!:16.29', 'c6=b7!-c6:8.34', 'c6=b6!-c5:7.57', 'c6=b6!-b5:7.43', 'c6=b6!-c6:7.43']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 1.6 seconds
+Turn 12 : after 1.6 seconds black-minimax2-inf selects c6=b6!-b7! amongst 198 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6.r    b7.s
+    a1.R    a2.P    a3.S    a4..    a5.R    a6.S
+
+
+Turn 13 / player white / credit 20 / alive P:2 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action b1-b2=d3 with value -1000000.00 amongst 125 best actions
+best actions: ['b4=d3', 'b4=d3-d4', 'b4=d5', 'b4=d5-d4', 'e4-d4', 'a3-b3=c2', 'a3-b3=d2', 'b3-a3=c2', 'b4=c3-d3', 'b4=c3-d4', 'b4=d3-c2', 'b4=d3-d2', 'b4=d3-e2', 'b4=d3-e3', 'b4=c4-d4', 'b4=c4-d5', 'b4=d5-d6', 'b4=d5-c5', 'b4=d5-e5', 'e4-e3', 'b4=c3', 'b4=c3-c4', 'b4=c3-c2', 'b4=c4', 'b4=c4-c5', 'a2-b3=c2', 'a2-b3=d2', 'a5-a6=b7!', 'a1-a2=a1', 'a2-a3=a2', 'b2-b3=b2', 'b3-b2=c1', 'b3-b2=d1', 'a2-a1', 'a3-a2', 'b3-b2', 'a2-b2=c1', 'a2-b2=d1', 'b2-a2=b2', 'b2-a2=c1', 'b3-a3=b3', 'b4=b5-c4', 'b4=b5-c5', 'a2-b2', 'a3-b3', 'b3-c2', 'b4-c3', 'b4-c4', 'e4-d5', 'b2-b3=c2', 'b2-b3=d2', 'b3-b2=c2', 'a2-b2=c2', 'a3-b3=c3', 'b3-b2=d3', 'a2-b2=d3', 'a3-b3=d4', 'a1-b2=a1', 'a2-b3=a2', 'b1-b2=b1', 'b2-a1', 'b2-b1', 'b3-a2', 'a1-b1=a1', 'a5-a6=a5', 'a5-a6=a4', 'a6-a5=a6', 'a6-a5=a4', 'b1-a1=b1', 'b4=b5', 'a1-b1', 'a3-a4', 'a5-a6', 'a5-a4', 'a6-a5', 'b1-a1', 'b2-c1', 'b4-b5', 'a1-b2=c1', 'a1-b2=d1', 'b1-b2=c1', 'b1-b2=d1', 'b2-a1=b2', 'b2-b1=b2', 'b2-b1=c1', 'b3-a2=b3', 'a1-b2', 'a2-b3', 'a5-b5', 'b1-b2', 'b1-c1', 'b2-c2', 'b3-c3', 'a1-b1=c1', 'a6-a5=b5', 'a1-b2=c2', 'a2-b3=c3', 'b1-b2=c2', 'b2-a1=c2', 'b2-b1=d2', 'b3-a2=c3', 'a1-b1=d2', 'a6-a5=c4', 'a1-b2=d3', 'a2-b3=d4', 'b1-b2=d3', 'a2-b2=a2', 'a3-b3=a3', 'b3-a3=a4', 'b4=b5-a4', 'b2-a2', 'b3-a3', 'b4-a4', 'a2-a3=a4', 'a2-a1=a2', 'a3-a2=a3', 'a3-a2=a4', 'b3-b2=b3', 'a1-a2', 'a2-a3', 'b2-b3', 'b2-b3=c3', 'b2-b3=d4', 'b4=a4', 'e4-e5']
+best branch: ['b4=d3', 'b6-b7=a6!']
+first actions:  ['b4=d3:-1000000.00', 'b4=d3-d4:-1000000.00', 'b4=d5:-1000000.00', 'b4=d5-d4:-1000000.00', 'e4-d4:-1000000.00', 'a3-b3=c2:-1000000.00']
+
+Player white-minimax2-inf is thinking ...
+Player white-minimax2-inf is done after 10.6 seconds
+Turn 13 : after 10.6 seconds white-minimax2-inf selects b1-b2=d3 amongst 134 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5..    e6..
+d1..    d2..    d3PS    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3.R    b4WW    b5..    b6.r    b7.s
+    a1.R    a2.P    a3.S    a4..    a5.R    a6.S
+
+
+Turn 14 / player black / credit 19 / alive P:2 R:4 S:3 W:2 p:4 r:4 s:4 w:2
+
+select action b6-a6! with value 2000000.00 amongst 2 best actions
+best actions: ['b6-b7=a6!', 'b6-a6!']
+best branch: ['b6-b7=a6!']
+first actions:  ['b6-b7=a6!:2000000.00', 'b6-a6!:2000000.00', 'g1-f2=d3!:32.68', 'f3-f2=d3!:32.07', 'd7=d5-e4!:25.91', 'd7=c6-b7:17.38']
+
+Player black-minimax2-inf is thinking ...
+Player black-minimax2-inf is done after 1.0 seconds
+Turn 14 : after 1.0 seconds black-minimax2-inf selects b6-a6! amongst 178 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6..
+f1.p    f2.r    f3.s    f4ww    f5rp    f6..    f7..
+    e1..    e2..    e3..    e4.R    e5..    e6..
+d1..    d2..    d3PS    d4..    d5..    d6..    d7ps
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3.R    b4WW    b5..    b6..    b7.s
+    a1.R    a2.P    a3.S    a4..    a5.R    a6.r
+
+
+Turn 15 / player white / credit 20 / alive P:2 R:4 S:2 W:2 p:4 r:4 s:4 w:2
+
+----------------------------------------
+Player black-minimax2-inf wins against white-minimax2-inf ; 24 versus 29 seconds

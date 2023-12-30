@@ -535,7 +535,7 @@ class GameGui(ttk.Frame):
         self.__root = tk.Tk()
 
         try:
-            self.__root.title("pijersi-certu : for playing the pijersi boardgame and testing AI agents" +
+            self.__root.title(f"pijersi-certu-v{rules.__version__} for playing the pijersi boardgame and testing AI agents" +
                               " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi")
             self.__root.iconbitmap(AppConfig.ICON_FILE)
         except:
@@ -2413,7 +2413,7 @@ GraphicalHexagon.init()
 
 
 def main():
-    print("Hello")
+    print(f"Hello from PIJERSI-CERTU-v{rules.__version__}")
     print(_COPYRIGHT_AND_LICENSE)
     _ = GameGui()
     print("Bye")
