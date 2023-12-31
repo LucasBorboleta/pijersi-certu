@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -2306,7 +2306,7 @@ class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
                  '__searcher_parent', '__transposition_table_depth_0', '__transposition_table_depth_n', '__null_windowing_count',
-                 '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count')
+                 '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count', '__fun_evaluation_count')
 
     __LOW_ALPHA_BETA_CUT = 0.50
     __LOW_ACTION_COUNT = int(1/__LOW_ALPHA_BETA_CUT)
@@ -2357,6 +2357,7 @@ class MinimaxSearcher(Searcher):
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
+        self.__fun_evaluation_count = 0
 
 
     def is_interactive(self) -> bool:
@@ -2372,6 +2373,7 @@ class MinimaxSearcher(Searcher):
         self.__alpha_cuts = []
         self.__beta_cuts = []
         self.__evaluation_count = 0
+        self.__fun_evaluation_count = 0
 
         if self.get_time_limit() is None:
             (best_value, best_branch, valued_actions) = self.alphabeta_plus(state=initial_state, player=1)
@@ -2397,10 +2399,12 @@ class MinimaxSearcher(Searcher):
                     beta_cut_mean = 0
                     beta_cut_q95 = 0
 
+                print()
                 print( f"{self.__evaluation_count} state evaluations" + " / " +
                        f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                        f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
+                print(f"{self.__fun_evaluation_count} function calls to state evaluation")
                 print(f"{len(self.__transposition_table_depth_0)} values in transposition table depth-0")
                 print(f"{len(self.__transposition_table_depth_n)} values in transposition table depth-n")
 
@@ -2498,6 +2502,8 @@ class MinimaxSearcher(Searcher):
 
     def evaluate_state_value(self, state: MinimaxState, depth: int) -> float:
 
+        self.__evaluation_count += 1
+
         pijersi_state = state.get_pijersi_state()
         credit = pijersi_state.get_credit()
         board_codes = pijersi_state.get_board_codes()
@@ -2514,6 +2520,8 @@ class MinimaxSearcher(Searcher):
             if False and self.__debugging:
                 print(f"HE: failed transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
 
+            self.__fun_evaluation_count += 1
+            
             value = self.__state_evaluator.evaluate_state_value(state, depth)
             self.__transposition_table_depth_0[key] = value
 
@@ -2528,7 +2536,6 @@ class MinimaxSearcher(Searcher):
 
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
-            self.__evaluation_count += 1
             return (state_value, [])
 
 
@@ -2591,10 +2598,10 @@ class MinimaxSearcher(Searcher):
 
         if depth == 0 or state.is_terminal():
             state_value = self.evaluate_state_value(state, depth)
-            self.__evaluation_count += 1
             return (state_value, [], [])
 
 
+        # >> HG: avoid state evaluation
         state_key = (depth, state.get_pijersi_state().get_credit(), *state.get_pijersi_state().get_board_codes())
         try:
             state_value = self.__transposition_table_depth_n[state_key]
@@ -2661,7 +2668,7 @@ class MinimaxSearcher(Searcher):
 
         # >> A few heuristics for generating efficient alpha-beta cuts
 
-        # Keep actions making unique states
+        # >> HF: keep actions making unique states
         unique_actions = []
         unique_action_keys = set()
 
@@ -2694,6 +2701,7 @@ class MinimaxSearcher(Searcher):
             (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
 
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
+            self.__fun_evaluation_count += pre_minimax_searcher.__fun_evaluation_count
 
             if self.__debugging:
                 print(f"HB: iterative deepening at depth {pre_depth} done")
@@ -2753,9 +2761,10 @@ class MinimaxSearcher(Searcher):
                         if False and self.__debugging:
                             print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
 
-                # >> HB: require book-keeping alpha-beta value
+                # >> HB: store value just for sorting
                 action.value = child_value
 
+                # >> HG: store value to avoid re-evaluation
                 if self.__null_windowing_count == 0:
                     child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
                     self.__transposition_table_depth_n[child_key] = child_value
@@ -2797,6 +2806,7 @@ class MinimaxSearcher(Searcher):
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
 
                     self.__evaluation_count += len(actions_without_value)
+                    self.__fun_evaluation_count += len(actions_without_value)
 
                     actions_without_value.sort(reverse=(player == 1))
 
@@ -2808,9 +2818,10 @@ class MinimaxSearcher(Searcher):
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
 
-                    # >> HB: require book-keeping alpha-beta value
+                    # >> HB: store value just for sorting
                     action.value = child_value
 
+                    # >> HG: store value to avoid re-evaluation
                     if self.__null_windowing_count == 0:
                         child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
                         self.__transposition_table_depth_n[child_key] = child_value
@@ -2883,9 +2894,10 @@ class MinimaxSearcher(Searcher):
                         if False and self.__debugging:
                             print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
 
-                # >> HB: require book-keeping alpha-beta value
+                # >> HB: store value just for sorting
                 action.value = child_value
 
+                # >> HG: store value to avoid re-evaluation
                 if self.__null_windowing_count == 0:
                     child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
                     self.__transposition_table_depth_n[child_key] = child_value
@@ -2927,6 +2939,7 @@ class MinimaxSearcher(Searcher):
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
 
                     self.__evaluation_count += len(actions_without_value)
+                    self.__fun_evaluation_count += len(actions_without_value)
 
                     actions_without_value.sort(reverse=(player == 1))
 
@@ -2938,9 +2951,10 @@ class MinimaxSearcher(Searcher):
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
 
-                    # >> HB: require book-keeping alpha-beta value
+                    # >> HB: store value just for sorting
                     action.value = child_value
 
+                    # >> HG: store value to avoid re-evaluation
                     if self.__null_windowing_count == 0:
                         child_key = (depth - 1, child_state.get_pijersi_state().get_credit(), *action.next_board_codes)
                         self.__transposition_table_depth_n[child_key] = child_value
