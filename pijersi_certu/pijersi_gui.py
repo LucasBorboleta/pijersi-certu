@@ -570,6 +570,9 @@ class GameGui(ttk.Frame):
         searcher_catalog_names = rules.SEARCHER_CATALOG.get_names()
         searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 2
 
+        setup_names = rules.Setup.get_names()
+        setup_names_width = max(map(len, setup_names))
+
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
         # >> default and nice theme is 'vista'
@@ -622,17 +625,18 @@ class GameGui(ttk.Frame):
                                               text='Resume',
                                               command=self.__command_resume)
 
-        self.__variable_easy_mode = tk.BooleanVar()
-        self.__variable_easy_mode.set(True)
-        self.__button_easy_mode = ttk.Checkbutton(self.__frame_commands,
-                                                  text='Easy mode',
-                                                  variable=self.__variable_easy_mode,
-                                                  command=self.__command_update_easy_mode)
+        self.__variable_setup = tk.StringVar()
+        self.__combobox_setup = ttk.Combobox(self.__frame_commands,
+                                                    width=setup_names_width,
+                                                    textvariable=self.__variable_setup,
+                                                    values=setup_names)
+        self.__combobox_setup.config(state="readonly")
+        self.__variable_setup.set(setup_names[0])
 
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
-        self.__button_easy_mode.grid(row=1, column=0)
+        self.__combobox_setup.grid(row=1, column=0)
         self.__button_resume.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -717,15 +721,14 @@ class GameGui(ttk.Frame):
 
        # In __frame_human_actions
 
-        self.__label_action = ttk.Label(self.__frame_human_actions, text='Action :')
+        self.__variable_easy_mode = tk.BooleanVar()
+        self.__variable_easy_mode.set(True)
+        self.__button_easy_mode = ttk.Checkbutton(self.__frame_human_actions,
+                                                  text='Easy mode',
+                                                  variable=self.__variable_easy_mode,
+                                                  command=self.__command_update_easy_mode)
 
         self.__variable_action = tk.StringVar()
-        self.__entry_action = ttk.Entry(self.__frame_human_actions, textvariable=self.__variable_action)
-        self.__entry_action.bind("<KeyPress>", self.__command_protect_action)
-
-        self.__button_confirm_action = ttk.Button(self.__frame_human_actions,
-                                                  text='OK',
-                                                  command=self.__command_confirm_action)
 
         self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
                                                 text='Edit actions',
@@ -769,9 +772,7 @@ class GameGui(ttk.Frame):
 
         self.__frame_actions.rowconfigure(0, pad=20)
 
-        self.__label_action.grid(row=0, column=0)
-        self.__entry_action.grid(row=0, column=1)
-        self.__button_confirm_action.grid(row=0, column=2)
+        self.__button_easy_mode.grid(row=0, column=0)
         self.__button_edit_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
@@ -789,8 +790,6 @@ class GameGui(ttk.Frame):
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
         self.__text_actions.pack(side=tk.LEFT)
 
-        self.__entry_action.config(state="disabled")
-        self.__button_confirm_action.config(state="disabled")
         self.__text_actions.config(state="disabled")
         self.__button_resume.config(state="disabled")
 
@@ -951,8 +950,6 @@ class GameGui(ttk.Frame):
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
 
-            self.__entry_action.config(state="disabled")
-            self.__button_confirm_action.config(state="disabled")
             self.__spinbox_turn.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
 
@@ -1101,8 +1098,6 @@ class GameGui(ttk.Frame):
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
 
-                self.__entry_action.config(state="disabled")
-                self.__button_confirm_action.config(state="disabled")
                 self.__spinbox_turn.config(state="enabled")
                 self.__button_make_pictures.config(state="enabled")
 
@@ -1123,8 +1118,6 @@ class GameGui(ttk.Frame):
         self.__button_easy_mode.config(state="disabled")
         self.__button_resume.config(state="disabled")
 
-        self.__entry_action.config(state="disabled")
-        self.__button_confirm_action.config(state="disabled")
         self.__button_edit_actions.config(state="disabled")
         self.__spinbox_turn.config(state="disabled")
         self.__button_make_pictures.config(state="disabled")
@@ -1183,9 +1176,6 @@ class GameGui(ttk.Frame):
             self.__variable_summary.set(self.__game.get_summary())
             self.__progressbar['value'] = 0.
 
-            self.__entry_action.config(state="disabled")
-            self.__button_confirm_action.config(state="disabled")
-
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
             self.__spinbox_turn.config(state="disabled")
@@ -1223,10 +1213,7 @@ class GameGui(ttk.Frame):
             self.__combobox_black_player.config(state="readonly")
             self.__spinbox_turn.config(state="enabled")
 
-            self.__entry_action.config(state="enabled")
             self.__variable_action.set("")
-            self.__entry_action.config(state="disabled")
-            self.__button_confirm_action.config(state="disabled")
 
             self.__button_edit_actions.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
@@ -1350,9 +1337,6 @@ class GameGui(ttk.Frame):
 
         self.__button_new_stop.configure(text="Stop")
 
-        self.__entry_action.config(state="disabled")
-        self.__button_confirm_action.config(state="disabled")
-
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
         self.__spinbox_turn.config(state="disabled")
@@ -1388,8 +1372,6 @@ class GameGui(ttk.Frame):
 
             if backend_searcher.is_interactive():
 
-                self.__entry_action.config(state="enabled")
-                self.__button_confirm_action.config(state="enabled")
                 self.__progressbar['value'] = 0.
 
                 if self.__action_validated and self.__action_input is not None:
@@ -1399,8 +1381,6 @@ class GameGui(ttk.Frame):
 
                     self.__action_input = None
                     self.__action_validated = False
-                    self.__entry_action.config(state="disabled")
-                    self.__button_confirm_action.config(state="disabled")
 
             elif not backend_searcher.is_interactive():
 
@@ -2046,8 +2026,6 @@ class GameGui(ttk.Frame):
                 self.__button_easy_mode.config(state="enabled")
                 self.__button_resume.config(state="enabled")
 
-                self.__entry_action.config(state="disabled")
-                self.__button_confirm_action.config(state="disabled")
                 self.__button_edit_actions.config(state="enabled")
                 self.__spinbox_turn.config(state="enabled")
                 self.__button_make_pictures.config(state="enabled")

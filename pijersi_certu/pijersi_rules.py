@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -72,6 +72,41 @@ PathCodes = Sequence[HexCode]
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
+
+
+class Setup:
+    SetupT = TypeVar("SetupT", bound="Setup.T")
+
+    @enum.unique
+    class T(enum.IntEnum):
+        CLASSIC = 0
+        FULL_RANDOM = 1
+        SEMI_RANDOM = 2
+        assert CLASSIC < FULL_RANDOM < SEMI_RANDOM
+
+
+    __TABLE_SETUP_FROM_NAME = {
+        'classic':T.CLASSIC,
+        'f-random':T.FULL_RANDOM,
+        's-random':T.SEMI_RANDOM}
+
+    __TABLE_SETUP_TO_NAME = {setup:name for (name, setup) in __TABLE_SETUP_FROM_NAME.items()}
+
+
+    @staticmethod
+    def from_name(name: str) -> SetupT:
+        return Setup.__TABLE_SETUP_FROM_NAME[name]
+
+
+    @staticmethod
+    def to_name(setup: SetupT) -> str:
+        return Setup.__TABLE_SETUP_TO_NAME[setup]
+
+
+    @staticmethod
+    def get_names() -> Sequence[str]:
+        return [Setup.to_name(setup) for setup in Setup.T]
+
 
 @enum.unique
 class Reward(enum.IntEnum):
