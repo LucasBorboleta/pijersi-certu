@@ -1,0 +1,2845 @@
+   1 a5-b6=c6             2 f6-f7=d6        
+   3 a4-b5=d6!            4 g5-f5=d6!       
+   5 b7-a6=c5             6 f4=d5-e5        
+   7 c5-b5                8 d6=f7           
+   9 b5-c5=e6            10 d5-e5=f6        
+  11 c6=d6               12 g4-f5           
+  13 d6=e5-d6            14 g2-g3=e4        
+  15 e5-f5!              16 e4=f4-f5!       
+  17 a1-b1=d2            18 f2-e2           
+  19 e6-e5               20 f7-g6           
+  21 d2=d4               22 e2-e3           
+  23 d4=d2               24 e3-e2
+           
+  25 b2-b3=d4            26 f4-e4           
+  27 d6-e5=e4!           28 g6=g4-f4        
+  29 d4=e3-f4!           30 f7-e6!          
+  31 f4-g3   
+
+----------------------------------------
+Player white-human wins against black-minimax4-inf ; 151 versus 545 seconds
+Lucas resumes at action 25 in place of white minimax4-inf in a game minimax4-inf versus minimax4-inf.
+This illustrates the "horizon effect" of minimax algorithms.
+----------------------------------------
+
+
+Hello from PIJERSI-CERTU-v1.2.0
+
+PIJERSI-CERTU implements a GUI and a rule engine for the PIJERSI boardgame.
+
+Copyright (C) 2022 Lucas Borboleta (lucas.borboleta@free.fr).
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
+
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 1 : after 0.0 seconds white-human selects a5-b6=c6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 2 : after 0.0 seconds black-human selects f6-f7=d6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6sp    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 3 : after 0.0 seconds white-human selects a4-b5=d6! amongst 170 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6RS    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 4 / player black / credit 20 / alive P:4 R:4 S:4 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 4 : after 0.0 seconds black-human selects g5-f5=d6! amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 5 / player white / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 5 : after 0.0 seconds white-human selects b7-a6=c5 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 6 / player black / credit 19 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 6 : after 0.0 seconds black-human selects f4=d5-e5 amongst 173 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 7 / player white / credit 18 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 7 : after 0.0 seconds white-human selects c5-b5 amongst 175 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 8 / player black / credit 17 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 8 : after 0.0 seconds black-human selects d6=f7 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 9 / player white / credit 16 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 9 : after 0.0 seconds white-human selects b5-c5=e6 amongst 167 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6PS
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 10 / player black / credit 15 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 10 : after 0.0 seconds black-human selects d5-e5=f6 amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 11 / player white / credit 14 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 11 : after 0.0 seconds white-human selects c6=d6 amongst 210 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 12 / player black / credit 13 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 12 : after 0.0 seconds black-human selects g4-f5 amongst 135 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 13 / player white / credit 12 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 13 : after 0.0 seconds white-human selects d6=e5-d6 amongst 195 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 14 / player black / credit 11 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 14 : after 0.0 seconds black-human selects g2-g3=e4 amongst 105 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 15 / player white / credit 10 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 15 : after 0.0 seconds white-human selects e5-f5! amongst 166 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.R    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 16 / player black / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 16 : after 0.0 seconds black-human selects e4=f4-f5! amongst 142 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 17 / player white / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 17 : after 0.0 seconds white-human selects a1-b1=d2 amongst 162 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 18 / player black / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 18 : after 0.0 seconds black-human selects f2-e2 amongst 109 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 19 / player white / credit 18 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 19 : after 0.0 seconds white-human selects e6-e5 amongst 182 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 20 / player black / credit 17 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 20 : after 0.0 seconds black-human selects f7-g6 amongst 82 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 21 / player white / credit 16 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 21 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 22 / player black / credit 15 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 22 : after 0.0 seconds black-human selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 23 / player white / credit 14 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 23 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 24 / player black / credit 13 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 24 : after 0.0 seconds black-human selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 25 / player white / credit 12 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 25 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 26 / player black / credit 11 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 26 : after 0.0 seconds black-human selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 27 / player white / credit 10 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 27 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 28 / player black / credit 9 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 28 : after 0.0 seconds black-human selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 29 / player white / credit 8 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 29 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 30 / player black / credit 7 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 30 : after 0.0 seconds black-human selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 31 / player white / credit 6 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 31 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 32 / player black / credit 5 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 32 : after 0.0 seconds black-human selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 33 / player white / credit 4 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 33 : after 0.0 seconds white-human selects e6-e5=d5 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5SP    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 34 / player black / credit 3 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 34 : after 0.0 seconds black-human selects f5-g5 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5.p    g6pr
+f1.p    f2..    f3.s    f4.r    f5..    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5SP    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 35 / player white / credit 2 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 35 : after 0.0 seconds white-human selects b2-c1 amongst 206 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5.p    g6pr
+f1.p    f2..    f3.s    f4.r    f5..    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5SP    d6.P    d7..
+    c1.S    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 36 / player black / credit 1 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-human is thinking ...
+Player black-human is done after 0.0 seconds
+Turn 36 : after 0.0 seconds black-human selects f3-e2=c3 amongst 89 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5.p    g6pr
+f1.p    f2..    f3..    f4.r    f5..    f6ww    f7.r
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5SP    d6.P    d7..
+    c1.S    c2..    c3sr    c4..    c5..    c6..
+b1..    b2..    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 37 / player white / credit 0 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+----------------------------------------
+Nobody wins ; the game is a draw between white-human and black-human ; 0 versus 0 seconds
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 1 : after 0.0 seconds white-human selects a5-b6=c6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 2 : after 0.0 seconds black-minimax4-inf selects f6-f7=d6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6sp    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 3 : after 0.0 seconds white-human selects a4-b5=d6! amongst 170 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6RS    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 4 / player black / credit 20 / alive P:4 R:4 S:4 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 4 : after 0.0 seconds black-minimax4-inf selects g5-f5=d6! amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 5 / player white / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 5 : after 0.0 seconds white-human selects b7-a6=c5 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 6 / player black / credit 19 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 6 : after 0.0 seconds black-minimax4-inf selects f4=d5-e5 amongst 173 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 7 / player white / credit 18 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 7 : after 0.0 seconds white-human selects c5-b5 amongst 175 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 8 / player black / credit 17 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 8 : after 0.0 seconds black-minimax4-inf selects d6=f7 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 9 / player white / credit 16 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 9 : after 0.0 seconds white-human selects b5-c5=e6 amongst 167 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6PS
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 10 / player black / credit 15 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 10 : after 0.0 seconds black-minimax4-inf selects d5-e5=f6 amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 11 / player white / credit 14 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 11 : after 0.0 seconds white-human selects c6=d6 amongst 210 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 12 / player black / credit 13 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 12 : after 0.0 seconds black-minimax4-inf selects g4-f5 amongst 135 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 13 / player white / credit 12 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 13 : after 0.0 seconds white-human selects d6=e5-d6 amongst 195 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 14 / player black / credit 11 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 14 : after 0.0 seconds black-minimax4-inf selects g2-g3=e4 amongst 105 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 15 / player white / credit 10 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 15 : after 0.0 seconds white-human selects e5-f5! amongst 166 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.R    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 16 / player black / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 16 : after 0.0 seconds black-minimax4-inf selects e4=f4-f5! amongst 142 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 17 / player white / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 17 : after 0.0 seconds white-human selects a1-b1=d2 amongst 162 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 18 / player black / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 18 : after 0.0 seconds black-minimax4-inf selects f2-e2 amongst 109 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 19 / player white / credit 18 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 19 : after 0.0 seconds white-human selects e6-e5 amongst 182 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 20 / player black / credit 17 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 20 : after 0.0 seconds black-minimax4-inf selects f7-g6 amongst 82 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 21 / player white / credit 16 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 21 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 22 / player black / credit 15 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 22 : after 0.0 seconds black-minimax4-inf selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 23 / player white / credit 14 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 23 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 24 / player black / credit 13 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 24 : after 0.0 seconds black-minimax4-inf selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 25 / player white / credit 12 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 7.1 seconds
+Turn 25 : after 7.1 seconds white-human selects e6-e5=f5! amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5SP    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 26 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:2 r:4 s:2 w:2
+
+select action f4-f5! with value -9.47 amongst 1 best actions
+best actions: ['f4-f5!']
+best branch: ['f4-f5!', 'd2=d4-e4', 'f1-g1=g3', 'd4-e4=f5!']
+first actions:  ['f4-f5!:-9.47', 'f4-f3=f5!:-11.49', 'g1-f2:-11.49', 'f3-e2=e1:-11.86', 'f3-f2:-12.79', 'f3-e3:-12.79']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 53.5 seconds
+Turn 26 : after 53.5 seconds black-minimax4-inf selects f4-f5! amongst 94 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.r    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 27 / player white / credit 20 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 46.8 seconds
+Turn 27 : after 46.8 seconds white-human selects d2=d4 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.r    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 28 / player black / credit 19 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+select action e2-e3 with value -11.30 amongst 1 best actions
+best actions: ['e2-e3']
+best branch: ['e2-e3', 'd4=d5-e4', 'f1-g1=g3', 'd5-d6=f7!']
+first actions:  ['e2-e3:-11.30', 'e2-f3:-11.36', 'g6-f7=e6:-11.39', 'g6-f7:-11.39', 'f3-e2=c1:-11.43', 'f3-e2=e3:-11.44']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 63.5 seconds
+Turn 28 : after 63.5 seconds black-minimax4-inf selects e2-e3 amongst 84 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.r    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5..    e6..
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 29 / player white / credit 18 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 29.2 seconds
+Turn 29 : after 29.2 seconds white-human selects b3-b2=d3 amongst 159 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.r    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5..    e6..
+d1..    d2..    d3RS    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 30 / player black / credit 17 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+select action f1-g1=e2 with value -11.73 amongst 1 best actions
+best actions: ['f1-g1=e2']
+best branch: ['f1-g1=e2', 'd4=d5-e4', 'e2-f3=f4', 'd5-d6=f7!']
+first actions:  ['f1-g1=e2:-11.73', 'f7-e6:-11.77', 'f1-f2:-11.80', 'g1-g2:-11.80', 'g6-f7:-11.80', 'f5-g4:-11.87']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 20.2 seconds
+Turn 30 : after 20.2 seconds black-minimax4-inf selects f1-g1=e2 amongst 81 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4..    g5..    g6pr
+f1..    f2..    f3.s    f4..    f5.r    f6ww    f7.r
+    e1..    e2ps    e3.r    e4..    e5..    e6..
+d1..    d2..    d3RS    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 31 / player white / credit 16 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 49.2 seconds
+Turn 31 : after 49.2 seconds white-human selects d4=e4-f4 amongst 147 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4..    g5..    g6pr
+f1..    f2..    f3.s    f4.R    f5.r    f6ww    f7.r
+    e1..    e2ps    e3.r    e4.P    e5..    e6..
+d1..    d2..    d3RS    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 32 / player black / credit 15 / alive P:3 R:2 S:2 W:2 p:2 r:4 s:2 w:2
+
+select action g6=g4-f4! with value -1.59 amongst 1 best actions
+best actions: ['g6=g4-f4!']
+best branch: ['g6=g4-f4!', 'd3=d5-e5', 'e2=c3-c4', 'd5-c4!']
+first actions:  ['g6=g4-f4!:-1.59', 'e2-f3=f4!:-1.88', 'e2-e3=f4!:-6.85', 'f3-e3=c4:-10.92', 'f3-e3=e4!:-3000000.00', 'e2-e3=d3!:-3000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 10.2 seconds
+Turn 32 : after 10.2 seconds black-minimax4-inf selects g6=g4-f4! amongst 107 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3.s    f4.p    f5.r    f6ww    f7.r
+    e1..    e2ps    e3.r    e4.P    e5..    e6..
+d1..    d2..    d3RS    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 33 / player white / credit 20 / alive P:3 R:1 S:2 W:2 p:2 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 8.1 seconds
+Turn 33 : after 8.1 seconds white-human selects e4-f5! amongst 130 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3.s    f4.p    f5.P    f6ww    f7.r
+    e1..    e2ps    e3.r    e4..    e5..    e6..
+d1..    d2..    d3RS    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 34 / player black / credit 20 / alive P:3 R:1 S:2 W:2 p:2 r:3 s:2 w:2
+
+select action f3-f4=f5! with value -1.46 amongst 1 best actions
+best actions: ['f3-f4=f5!']
+best branch: ['f3-f4=f5!', 'd3=d5-e5', 'f5=f4-g4', 'd6-e5=e3!']
+first actions:  ['f3-f4=f5!:-1.46', 'g4-f4=e4:-2.05', 'g4-f4=d5:-2.06', 'e3-d4:-2.09', 'f7-e6:-2.45', 'e2=c1-d1:-2.78']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 16.2 seconds
+Turn 34 : after 16.2 seconds black-minimax4-inf selects f3-f4=f5! amongst 141 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3..    f4..    f5sp    f6ww    f7.r
+    e1..    e2ps    e3.r    e4..    e5..    e6..
+d1..    d2..    d3RS    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 35 / player white / credit 20 / alive P:2 R:1 S:2 W:2 p:2 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 8.6 seconds
+Turn 35 : after 8.6 seconds white-human selects d6-e6 amongst 126 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3..    f4..    f5sp    f6ww    f7.r
+    e1..    e2ps    e3.r    e4..    e5..    e6.P
+d1..    d2..    d3RS    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 36 / player black / credit 19 / alive P:2 R:1 S:2 W:2 p:2 r:3 s:2 w:2
+
+select action e2=d3!-c2 with value 27.07 amongst 1 best actions
+best actions: ['e2=d3!-c2']
+best branch: ['e2=d3!-c2', 'b4=b3-b2', 'f5=d6-e6!', 'a2-a3=c4']
+first actions:  ['e2=d3!-c2:27.07', 'e2=d3!:26.96', 'e2-e3=d3!:26.41', 'f7-g6:20.14', 'f5=d6-e6!:19.77', 'e2=d2-c2:18.78']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 33.3 seconds
+Turn 36 : after 33.3 seconds black-minimax4-inf selects e2=d3!-c2 amongst 145 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3..    f4..    f5sp    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5..    e6.P
+d1..    d2..    d3.s    d4..    d5..    d6..    d7..
+    c1..    c2.p    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 37 / player white / credit 20 / alive P:2 R:0 S:1 W:2 p:2 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 11.2 seconds
+Turn 37 : after 11.2 seconds white-human selects b4=b2-b3 amongst 74 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3..    f4..    f5sp    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5..    e6.P
+d1..    d2..    d3.s    d4..    d5..    d6..    d7..
+    c1..    c2.p    c3..    c4..    c5..    c6..
+b1..    b2.W    b3.W    b4..    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 38 / player black / credit 19 / alive P:2 R:0 S:1 W:2 p:2 r:3 s:2 w:2
+
+select action d3-e3=c4 with value 2000000.00 amongst 6 best actions
+best actions: ['c2-d3=d5', 'd3-c2=c4', 'd3-e3=c4', 'e3-d3=d5', 'f5=d6', 'f5=d6-c5']
+best branch: ['c2-d3=d5', 'e6-f7!', 'd5=b6-a6']
+first actions:  ['c2-d3=d5:2000000.00', 'd3-c2=c4:2000000.00', 'd3-e3=c4:2000000.00', 'e3-d3=d5:2000000.00', 'f5=d6:2000000.00', 'f5=d6-c5:2000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 117.5 seconds
+Turn 38 : after 117.5 seconds black-minimax4-inf selects d3-e3=c4 amongst 131 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3..    f4..    f5sp    f6ww    f7.r
+    e1..    e2..    e3..    e4..    e5..    e6.P
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2.p    c3..    c4sr    c5..    c6..
+b1..    b2.W    b3.W    b4..    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 39 / player white / credit 18 / alive P:2 R:0 S:1 W:2 p:2 r:3 s:2 w:2
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 1 : after 0.0 seconds white-human selects a5-b6=c6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 2 : after 0.0 seconds black-minimax4-inf selects f6-f7=d6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6sp    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 3 : after 0.0 seconds white-human selects a4-b5=d6! amongst 170 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6RS    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 4 / player black / credit 20 / alive P:4 R:4 S:4 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 4 : after 0.0 seconds black-minimax4-inf selects g5-f5=d6! amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 5 / player white / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 5 : after 0.0 seconds white-human selects b7-a6=c5 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 6 / player black / credit 19 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 6 : after 0.0 seconds black-minimax4-inf selects f4=d5-e5 amongst 173 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 7 / player white / credit 18 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 7 : after 0.0 seconds white-human selects c5-b5 amongst 175 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 8 / player black / credit 17 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 8 : after 0.0 seconds black-minimax4-inf selects d6=f7 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 9 / player white / credit 16 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 9 : after 0.0 seconds white-human selects b5-c5=e6 amongst 167 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6PS
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 10 / player black / credit 15 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 10 : after 0.0 seconds black-minimax4-inf selects d5-e5=f6 amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 11 / player white / credit 14 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 11 : after 0.0 seconds white-human selects c6=d6 amongst 210 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 12 / player black / credit 13 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 12 : after 0.0 seconds black-minimax4-inf selects g4-f5 amongst 135 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 13 / player white / credit 12 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 13 : after 0.0 seconds white-human selects d6=e5-d6 amongst 195 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 14 / player black / credit 11 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 14 : after 0.0 seconds black-minimax4-inf selects g2-g3=e4 amongst 105 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 15 / player white / credit 10 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 15 : after 0.0 seconds white-human selects e5-f5! amongst 166 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.R    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 16 / player black / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 16 : after 0.0 seconds black-minimax4-inf selects e4=f4-f5! amongst 142 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 17 / player white / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 17 : after 0.0 seconds white-human selects a1-b1=d2 amongst 162 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 18 / player black / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 18 : after 0.0 seconds black-minimax4-inf selects f2-e2 amongst 109 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 19 / player white / credit 18 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 19 : after 0.0 seconds white-human selects e6-e5 amongst 182 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 20 / player black / credit 17 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 20 : after 0.0 seconds black-minimax4-inf selects f7-g6 amongst 82 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 21 / player white / credit 16 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 21 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 22 / player black / credit 15 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 22 : after 0.0 seconds black-minimax4-inf selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 23 / player white / credit 14 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 23 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 24 / player black / credit 13 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 24 : after 0.0 seconds black-minimax4-inf selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 25 / player white / credit 12 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 36.6 seconds
+Turn 25 : after 36.6 seconds white-human selects b2-b3=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 26 / player black / credit 11 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+select action f4-e4 with value -24.88 amongst 1 best actions
+best actions: ['f4-e4']
+best branch: ['f4-e4', 'e5-e4!', 'g6=g4-f4', 'd6-e6=f7!']
+first actions:  ['f4-e4:-24.88', 'f6=g5:-24.90', 'f6=g5-g4:-24.90', 'e2-f3=e2:-24.90', 'e2-f3:-24.90', 'e2-f3=f2:-24.90']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 73.1 seconds
+Turn 26 : after 73.1 seconds black-minimax4-inf selects f4-e4 amongst 90 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4.r    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 27 / player white / credit 10 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 51.3 seconds
+Turn 27 : after 51.3 seconds white-human selects d6-e5=e4! amongst 202 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 28 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+select action g6=g4-f4 with value -1000000.00 amongst 1 best actions
+best actions: ['g6=g4-f4']
+best branch: ['g6=g4-f4', 'd4=e3-f4!', 'f7-e6!', 'e4-f4=g4!']
+first actions:  ['g6=g4-f4:-1000000.00', 'f3-e3:-3000000.00', 'g6-f7:-3000000.00', 'e2-f3:-3000000.00', 'e2-f3=e3:-3000000.00', 'e2-f3=f4:-3000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 111.9 seconds
+Turn 28 : after 111.9 seconds black-minimax4-inf selects g6=g4-f4 amongst 69 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.p    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 29 / player white / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 33.7 seconds
+Turn 29 : after 33.7 seconds white-human selects d4=e3-f4! amongst 200 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 30 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:2 w:2
+
+select action g1-f1=g1 with value -3000000.00 amongst 66 best actions
+best actions: ['e2-f3=f4!', 'g4-f5=f4!', 'f7-e6!', 'g4-f4!', 'e2-f3=e2', 'e2-f3=f2', 'e2-f3=g2', 'e2-f3=g3', 'f1-g1=g2', 'f1-g1=g3', 'f1-g1=f2', 'f1-g1=f1', 'f3-e2=d3', 'f3-e2=c3', 'f3-e2=e1', 'f3-e2=f2', 'f3-e2=f3', 'f3-e2=g3', 'f5-g4=g5', 'f5-g4=g6', 'f5-g4=f5', 'f5-g4=e5', 'f5-g4=g3', 'f5-g4=g2', 'f6=e5', 'f6=e5-d6', 'f6=e5-d5', 'f6=d5', 'f6=d5-d6', 'f6=d5-c5', 'f6=d5-c4', 'f6=d5-d4', 'f6=g5', 'f6=g5-g6', 'f6=g6', 'g1-f1=f2', 'g1-f1=e1', 'g1-f1=g1', 'g4-f5=e5', 'g4-f5=d6', 'g4-f5=g4', 'g4-f5=g5', 'e2-d3', 'e2-e1', 'e2-f2', 'e2-f3', 'f1-f2', 'f1-e1', 'f1-g1', 'f3-e2', 'f3-f2', 'f3-g2', 'f3-g3', 'f5-e5', 'f5-g4', 'f5-g5', 'f6-e5', 'f6-g5', 'f6-g6', 'f7-g6', 'g1-g2', 'g1-f2', 'g1-f1', 'g4-g5', 'g4-f5', 'g4-g3']
+best branch: ['e2-f3=f4!', 'e4=f4!-g4!']
+first actions:  ['e2-f3=f4!:-3000000.00', 'g4-f5=f4!:-3000000.00', 'f7-e6!:-3000000.00', 'g4-f4!:-3000000.00', 'e2-f3=e2:-3000000.00', 'e2-f3=f2:-3000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 379.9 seconds
+Turn 30 : after 379.9 seconds black-minimax4-inf selects g1-f1=g1 amongst 71 actions
+----------------------------------------
+
+    g1sp    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 31 / player white / credit 19 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 37.4 seconds
+Turn 31 : after 37.4 seconds white-human selects e3-f3! amongst 194 actions
+----------------------------------------
+
+    g1sp    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3.R    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 32 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:1 w:2
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 1 : after 0.0 seconds white-human selects a5-b6=c6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 2 : after 0.0 seconds black-minimax4-inf selects f6-f7=d6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6sp    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 3 : after 0.0 seconds white-human selects a4-b5=d6! amongst 170 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6RS    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 4 / player black / credit 20 / alive P:4 R:4 S:4 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 4 : after 0.0 seconds black-minimax4-inf selects g5-f5=d6! amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 5 / player white / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 5 : after 0.0 seconds white-human selects b7-a6=c5 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 6 / player black / credit 19 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 6 : after 0.0 seconds black-minimax4-inf selects f4=d5-e5 amongst 173 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 7 / player white / credit 18 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 7 : after 0.0 seconds white-human selects c5-b5 amongst 175 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 8 / player black / credit 17 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 8 : after 0.0 seconds black-minimax4-inf selects d6=f7 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 9 / player white / credit 16 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 9 : after 0.0 seconds white-human selects b5-c5=e6 amongst 167 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6PS
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 10 / player black / credit 15 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 10 : after 0.0 seconds black-minimax4-inf selects d5-e5=f6 amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 11 / player white / credit 14 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 11 : after 0.0 seconds white-human selects c6=d6 amongst 210 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 12 / player black / credit 13 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 12 : after 0.0 seconds black-minimax4-inf selects g4-f5 amongst 135 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 13 / player white / credit 12 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 13 : after 0.0 seconds white-human selects d6=e5-d6 amongst 195 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 14 / player black / credit 11 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 14 : after 0.0 seconds black-minimax4-inf selects g2-g3=e4 amongst 105 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 15 / player white / credit 10 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 15 : after 0.0 seconds white-human selects e5-f5! amongst 166 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.R    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 16 / player black / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 16 : after 0.0 seconds black-minimax4-inf selects e4=f4-f5! amongst 142 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 17 / player white / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 17 : after 0.0 seconds white-human selects a1-b1=d2 amongst 162 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 18 / player black / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 18 : after 0.0 seconds black-minimax4-inf selects f2-e2 amongst 109 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 19 / player white / credit 18 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 19 : after 0.0 seconds white-human selects e6-e5 amongst 182 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 20 / player black / credit 17 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 20 : after 0.0 seconds black-minimax4-inf selects f7-g6 amongst 82 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 21 / player white / credit 16 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 21 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 22 / player black / credit 15 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 22 : after 0.0 seconds black-minimax4-inf selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 23 / player white / credit 14 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 23 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 24 / player black / credit 13 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 24 : after 0.0 seconds black-minimax4-inf selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 25 / player white / credit 12 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 25 : after 0.0 seconds white-human selects b2-b3=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 26 / player black / credit 11 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 26 : after 0.0 seconds black-minimax4-inf selects f4-e4 amongst 90 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4.r    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 27 / player white / credit 10 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 27 : after 0.0 seconds white-human selects d6-e5=e4! amongst 202 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 28 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 28 : after 0.0 seconds black-minimax4-inf selects g6=g4-f4 amongst 69 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.p    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 29 / player white / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 29 : after 0.0 seconds white-human selects d4=e3-f4! amongst 200 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 30 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 30 : after 0.0 seconds black-minimax4-inf selects g1-f1=g1 amongst 71 actions
+----------------------------------------
+
+    g1sp    g2..    g3..    g4.r    g5..    g6..
+f1..    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 31 / player white / credit 19 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 2.5 seconds
+Turn 31 : after 2.5 seconds white-human selects d2=f1-g1! amongst 194 actions
+----------------------------------------
+
+    g1.R    g2..    g3..    g4.r    g5..    g6..
+f1.P    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 32 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:1 r:3 s:1 w:2
+
+----------------------------------------
+Player white-human wins against black-minimax4-inf ; 3 versus 0 seconds
+
+select action f5-g4=f5 with value -3000000.00 amongst 58 best actions
+best actions: ['g4-f5=f4!', 'f7-e6!', 'g4-f4!', 'f5-g4=g5', 'f5-g4=g6', 'f5-g4=f5', 'f5-g4=e5', 'f5-g4=g3', 'f5-g4=g2', 'f6=e5', 'f6=e5-d6', 'f6=e5-d5', 'f6=d5', 'f6=d5-d6', 'f6=d5-c5', 'f6=d5-c4', 'f6=d5-d4', 'f6=g5', 'f6=g5-g6', 'f6=g6', 'g1=g2', 'g1=g2-g3', 'g1=g2-f2', 'g1=g2-g1', 'g1=g3', 'g1=g3-g4', 'g1=g3-g2', 'g1=f2', 'g1=f2-e2', 'g1=f2-e1', 'g1=f2-f1', 'g1=f2-g1', 'g1=f2-g2', 'g1=f1', 'g1=f1-f2', 'g1=f1-e1', 'g1=f1-g1', 'g4-f5=e5', 'g4-f5=d6', 'g4-f5=g4', 'g4-f5=g5', 'e2-e3', 'e2-d3', 'e2-e1', 'e2-f2', 'f5-e5', 'f5-g4', 'f5-g5', 'f6-e5', 'f6-g5', 'f6-g6', 'f7-g6', 'g1-g2', 'g1-f2', 'g1-f1', 'g4-g5', 'g4-f5', 'g4-g3']
+best branch: ['g4-f5=f4!', 'd2=f1-g1!']
+first actions:  ['g4-f5=f4!:-3000000.00', 'f7-e6!:-3000000.00', 'g4-f4!:-3000000.00', 'f5-g4=g5:-3000000.00', 'f5-g4=g6:-3000000.00', 'f5-g4=f5:-3000000.00']
+
+pictures are available in directory 'C:\Users\leandre\AppData\Local\Temp\_MEI169322\tmp-pictures'
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5.S    b6.R    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5.P    a6.S
+
+
+Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 1 : after 0.0 seconds white-human selects a5-b6=c6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6.s    f7.p
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 2 / player black / credit 19 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 2 : after 0.0 seconds black-minimax4-inf selects f6-f7=d6 amongst 186 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6sp    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.S    b6..    b7.P
+    a1.R    a2.P    a3.S    a4.R    a5..    a6.S
+
+
+Turn 3 / player white / credit 18 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 3 : after 0.0 seconds white-human selects a4-b5=d6! amongst 170 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5.p    g6.r
+f1.p    f2.r    f3.s    f4ww    f5.r    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6RS    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 4 / player black / credit 20 / alive P:4 R:4 S:4 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 4 : after 0.0 seconds black-minimax4-inf selects g5-f5=d6! amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7.P
+    a1.R    a2.P    a3.S    a4..    a5..    a6.S
+
+
+Turn 5 / player white / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 5 : after 0.0 seconds white-human selects b7-a6=c5 amongst 174 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4ww    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4..    d5..    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 6 / player black / credit 19 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 6 : after 0.0 seconds black-minimax4-inf selects f4=d5-e5 amongst 173 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5PS    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 7 / player white / credit 18 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 7 : after 0.0 seconds white-human selects c5-b5 amongst 175 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7..
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6pr    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 8 / player black / credit 17 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 8 : after 0.0 seconds black-minimax4-inf selects d6=f7 amongst 157 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6..
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5.S    c6PR
+b1.P    b2.S    b3.R    b4WW    b5.P    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 9 / player white / credit 16 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 9 : after 0.0 seconds white-human selects b5-c5=e6 amongst 167 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6..    f7pr
+    e1..    e2..    e3..    e4..    e5.w    e6PS
+d1..    d2..    d3..    d4..    d5.w    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 10 / player black / credit 15 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 10 : after 0.0 seconds black-minimax4-inf selects d5-e5=f6 amongst 152 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6PR
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 11 / player white / credit 14 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 11 : after 0.0 seconds white-human selects c6=d6 amongst 210 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4.s    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5..    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 12 / player black / credit 13 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 12 : after 0.0 seconds black-minimax4-inf selects g4-f5 amongst 135 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6PR    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 13 / player white / credit 12 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 13 : after 0.0 seconds white-human selects d6=e5-d6 amongst 195 actions
+----------------------------------------
+
+    g1.s    g2.p    g3.r    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 14 / player black / credit 11 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 14 : after 0.0 seconds black-minimax4-inf selects g2-g3=e4 amongst 105 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.s    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5.R    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 15 / player white / credit 10 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:3 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 15 : after 0.0 seconds white-human selects e5-f5! amongst 166 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4..    f5.R    f6ww    f7pr
+    e1..    e2..    e3..    e4pr    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 16 / player black / credit 20 / alive P:4 R:3 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 16 : after 0.0 seconds black-minimax4-inf selects e4=f4-f5! amongst 142 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2..    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1.P    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1.R    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 17 / player white / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 17 : after 0.0 seconds white-human selects a1-b1=d2 amongst 162 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2.r    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2..    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 18 / player black / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 18 : after 0.0 seconds black-minimax4-inf selects f2-e2 amongst 109 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5..    e6PS
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 19 / player white / credit 18 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 19 : after 0.0 seconds white-human selects e6-e5 amongst 182 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6.r
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7pr
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 20 / player black / credit 17 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 20 : after 0.0 seconds black-minimax4-inf selects f7-g6 amongst 82 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 21 / player white / credit 16 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 21 : after 0.0 seconds white-human selects d2=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 22 / player black / credit 15 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 22 : after 0.0 seconds black-minimax4-inf selects e2-e3 amongst 92 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2..    d3..    d4RP    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 23 / player white / credit 14 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 0.0 seconds
+Turn 23 : after 0.0 seconds white-human selects d4=d2 amongst 197 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2..    e3.r    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 24 / player black / credit 13 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 0.0 seconds
+Turn 24 : after 0.0 seconds black-minimax4-inf selects e3-e2 amongst 104 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2.S    b3.R    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 25 / player white / credit 12 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 12.1 seconds
+Turn 25 : after 12.1 seconds white-human selects b2-b3=d4 amongst 199 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4.r    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4..    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 26 / player black / credit 11 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+select action f4-e4 with value -24.88 amongst 1 best actions
+best actions: ['f4-e4']
+best branch: ['f4-e4', 'e5-e4!', 'g6=g4-f4', 'd6-e6=f7!']
+first actions:  ['f4-e4:-24.88', 'f6=g5:-24.90', 'f6=g5-g4:-24.90', 'e2-f3=e2:-24.90', 'e2-f3:-24.90', 'e2-f3=f2:-24.90']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 76.2 seconds
+Turn 26 : after 76.2 seconds black-minimax4-inf selects f4-e4 amongst 90 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4.r    e5.P    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6.P    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 27 / player white / credit 10 / alive P:4 R:2 S:3 W:2 p:3 r:4 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 74.4 seconds
+Turn 27 : after 74.4 seconds white-human selects d6-e5=e4! amongst 202 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4..    g5..    g6pr
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 28 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+select action g6=g4-f4 with value -1000000.00 amongst 1 best actions
+best actions: ['g6=g4-f4']
+best branch: ['g6=g4-f4', 'd4=e3-f4!', 'f7-e6!', 'e4-f4=g4!']
+first actions:  ['g6=g4-f4:-1000000.00', 'f3-e3:-3000000.00', 'g6-f7:-3000000.00', 'e2-f3:-3000000.00', 'e2-f3=e3:-3000000.00', 'e2-f3=f4:-3000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 110.9 seconds
+Turn 28 : after 110.9 seconds black-minimax4-inf selects g6=g4-f4 amongst 69 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.p    f5.p    f6ww    f7.r
+    e1..    e2.r    e3..    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4SR    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 29 / player white / credit 19 / alive P:4 R:2 S:3 W:2 p:3 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 31.2 seconds
+Turn 29 : after 31.2 seconds white-human selects d4=e3-f4! amongst 200 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.S    f5.p    f6ww    f7.r
+    e1..    e2.r    e3.R    e4PP    e5..    e6.S
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 30 / player black / credit 20 / alive P:4 R:2 S:3 W:2 p:2 r:3 s:2 w:2
+
+select action f7-e6! with value -3000000.00 amongst 66 best actions
+best actions: ['e2-f3=f4!', 'g4-f5=f4!', 'f7-e6!', 'g4-f4!', 'e2-f3=e2', 'e2-f3=f2', 'e2-f3=g2', 'e2-f3=g3', 'f1-g1=g2', 'f1-g1=g3', 'f1-g1=f2', 'f1-g1=f1', 'f3-e2=d3', 'f3-e2=c3', 'f3-e2=e1', 'f3-e2=f2', 'f3-e2=f3', 'f3-e2=g3', 'f5-g4=g5', 'f5-g4=g6', 'f5-g4=f5', 'f5-g4=e5', 'f5-g4=g3', 'f5-g4=g2', 'f6=e5', 'f6=e5-d6', 'f6=e5-d5', 'f6=d5', 'f6=d5-d6', 'f6=d5-c5', 'f6=d5-c4', 'f6=d5-d4', 'f6=g5', 'f6=g5-g6', 'f6=g6', 'g1-f1=f2', 'g1-f1=e1', 'g1-f1=g1', 'g4-f5=e5', 'g4-f5=d6', 'g4-f5=g4', 'g4-f5=g5', 'e2-d3', 'e2-e1', 'e2-f2', 'e2-f3', 'f1-f2', 'f1-e1', 'f1-g1', 'f3-e2', 'f3-f2', 'f3-g2', 'f3-g3', 'f5-e5', 'f5-g4', 'f5-g5', 'f6-e5', 'f6-g5', 'f6-g6', 'f7-g6', 'g1-g2', 'g1-f2', 'g1-f1', 'g4-g5', 'g4-f5', 'g4-g3']
+best branch: ['e2-f3=f4!', 'e4=f4!-g4!']
+first actions:  ['e2-f3=f4!:-3000000.00', 'g4-f5=f4!:-3000000.00', 'f7-e6!:-3000000.00', 'g4-f4!:-3000000.00', 'e2-f3=e2:-3000000.00', 'e2-f3=f2:-3000000.00']
+
+Player black-minimax4-inf is thinking ...
+Player black-minimax4-inf is done after 358.2 seconds
+Turn 30 : after 358.2 seconds black-minimax4-inf selects f7-e6! amongst 71 actions
+----------------------------------------
+
+    g1.s    g2..    g3..    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4.S    f5.p    f6ww    f7..
+    e1..    e2.r    e3.R    e4PP    e5..    e6.r
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 31 / player white / credit 20 / alive P:4 R:2 S:2 W:2 p:2 r:3 s:2 w:2
+
+Player white-human is thinking ...
+Player white-human is done after 33.2 seconds
+Turn 31 : after 33.2 seconds white-human selects f4-g3 amongst 191 actions
+----------------------------------------
+
+    g1.s    g2..    g3.S    g4.r    g5..    g6..
+f1.p    f2..    f3.s    f4..    f5.p    f6ww    f7..
+    e1..    e2.r    e3.R    e4PP    e5..    e6.r
+d1..    d2RP    d3..    d4..    d5..    d6..    d7..
+    c1..    c2..    c3..    c4..    c5..    c6..
+b1..    b2..    b3..    b4WW    b5..    b6..    b7..
+    a1..    a2.P    a3.S    a4..    a5..    a6..
+
+
+Turn 32 / player black / credit 19 / alive P:4 R:2 S:2 W:2 p:2 r:3 s:2 w:2
+
+----------------------------------------
+Player white-human wins against black-minimax4-inf ; 151 versus 545 seconds
