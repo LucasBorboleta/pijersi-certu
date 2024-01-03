@@ -508,6 +508,7 @@ class GameGui(ttk.Frame):
         self.__turn_actions = list()
 
         self.__game = None
+        self.__game_setup = None
         self.__game_played = False
         self.__game_terminated = False
         self.__pijersi_state = rules.PijersiState()
@@ -571,7 +572,7 @@ class GameGui(ttk.Frame):
         searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 2
 
         setup_names = rules.Setup.get_names()
-        setup_names_width = max(map(len, setup_names))
+        setup_names_width = max(map(len, setup_names)) + 1
 
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
@@ -1142,7 +1143,8 @@ class GameGui(ttk.Frame):
             self.__concurrent_executor = PoolExecutor(max_workers=1)
             self.__backend_futures = [None for player in rules.Player.T]
 
-            self.__game = rules.Game()
+            self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
+            self.__game = rules.Game(self.__game_setup)
 
             self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
             self.__backend_searchers[rules.Player.T.BLACK] = self.__searcher[rules.Player.T.BLACK]
@@ -1241,7 +1243,8 @@ class GameGui(ttk.Frame):
 
         # interpret actions
 
-        self.__game = rules.Game()
+        self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
+        self.__game = rules.Game(self.__game_setup)
 
         white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
         black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())

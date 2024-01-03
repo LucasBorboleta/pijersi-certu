@@ -848,7 +848,7 @@ class PijersiState:
 
     __init_done = False
     __max_credit = 20
-    __slots__ = ('__board_codes', '__player', '__credit', '__turn',
+    __slots__ = ('__board_codes', '__player', '__credit', '__turn', '__setup',
                  '__actions', '__actions_by_names', '__actions_by_simple_names',
                  '__is_terminal_cache', '__has_action_cache', '__player_is_arrived_cache')
 
@@ -885,12 +885,14 @@ class PijersiState:
                  board_codes: Optional[BoardCodes]=None,
                  player: Player.T=Player.T.WHITE,
                  credit: Optional[int]=None,
-                 turn: int=1):
+                 turn: int=1,
+                 setup=Setup.T.CLASSIC):
 
-        self.__board_codes = board_codes if board_codes is not None else PijersiState.__make_default_board_codes()
+        self.__board_codes = board_codes if board_codes is not None else PijersiState.__setup_board_codes(setup)
         self.__player = player
         self.__credit = credit if credit is not None else PijersiState.__max_credit
         self.__turn = turn
+        self.__setup = setup
         self.__actions = None
         self.__actions_by_names = None
         self.__actions_by_simple_names = None
@@ -1372,6 +1374,10 @@ class PijersiState:
         return self.__credit
 
 
+    def get_setup(self) -> Setup.T:
+        return self.__setup
+
+
     def get_current_player(self) -> Player.T:
         return self.__player
 
@@ -1462,7 +1468,8 @@ class PijersiState:
             action.next_state = PijersiState(board_codes=action.next_board_codes,
                                  player=self.get_other_player(),
                                  credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
-                                 turn=self.__turn + 1)
+                                 turn=self.__turn + 1,
+                                 setup=self.__setup)
 
         return action.next_state
 
@@ -1628,19 +1635,32 @@ class PijersiState:
 
 
     @staticmethod
-    def __make_empty_board_codes() -> BoardCodes :
-        board_codes = bytearray([0 for _ in Hexagon.get_all()])
-        return board_codes
-
-
-    @staticmethod
     def __copy_board_codes(board_codes: BoardCodes) -> BoardCodes :
         return bytearray(board_codes)
 
 
     @staticmethod
-    def __make_default_board_codes() -> BoardCodes :
-        board_codes = PijersiState.__make_empty_board_codes()
+    def __empty_board_codes() -> BoardCodes :
+        board_codes = bytearray([0 for _ in Hexagon.get_all()])
+        return board_codes
+
+
+    @staticmethod
+    def __setup_board_codes(setup: Setup.T) -> BoardCodes :
+        
+        if setup == Setup.T.CLASSIC:
+            return PijersiState.__setup_classic_board_codes()
+        
+        elif setup == Setup.T.FULL_RANDOM:
+            return PijersiState.__setup_full_random_board_codes()
+            
+        elif setup == Setup.T.SEMI_RANDOM:
+            return PijersiState.__setup_semi_random_board_codes()
+ 
+
+    @staticmethod
+    def __setup_classic_board_codes() -> BoardCodes :
+        board_codes = PijersiState.__empty_board_codes()
 
         #-- Whites
 
@@ -1679,6 +1699,98 @@ class PijersiState:
         PijersiState.__set_cube_from_names(board_codes, 'f3', 's')
         PijersiState.__set_cube_from_names(board_codes, 'f2', 'r')
         PijersiState.__set_cube_from_names(board_codes, 'f1', 'p')
+
+        return board_codes
+
+
+    @staticmethod
+    def __setup_full_random_board_codes() -> BoardCodes :
+        board_codes = PijersiState.__empty_board_codes()
+
+        #-- Whites
+
+        white_stack_hex = 'b4'        
+        white_cube_hexs = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6',  'b1', 'b2', 'b3', 'b5', 'b6', 'b7']
+        
+        white_cubes = ['W', 'W',  'R', 'R' , 'R', 'R',  'P', 'P', 'P', 'P',  'S', 'S', 'S', 'S']
+        random.shuffle(white_cubes)
+        
+        white_cube_1 = white_cubes.pop()
+        white_cube_2 = white_cubes.pop()
+
+        if white_cube_1 == 'W':
+            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
+        else:
+            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
+            
+        for (white_cube_hex, white_cube) in zip(white_cube_hexs, white_cubes):
+            PijersiState.__set_cube_from_names(board_codes, white_cube_hex, white_cube)
+
+        #-- Blacks
+
+        black_stack_hex = 'f4'        
+        black_cube_hexs = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6',  'f1', 'f2', 'f3', 'f5', 'f6', 'f7']
+        
+        black_cubes = ['w', 'w',  'r', 'r' , 'r', 'r',  'p', 'p', 'p', 'p',  's', 's', 's', 's']
+        random.shuffle(black_cubes)
+        
+        black_cube_1 = black_cubes.pop()
+        black_cube_2 = black_cubes.pop()
+
+        if black_cube_1 == 'w':
+            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
+        else:
+            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
+            
+        for (black_cube_hex, black_cube) in zip(black_cube_hexs, black_cubes):
+            PijersiState.__set_cube_from_names(board_codes, black_cube_hex, black_cube)
+
+        return board_codes
+
+
+    @staticmethod
+    def __setup_semi_random_board_codes() -> BoardCodes :
+        board_codes = PijersiState.__empty_board_codes()
+
+        #-- Whites
+
+        white_stack_hex = 'b4'        
+        white_cube_hexs = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6',  'b1', 'b2', 'b3', 'b5', 'b6', 'b7']
+        
+        white_cubes = ['W', 'W',  'R', 'R' , 'R', 'R',  'P', 'P', 'P', 'P',  'S', 'S', 'S', 'S']
+        random.shuffle(white_cubes)
+        
+        # >> black sorts version of white sorts
+        # >> make it before "poping" white_cubes !
+        black_cubes = list(map(str.lower, white_cubes))
+        
+        white_cube_1 = white_cubes.pop()
+        white_cube_2 = white_cubes.pop()
+
+        if white_cube_1 == 'W':
+            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
+        else:
+            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
+            
+        for (white_cube_hex, white_cube) in zip(white_cube_hexs, white_cubes):
+            PijersiState.__set_cube_from_names(board_codes, white_cube_hex, white_cube)
+
+        #-- Blacks
+
+        # >> symmetrical hexagons of white_stack_hex and white_cube_hexs
+        black_stack_hex = 'f4'   
+        black_cube_hexs = ['g6', 'g5', 'g4', 'g3', 'g2', 'g1',  'f7', 'f6', 'f5', 'f3', 'f2', 'f1']
+        
+        black_cube_1 = black_cubes.pop()
+        black_cube_2 = black_cubes.pop()
+
+        if black_cube_1 == 'w':
+            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
+        else:
+            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
+            
+        for (black_cube_hex, black_cube) in zip(black_cube_hexs, black_cubes):
+            PijersiState.__set_cube_from_names(board_codes, black_cube_hex, black_cube)
 
         return board_codes
 
@@ -2668,7 +2780,9 @@ class MinimaxSearcher(Searcher):
 
         make_opening_file = False
 
-        if depth == self.__max_depth and depth >= 2 and state.get_pijersi_state().get_turn() == 1:
+        if ( depth == self.__max_depth and depth >= 2 and 
+            state.get_pijersi_state().get_turn() == 1 and 
+            state.get_pijersi_state().get_setup() == Setup.T.CLASSIC ):
             opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
 
             if not os.path.isfile(opening_file_path):
@@ -3075,13 +3189,14 @@ class SearcherCatalog:
 
 class Game:
 
-    __slots__ = ('__searcher', '__pijersi_state', '__enabled_log', '__log', '__turn', '__last_action',
+    __slots__ = ('__searcher', '__pijersi_state', '__pijersi_setup', '__enabled_log', '__log', '__turn', '__last_action',
                  '__turn_duration', '__turn_start', '__turn_end')
 
 
-    def __init__(self):
+    def __init__(self, setup=Setup.T.CLASSIC):
         self.__searcher = [None, None]
         self.__pijersi_state = None
+        self.__pijersi_setup = setup
 
         self.__enabled_log = True
         self.__log = ""
@@ -3111,7 +3226,7 @@ class Game:
         assert self.__searcher[Player.T.WHITE] is not None
         assert self.__searcher[Player.T.BLACK] is not None
 
-        self.__pijersi_state = PijersiState()
+        self.__pijersi_state = PijersiState(setup=self.__pijersi_setup)
 
         if self.__enabled_log:
             self.__pijersi_state.show()
