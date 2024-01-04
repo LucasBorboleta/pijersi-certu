@@ -997,8 +997,9 @@ class GameGui(ttk.Frame):
 
             # interpret actions
             if validated_edited_actions:
-
-                self.__game = rules.Game()
+                
+                self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
+                self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
 
                 white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
                 black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
@@ -1188,6 +1189,7 @@ class GameGui(ttk.Frame):
             self.__text_actions.config(state="normal")
             self.__text_actions.delete('1.0', tk.END)
             self.__text_actions.config(state="disabled")
+            self.__write_setup()
 
             self.__button_edit_actions.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
@@ -1243,6 +1245,8 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(state="normal")
         self.__text_actions.delete('1.0', tk.END)
         self.__text_actions.config(state="disabled")
+        
+        self.__write_setup()
 
         # interpret actions
 
@@ -1904,6 +1908,43 @@ class GameGui(ttk.Frame):
 
         destination_hexagons = [GraphicalHexagon.get(hexagon_name) for hexagon_name in hexagon_names]
         return destination_hexagons
+
+
+    def __write_setup(self):
+        self.__text_actions.config(state="normal")
+        
+        hex_states = [rules.HexState.decode(code) for code in self.__game_setup_board_codes]
+        
+        player_setup = {player:{} for player in rules.Player.T}
+        
+        for hexagon in rules.Hexagon.all:
+            hex_state = hex_states[hexagon.index]
+            
+            if hex_state.is_empty:
+                pass
+
+            elif hex_state.has_stack:
+                player_setup[hex_state.player][hexagon.name] = ( 
+                    f"{rules.Cube.to_name(hex_state.player, hex_state.top)}" +
+                    f"{rules.Cube.to_name(hex_state.player, hex_state.bottom)}" )
+                               
+            else:
+                player_setup[hex_state.player][hexagon.name] = (
+                    f"{rules.Cube.to_name(hex_state.player, hex_state.bottom)}" )
+
+            
+        for player in rules.Player.T:
+            items = []
+            for (key, value) in sorted(player_setup[player].items()):
+                items.append(f"{key}:{value}")
+                
+            if len(items) != 0:
+                self.__text_actions.insert(tk.END, " ".join(items) + "\n")
+            
+        self.__text_actions.insert(tk.END, "\n")
+        self.__text_actions.see(tk.END)
+        self.__text_actions.config(state="disabled")
+
 
     def __make_legend_score(self, pijersi_state):
         rewards = pijersi_state.get_rewards()
