@@ -509,6 +509,8 @@ class GameGui(ttk.Frame):
 
         self.__game = None
         self.__game_setup = None
+        self.__game_setup_board_codes = None
+
         self.__game_played = False
         self.__game_terminated = False
         self.__pijersi_state = rules.PijersiState()
@@ -1158,6 +1160,7 @@ class GameGui(ttk.Frame):
             self.__game.start()
             self.__game.set_turn_start(time.time())
             self.__game.set_turn_end(None)
+            self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
 
             self.__searcher_max_time = None
             self.__searcher_start_time = None
@@ -1244,7 +1247,7 @@ class GameGui(ttk.Frame):
         # interpret actions
 
         self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
-        self.__game = rules.Game(self.__game_setup)
+        self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
 
         white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
         black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
