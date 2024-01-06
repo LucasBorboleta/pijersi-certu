@@ -574,7 +574,7 @@ class GameGui(ttk.Frame):
         searcher_catalog_names_width = max(map(len, searcher_catalog_names)) + 2
 
         setup_names = rules.Setup.get_names()
-        setup_names_width = max(map(len, setup_names)) + 1
+        setup_names_width = max(map(len, setup_names))
 
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
@@ -952,6 +952,7 @@ class GameGui(ttk.Frame):
             self.__button_new_stop.config(state="disabled")
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
+            self.__combobox_setup.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
@@ -997,7 +998,7 @@ class GameGui(ttk.Frame):
 
             # interpret actions
             if validated_edited_actions:
-                
+
                 self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
                 self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
 
@@ -1101,6 +1102,7 @@ class GameGui(ttk.Frame):
                 self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
+                self.__combobox_setup.config(state="readonly")
 
                 self.__spinbox_turn.config(state="enabled")
                 self.__button_make_pictures.config(state="enabled")
@@ -1118,6 +1120,7 @@ class GameGui(ttk.Frame):
         self.__button_new_stop.config(state="disabled")
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
+        self.__combobox_setup.config(state="disabled")
 
         self.__button_easy_mode.config(state="disabled")
         self.__button_resume.config(state="disabled")
@@ -1184,6 +1187,8 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
+            self.__combobox_setup.config(state="disabled")
+
             self.__spinbox_turn.config(state="disabled")
 
             self.__text_actions.config(state="normal")
@@ -1218,6 +1223,8 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
+            self.__combobox_setup.config(state="enabled")
+
             self.__spinbox_turn.config(state="enabled")
 
             self.__variable_action.set("")
@@ -1245,7 +1252,7 @@ class GameGui(ttk.Frame):
         self.__text_actions.config(state="normal")
         self.__text_actions.delete('1.0', tk.END)
         self.__text_actions.config(state="disabled")
-        
+
         self.__write_setup()
 
         # interpret actions
@@ -1349,6 +1356,8 @@ class GameGui(ttk.Frame):
 
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
+        self.__combobox_setup.config(state="disabled")
+
         self.__spinbox_turn.config(state="disabled")
 
         self.__text_actions.config(state="disabled")
@@ -1504,6 +1513,8 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
+            self.__combobox_setup.config(state="readonly")
+
             self.__spinbox_turn.config(state="enabled")
 
             self.__progressbar['value'] = 0.
@@ -1911,36 +1922,87 @@ class GameGui(ttk.Frame):
 
 
     def __write_setup(self):
+        """Log compact setup"""
+
         self.__text_actions.config(state="normal")
-        
+
         hex_states = [rules.HexState.decode(code) for code in self.__game_setup_board_codes]
-        
-        player_setup = {player:{} for player in rules.Player.T}
-        
+
+        rows = {}
+
         for hexagon in rules.Hexagon.all:
             hex_state = hex_states[hexagon.index]
-            
+
+            row_label = hexagon.name[0]
+            col_index = int(hexagon.name[1])
+
             if hex_state.is_empty:
-                pass
+                content = ""
 
             elif hex_state.has_stack:
-                player_setup[hex_state.player][hexagon.name] = ( 
-                    f"{rules.Cube.to_name(hex_state.player, hex_state.top)}" +
-                    f"{rules.Cube.to_name(hex_state.player, hex_state.bottom)}" )
-                               
-            else:
-                player_setup[hex_state.player][hexagon.name] = (
-                    f"{rules.Cube.to_name(hex_state.player, hex_state.bottom)}" )
+                content = rules.Cube.to_name(hex_state.player, hex_state.top) + rules.Cube.to_name(hex_state.player, hex_state.top)
 
-            
-        for player in rules.Player.T:
-            items = []
-            for (key, value) in sorted(player_setup[player].items()):
-                items.append(f"{key}:{value}")
-                
-            if len(items) != 0:
-                self.__text_actions.insert(tk.END, " ".join(items) + "\n")
-            
+            else:
+                content = rules.Cube.to_name(hex_state.player, hex_state.bottom)
+
+            if len(content) != 0:
+                if row_label not in rows:
+                    rows[row_label] = {}
+                rows[row_label][col_index] = content
+
+        row_count = 0
+        row_items = []
+
+        for row_label in sorted(rows.keys(), reverse=True):
+            col_content = ""
+            col_start = None
+
+            for col_index in sorted(rows[row_label].keys()):
+                content = rows[row_label][col_index]
+
+                if col_start is None:
+                    col_start = col_index
+
+                if col_index == col_start + len(col_content) and len(content) == 1:
+                    col_content += content
+
+                else:
+
+                    if len(col_content) != 0:
+                        if len(col_content) == 1:
+                            row_items.append(f"{row_label}{col_start}:{col_content}")
+                        else:
+                            col_end = col_start + len(col_content) - 1
+                            row_items.append(f"{row_label}{col_start}{col_end}:{col_content}")
+                        col_content = ""
+
+                    if len(content) > 1:
+                        row_items.append(f"{row_label}{col_index}:{content}")
+                        col_content = ""
+                        col_start = None
+
+                    else:
+                        col_start = col_index
+                        col_content = content
+
+            if len(col_content) != 0:
+                if len(col_content) == 1:
+                    row_items.append(f"{row_label}{col_start}:{col_content}")
+                else:
+                    col_end = col_start + len(col_content) - 1
+                    row_items.append(f"{row_label}{col_start}{col_end}:{col_content}")
+                col_content = ""
+
+
+            row_count += 1
+            if row_count % 2 == 0:
+                self.__text_actions.insert(tk.END, " ".join(row_items) + "\n")
+                row_items = []
+
+        if len(row_items) != 0:
+            self.__text_actions.insert(tk.END, " ".join(row_items) + "\n")
+            row_items = []
+
         self.__text_actions.insert(tk.END, "\n")
         self.__text_actions.see(tk.END)
         self.__text_actions.config(state="disabled")
@@ -2069,6 +2131,7 @@ class GameGui(ttk.Frame):
                 self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
+                self.__combobox_setup.config(state="readonly")
 
                 self.__button_easy_mode.config(state="enabled")
                 self.__button_resume.config(state="enabled")

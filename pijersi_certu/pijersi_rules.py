@@ -81,14 +81,14 @@ class Setup:
     class T(enum.IntEnum):
         CLASSIC = 0
         FULL_RANDOM = 1
-        SEMI_RANDOM = 2
-        assert CLASSIC < FULL_RANDOM < SEMI_RANDOM
+        HALF_RANDOM = 2
+        assert CLASSIC < FULL_RANDOM < HALF_RANDOM
 
 
     __TABLE_SETUP_FROM_NAME = {
         'classic':T.CLASSIC,
-        'f-random':T.FULL_RANDOM,
-        's-random':T.SEMI_RANDOM}
+        'full-random':T.FULL_RANDOM,
+        'half-random':T.HALF_RANDOM}
 
     __TABLE_SETUP_TO_NAME = {setup:name for (name, setup) in __TABLE_SETUP_FROM_NAME.items()}
 
@@ -1654,8 +1654,8 @@ class PijersiState:
         elif setup == Setup.T.FULL_RANDOM:
             return PijersiState.__setup_full_random_board_codes()
 
-        elif setup == Setup.T.SEMI_RANDOM:
-            return PijersiState.__setup_semi_random_board_codes()
+        elif setup == Setup.T.HALF_RANDOM:
+            return PijersiState.__setup_half_random_board_codes()
 
         else:
             return PijersiState.__empty_board_codes()
@@ -1752,7 +1752,7 @@ class PijersiState:
 
 
     @staticmethod
-    def __setup_semi_random_board_codes() -> BoardCodes :
+    def __setup_half_random_board_codes() -> BoardCodes :
         board_codes = PijersiState.__empty_board_codes()
 
         #-- Whites
