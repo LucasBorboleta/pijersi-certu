@@ -1940,7 +1940,8 @@ class GameGui(ttk.Frame):
                 content = ""
 
             elif hex_state.has_stack:
-                content = rules.Cube.to_name(hex_state.player, hex_state.top) + rules.Cube.to_name(hex_state.player, hex_state.top)
+                content = (rules.Cube.to_name(hex_state.player, hex_state.top) +
+                           rules.Cube.to_name(hex_state.player, hex_state.bottom))
 
             else:
                 content = rules.Cube.to_name(hex_state.player, hex_state.bottom)
