@@ -21,6 +21,7 @@ import sys
 import glob
 import math
 import os
+import re
 import shutil
 import time
 from tkinter import font
@@ -972,7 +973,35 @@ class GameGui(ttk.Frame):
             self.__text_actions.config(state="disabled")
 
             validated_edited_actions = True
-            actions_items = actions_text.split()
+            text_items = actions_text.split()
+
+            # extract setup and actions items
+            actions_items = []
+            setup_items = []
+            for text_item in text_items:
+                if re.match(r".*:.*", text_item):
+                    if len(actions_items) != 0:
+                        validated_edited_actions = False
+                        self.__variable_log.set("Error: setup cannot be after action")
+                    setup_items.append(text_item)
+                else:
+                    actions_items.append(text_item)
+
+            # interpret setup
+            if len(setup_items) == 0:
+                self.__game_setup_board_codes = None
+                self.__game_setup = rules.Setup.T.CLASSIC
+
+            else:
+                board_codes = self.__read_setup(setup_items)
+                if board_codes is not None:
+                    self.__game_setup_board_codes = board_codes
+                    self.__game_setup = rules.Setup.T.GIVEN
+
+                else:
+                    validated_edited_actions = False
+                    self.__game_setup_board_codes = None
+                    self.__game_setup = rules.Setup.T.GIVEN
 
             # check length of action items
             if validated_edited_actions and not len(actions_items) % 2 == 0:
@@ -1009,6 +1038,8 @@ class GameGui(ttk.Frame):
                 self.__game.set_black_searcher(black_replayer)
 
                 self.__game.start()
+                self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
+                self.__write_setup()
 
                 self.__turn_states = list()
                 self.__turn_states.append(self.__game.get_state())
@@ -1150,6 +1181,10 @@ class GameGui(ttk.Frame):
             self.__backend_futures = [None for player in rules.Player.T]
 
             self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
+            if self.__game_setup == rules.Setup.T.GIVEN:
+                self.__game_setup = rules.Setup.T.CLASSIC
+                self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
+
             self.__game = rules.Game(self.__game_setup)
 
             self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
@@ -1921,8 +1956,112 @@ class GameGui(ttk.Frame):
         return destination_hexagons
 
 
+    def __read_setup(self, setup_items):
+
+        cube_names = rules.Cube.get_names()
+        hexagon_names = [hexagon.name for hexagon in rules.Hexagon.get_all()]
+
+        cube_counts = {cube_name:0 for cube_name in cube_names}
+
+        board_codes = rules.PijersiState.empty_board_codes()
+
+        for setup_item in setup_items:
+
+            if not re.match(r"^[a-z][1-9]{1,2}:[a-zA-Z]+$", setup_item):
+                self.__variable_log.set(f"Error: setup '{setup_item}' is not well-formed")
+                return None
+
+            if re.match(r"^[a-z][1-9]:[a-zA-Z]$", setup_item):
+                hexagon_name = setup_item[0:2]
+                cube_name = setup_item[3]
+
+                if hexagon_name not in hexagon_names:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong hexagon '{hexagon_name}'")
+                    return None
+
+                if cube_name not in cube_names:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong cube '{cube_name}'")
+                    return None
+
+                try:
+                    rules.PijersiState.set_cube_from_names(board_codes, hexagon_name, cube_name)
+                    cube_counts[cube_name] += 1
+                except:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' is illegal")
+                    return None
+
+            elif re.match(r"^[a-z][1-9]:[a-zA-Z][a-zA-Z]$", setup_item):
+                hexagon_name = setup_item[0:2]
+                top_name = setup_item[3]
+                bottom_name = setup_item[4]
+
+                if hexagon_name not in hexagon_names:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong hexagon '{hexagon_name}'")
+                    return None
+
+                if top_name not in cube_names:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong top cube '{top_name}'")
+                    return None
+
+                if bottom_name not in cube_names:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong bottom cube '{bottom_name}'")
+                    return None
+
+                try:
+                    rules.PijersiState.set_stack_from_names(board_codes, hexagon_name, bottom_name=bottom_name, top_name=top_name)
+                    cube_counts[top_name] += 1
+                    cube_counts[bottom_name] += 1
+                except:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' is illegal")
+                    return None
+
+            elif re.match(r"^[a-z][1-9]{2}:[a-zA-Z]+$", setup_item):
+                (setup_positions, setup_cubes) = setup_item.split(':')
+                row_name = setup_positions[0]
+                (col_start, col_end) = (int(setup_positions[1]), int(setup_positions[2]))
+                if not col_start < col_end:
+                    self.__variable_log.set(f"Error: setup '{setup_item}' with wrong column range")
+                    return None
+
+                setup_hexagon_names = [ f"{row_name}{col_index}" for col_index in range(col_start, col_end + 1) ]
+                setup_cube_names = [cube_name for cube_name in setup_cubes]
+
+                if len(setup_hexagon_names) != len(setup_cube_names):
+                    self.__variable_log.set(f"Error: setup '{setup_item}' cubes and column range does not match")
+                    return None
+
+                for hexagon_name in setup_hexagon_names:
+                    if hexagon_name not in hexagon_names:
+                        self.__variable_log.set(f"Error: setup '{setup_item}' with wrong implied hexagon '{hexagon_name}'")
+                        return None
+
+                for cube_name in setup_cube_names:
+                    if cube_name not in cube_names:
+                        self.__variable_log.set(f"Error: setup '{setup_item}' with wrong cube '{cube_name}'")
+                        return None
+
+                for (hexagon_name, cube_name) in zip(setup_hexagon_names, setup_cube_names):
+                    try:
+                        rules.PijersiState.set_cube_from_names(board_codes, hexagon_name, cube_name)
+                        cube_counts[cube_name] += 1
+                    except:
+                        self.__variable_log.set(f"Error: setup '{setup_item}' is illegal in implied '{hexagon_name}:{cube_name}'")
+                        return None
+
+            else:
+                self.__variable_log.set(f"Error: setup '{setup_item}' failed")
+                return None
+
+        for (cube_name, cube_count) in cube_counts.items():
+            if cube_count > (2 if cube_name in ['w', 'W'] else 4):
+                self.__variable_log.set(f"Error: setup has too much cubes '{cube_name}' : {cube_count}")
+                return None
+
+        return board_codes
+
+
     def __write_setup(self):
-        """Log compact setup"""
+        """Write compact setup in self.__text_actions"""
 
         self.__text_actions.config(state="normal")
 
@@ -1997,11 +2136,11 @@ class GameGui(ttk.Frame):
 
             row_count += 1
             if row_count % 2 == 0:
-                self.__text_actions.insert(tk.END, " ".join(row_items) + "\n")
+                self.__text_actions.insert(tk.END, 3*" " + " ".join(row_items) + "\n")
                 row_items = []
 
         if len(row_items) != 0:
-            self.__text_actions.insert(tk.END, " ".join(row_items) + "\n")
+            self.__text_actions.insert(tk.END, 3*" " + " ".join(row_items) + "\n")
             row_items = []
 
         self.__text_actions.insert(tk.END, "\n")

@@ -82,13 +82,15 @@ class Setup:
         CLASSIC = 0
         FULL_RANDOM = 1
         HALF_RANDOM = 2
-        assert CLASSIC < FULL_RANDOM < HALF_RANDOM
+        GIVEN = 3
+        assert CLASSIC < FULL_RANDOM < HALF_RANDOM < GIVEN
 
 
     __TABLE_SETUP_FROM_NAME = {
         'classic':T.CLASSIC,
         'full-random':T.FULL_RANDOM,
-        'half-random':T.HALF_RANDOM}
+        'half-random':T.HALF_RANDOM,
+        'given':T.GIVEN}
 
     __TABLE_SETUP_TO_NAME = {setup:name for (name, setup) in __TABLE_SETUP_FROM_NAME.items()}
 
@@ -180,6 +182,11 @@ class Cube:
     @staticmethod
     def to_name(player: Player.T, cube: CubeT) -> str:
         return Cube.__TABLE_CUBE_TO_NAME[(player, cube)]
+
+
+    @staticmethod
+    def get_names() -> Sequence[str]:
+        return list(sorted(Cube.__TABLE_CUBE_FROM_NAME.keys()))
 
 
 class Notation:
@@ -888,7 +895,7 @@ class PijersiState:
                  turn: int=1,
                  setup=Setup.T.CLASSIC):
 
-        self.__board_codes = board_codes if board_codes is not None else PijersiState.__setup_board_codes(setup)
+        self.__board_codes = board_codes if board_codes is not None else PijersiState.setup_board_codes(setup)
         self.__player = player
         self.__credit = credit if credit is not None else PijersiState.__max_credit
         self.__turn = turn
@@ -1635,80 +1642,80 @@ class PijersiState:
 
 
     @staticmethod
-    def __copy_board_codes(board_codes: BoardCodes) -> BoardCodes :
+    def copy_board_codes(board_codes: BoardCodes) -> BoardCodes :
         return bytearray(board_codes)
 
 
     @staticmethod
-    def __empty_board_codes() -> BoardCodes :
+    def empty_board_codes() -> BoardCodes :
         board_codes = bytearray([0 for _ in Hexagon.get_all()])
         return board_codes
 
 
     @staticmethod
-    def __setup_board_codes(setup: Setup.T) -> BoardCodes :
+    def setup_board_codes(setup: Setup.T) -> BoardCodes :
 
         if setup == Setup.T.CLASSIC:
-            return PijersiState.__setup_classic_board_codes()
+            return PijersiState.setup_classic_board_codes()
 
         elif setup == Setup.T.FULL_RANDOM:
-            return PijersiState.__setup_full_random_board_codes()
+            return PijersiState.setup_full_random_board_codes()
 
         elif setup == Setup.T.HALF_RANDOM:
-            return PijersiState.__setup_half_random_board_codes()
+            return PijersiState.setup_half_random_board_codes()
 
-        else:
-            return PijersiState.__empty_board_codes()
+        elif setup == Setup.T.GIVEN:
+            return PijersiState.empty_board_codes()
 
 
     @staticmethod
-    def __setup_classic_board_codes() -> BoardCodes :
-        board_codes = PijersiState.__empty_board_codes()
+    def setup_classic_board_codes() -> BoardCodes :
+        board_codes = PijersiState.empty_board_codes()
 
         #-- Whites
 
-        PijersiState.__set_stack_from_names(board_codes, 'b4', bottom_name='W', top_name='W')
+        PijersiState.set_stack_from_names(board_codes, 'b4', bottom_name='W', top_name='W')
 
-        PijersiState.__set_cube_from_names(board_codes, 'a1', 'R')
-        PijersiState.__set_cube_from_names(board_codes, 'a2', 'P')
-        PijersiState.__set_cube_from_names(board_codes, 'a3', 'S')
-        PijersiState.__set_cube_from_names(board_codes, 'a4', 'R')
-        PijersiState.__set_cube_from_names(board_codes, 'a5', 'P')
-        PijersiState.__set_cube_from_names(board_codes, 'a6', 'S')
+        PijersiState.set_cube_from_names(board_codes, 'a1', 'R')
+        PijersiState.set_cube_from_names(board_codes, 'a2', 'P')
+        PijersiState.set_cube_from_names(board_codes, 'a3', 'S')
+        PijersiState.set_cube_from_names(board_codes, 'a4', 'R')
+        PijersiState.set_cube_from_names(board_codes, 'a5', 'P')
+        PijersiState.set_cube_from_names(board_codes, 'a6', 'S')
 
-        PijersiState.__set_cube_from_names(board_codes, 'b1', 'P')
-        PijersiState.__set_cube_from_names(board_codes, 'b2', 'S')
-        PijersiState.__set_cube_from_names(board_codes, 'b3', 'R')
+        PijersiState.set_cube_from_names(board_codes, 'b1', 'P')
+        PijersiState.set_cube_from_names(board_codes, 'b2', 'S')
+        PijersiState.set_cube_from_names(board_codes, 'b3', 'R')
 
-        PijersiState.__set_cube_from_names(board_codes, 'b5', 'S')
-        PijersiState.__set_cube_from_names(board_codes, 'b6', 'R')
-        PijersiState.__set_cube_from_names(board_codes, 'b7', 'P')
+        PijersiState.set_cube_from_names(board_codes, 'b5', 'S')
+        PijersiState.set_cube_from_names(board_codes, 'b6', 'R')
+        PijersiState.set_cube_from_names(board_codes, 'b7', 'P')
 
         #-- Blacks
 
-        PijersiState.__set_stack_from_names(board_codes, 'f4', bottom_name='w', top_name='w')
+        PijersiState.set_stack_from_names(board_codes, 'f4', bottom_name='w', top_name='w')
 
-        PijersiState.__set_cube_from_names(board_codes, 'g6', 'r')
-        PijersiState.__set_cube_from_names(board_codes, 'g5', 'p')
-        PijersiState.__set_cube_from_names(board_codes, 'g4', 's')
-        PijersiState.__set_cube_from_names(board_codes, 'g3', 'r')
-        PijersiState.__set_cube_from_names(board_codes, 'g2', 'p')
-        PijersiState.__set_cube_from_names(board_codes, 'g1', 's')
+        PijersiState.set_cube_from_names(board_codes, 'g6', 'r')
+        PijersiState.set_cube_from_names(board_codes, 'g5', 'p')
+        PijersiState.set_cube_from_names(board_codes, 'g4', 's')
+        PijersiState.set_cube_from_names(board_codes, 'g3', 'r')
+        PijersiState.set_cube_from_names(board_codes, 'g2', 'p')
+        PijersiState.set_cube_from_names(board_codes, 'g1', 's')
 
-        PijersiState.__set_cube_from_names(board_codes, 'f7', 'p')
-        PijersiState.__set_cube_from_names(board_codes, 'f6', 's')
-        PijersiState.__set_cube_from_names(board_codes, 'f5', 'r')
+        PijersiState.set_cube_from_names(board_codes, 'f7', 'p')
+        PijersiState.set_cube_from_names(board_codes, 'f6', 's')
+        PijersiState.set_cube_from_names(board_codes, 'f5', 'r')
 
-        PijersiState.__set_cube_from_names(board_codes, 'f3', 's')
-        PijersiState.__set_cube_from_names(board_codes, 'f2', 'r')
-        PijersiState.__set_cube_from_names(board_codes, 'f1', 'p')
+        PijersiState.set_cube_from_names(board_codes, 'f3', 's')
+        PijersiState.set_cube_from_names(board_codes, 'f2', 'r')
+        PijersiState.set_cube_from_names(board_codes, 'f1', 'p')
 
         return board_codes
 
 
     @staticmethod
-    def __setup_full_random_board_codes() -> BoardCodes :
-        board_codes = PijersiState.__empty_board_codes()
+    def setup_full_random_board_codes() -> BoardCodes :
+        board_codes = PijersiState.empty_board_codes()
 
         #-- Whites
 
@@ -1722,12 +1729,12 @@ class PijersiState:
         white_cube_2 = white_cubes.pop()
 
         if white_cube_1 == 'W':
-            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
+            PijersiState.set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
         else:
-            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
+            PijersiState.set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
 
         for (white_cube_hex, white_cube) in zip(white_cube_hexs, white_cubes):
-            PijersiState.__set_cube_from_names(board_codes, white_cube_hex, white_cube)
+            PijersiState.set_cube_from_names(board_codes, white_cube_hex, white_cube)
 
         #-- Blacks
 
@@ -1741,19 +1748,19 @@ class PijersiState:
         black_cube_2 = black_cubes.pop()
 
         if black_cube_1 == 'w':
-            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
+            PijersiState.set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
         else:
-            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
+            PijersiState.set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
 
         for (black_cube_hex, black_cube) in zip(black_cube_hexs, black_cubes):
-            PijersiState.__set_cube_from_names(board_codes, black_cube_hex, black_cube)
+            PijersiState.set_cube_from_names(board_codes, black_cube_hex, black_cube)
 
         return board_codes
 
 
     @staticmethod
-    def __setup_half_random_board_codes() -> BoardCodes :
-        board_codes = PijersiState.__empty_board_codes()
+    def setup_half_random_board_codes() -> BoardCodes :
+        board_codes = PijersiState.empty_board_codes()
 
         #-- Whites
 
@@ -1771,12 +1778,12 @@ class PijersiState:
         white_cube_2 = white_cubes.pop()
 
         if white_cube_1 == 'W':
-            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
+            PijersiState.set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_1, top_name=white_cube_2)
         else:
-            PijersiState.__set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
+            PijersiState.set_stack_from_names(board_codes, white_stack_hex, bottom_name=white_cube_2, top_name=white_cube_1)
 
         for (white_cube_hex, white_cube) in zip(white_cube_hexs, white_cubes):
-            PijersiState.__set_cube_from_names(board_codes, white_cube_hex, white_cube)
+            PijersiState.set_cube_from_names(board_codes, white_cube_hex, white_cube)
 
         #-- Blacks
 
@@ -1788,34 +1795,36 @@ class PijersiState:
         black_cube_2 = black_cubes.pop()
 
         if black_cube_1 == 'w':
-            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
+            PijersiState.set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_1, top_name=black_cube_2)
         else:
-            PijersiState.__set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
+            PijersiState.set_stack_from_names(board_codes, black_stack_hex, bottom_name=black_cube_2, top_name=black_cube_1)
 
         for (black_cube_hex, black_cube) in zip(black_cube_hexs, black_cubes):
-            PijersiState.__set_cube_from_names(board_codes, black_cube_hex, black_cube)
+            PijersiState.set_cube_from_names(board_codes, black_cube_hex, black_cube)
 
         return board_codes
 
 
     @staticmethod
-    def __set_cube_from_names(board_codes: BoardCodes, hex_name: str, cube_name: str):
+    def set_cube_from_names(board_codes: BoardCodes, hex_name: str, cube_name: str):
         hex_index = Hexagon.get(hex_name).index
         (player, cube) = Cube.from_name(cube_name)
-        PijersiState.__set_cube(board_codes, hex_index, player, cube)
+        PijersiState.set_cube(board_codes, hex_index, player, cube)
 
 
     @staticmethod
-    def __set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: str, top_name: str):
+    def set_stack_from_names(board_codes: BoardCodes, hex_name: str, bottom_name: str, top_name: str):
         hex_index = Hexagon.get(hex_name).index
         (player, bottom) = Cube.from_name(bottom_name)
         (top_player, top) = Cube.from_name(top_name)
         assert top_player == player
-        PijersiState.__set_stack(board_codes, hex_index, player, bottom, top)
+        if top == Cube.T.WISE:
+            assert bottom == Cube.T.WISE
+        PijersiState.set_stack(board_codes, hex_index, player, bottom, top)
 
 
     @staticmethod
-    def __set_cube(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, cube: Cube.T):
+    def set_cube(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, cube: Cube.T):
         hex_state = HexState.decode(board_codes[hex_index])
 
         assert hex_state.is_empty
@@ -1827,7 +1836,7 @@ class PijersiState:
 
 
     @staticmethod
-    def __set_stack(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, bottom: Cube.T, top: Cube.T):
+    def set_stack(board_codes: BoardCodes, hex_index: HexIndex, player: Player.T, bottom: Cube.T, top: Cube.T):
         hex_state = HexState.decode(board_codes[hex_index])
 
         assert hex_state.is_empty
@@ -2026,7 +2035,7 @@ class PijersiState:
 
     @staticmethod
     def __apply_path2_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
-        next_board_codes = PijersiState.__copy_board_codes(board_codes)
+        next_board_codes = PijersiState.copy_board_codes(board_codes)
 
         next_board_codes[path[0]] = path_codes[0]
         next_board_codes[path[1]] = path_codes[1]
@@ -2035,7 +2044,7 @@ class PijersiState:
 
     @staticmethod
     def __apply_path3_codes(board_codes: BoardCodes, path: Path, path_codes: PathCodes) -> BoardCodes:
-        next_board_codes = PijersiState.__copy_board_codes(board_codes)
+        next_board_codes = PijersiState.copy_board_codes(board_codes)
         next_board_codes[path[0]] = path_codes[0]
         next_board_codes[path[1]] = path_codes[1]
         next_board_codes[path[2]] = path_codes[2]
