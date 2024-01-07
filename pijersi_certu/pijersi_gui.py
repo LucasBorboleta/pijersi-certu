@@ -629,18 +629,17 @@ class GameGui(ttk.Frame):
                                               text='Resume',
                                               command=self.__command_resume)
 
-        self.__variable_setup = tk.StringVar()
-        self.__combobox_setup = ttk.Combobox(self.__frame_commands,
-                                                    width=setup_names_width,
-                                                    textvariable=self.__variable_setup,
-                                                    values=setup_names)
-        self.__combobox_setup.config(state="readonly")
-        self.__variable_setup.set(setup_names[0])
+        self.__variable_easy_mode = tk.BooleanVar()
+        self.__variable_easy_mode.set(True)
+        self.__button_easy_mode = ttk.Checkbutton(self.__frame_commands,
+                                                  text='Easy mode',
+                                                  variable=self.__variable_easy_mode,
+                                                  command=self.__command_update_easy_mode)
 
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
-        self.__combobox_setup.grid(row=1, column=0)
+        self.__button_easy_mode.grid(row=1, column=0)
         self.__button_resume.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -724,14 +723,17 @@ class GameGui(ttk.Frame):
                                          borderwidth=2, relief="groove")
 
        # In __frame_human_actions
+       
+        self.__label_setup = ttk.Label(self.__frame_human_actions, text='Setup :')
 
-        self.__variable_easy_mode = tk.BooleanVar()
-        self.__variable_easy_mode.set(True)
-        self.__button_easy_mode = ttk.Checkbutton(self.__frame_human_actions,
-                                                  text='Easy mode',
-                                                  variable=self.__variable_easy_mode,
-                                                  command=self.__command_update_easy_mode)
-
+        self.__variable_setup = tk.StringVar()
+        self.__combobox_setup = ttk.Combobox(self.__frame_human_actions,
+                                                    width=setup_names_width,
+                                                    textvariable=self.__variable_setup,
+                                                    values=setup_names)
+        self.__combobox_setup.config(state="readonly")
+        self.__variable_setup.set(setup_names[0])
+        
         self.__variable_action = tk.StringVar()
 
         self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
@@ -776,7 +778,8 @@ class GameGui(ttk.Frame):
 
         self.__frame_actions.rowconfigure(0, pad=20)
 
-        self.__button_easy_mode.grid(row=0, column=0)
+        self.__label_setup.grid(row=0, column=0)
+        self.__combobox_setup.grid(row=0, column=1)
         self.__button_edit_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
