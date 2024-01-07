@@ -556,6 +556,10 @@ class GameGui(ttk.Frame):
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
         self.__variable_summary.set("(c) 2022 Lucas Borboleta ; pijersi software license : GNU GPL ; pijersi rules license : CC-BY-NC-SA")
 
+        self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
+        self.__game_setup_board_codes = rules.PijersiState.setup_board_codes(self.__game_setup)
+        self.__write_setup()
+
         if False:
             # Prepare the resizable feature
             self.__root.resizable(width=True, height=True)
@@ -723,7 +727,7 @@ class GameGui(ttk.Frame):
                                          borderwidth=2, relief="groove")
 
        # In __frame_human_actions
-       
+
         self.__label_setup = ttk.Label(self.__frame_human_actions, text='Setup :')
 
         self.__variable_setup = tk.StringVar()
@@ -733,7 +737,7 @@ class GameGui(ttk.Frame):
                                                     values=setup_names)
         self.__combobox_setup.config(state="readonly")
         self.__variable_setup.set(setup_names[0])
-        
+
         self.__variable_action = tk.StringVar()
 
         self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
@@ -1096,7 +1100,7 @@ class GameGui(ttk.Frame):
                 self.__game_terminated = not self.__game.has_next_turn()
 
                 self.__pijersi_state = self.__game.get_state()
-                        
+
                 self.__variable_summary.set(self.__game.get_summary())
                 self.__variable_log.set(self.__game.get_log())
 
@@ -1190,11 +1194,15 @@ class GameGui(ttk.Frame):
             self.__backend_futures = [None for player in rules.Player.T]
 
             self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
-            if self.__game_setup == rules.Setup.T.GIVEN:
+
+            if self.__game_setup != rules.Setup.T.GIVEN:
+                self.__game_setup_board_codes = None
+
+            if  self.__game_setup == rules.Setup.T.GIVEN and self.__game_setup_board_codes is None:
                 self.__game_setup = rules.Setup.T.CLASSIC
                 self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
 
-            self.__game = rules.Game(self.__game_setup)
+            self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
 
             self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
             self.__backend_searchers[rules.Player.T.BLACK] = self.__searcher[rules.Player.T.BLACK]
@@ -1365,7 +1373,7 @@ class GameGui(ttk.Frame):
 
         else:
             self.__legend = ""
-                        
+
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
