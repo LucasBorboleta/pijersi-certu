@@ -3246,6 +3246,28 @@ class Game:
             self.__pijersi_state.show()
             self.__log = "Game started"
 
+        if self.__pijersi_state.is_terminal():
+
+            rewards = self.__pijersi_state.get_rewards()
+
+            if self.__enabled_log:
+                print()
+                print("-"*40)
+
+                white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
+                black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
+
+                if rewards[Player.T.WHITE] == rewards[Player.T.BLACK]:
+                    self.__log = f"Nobody wins ; the game is a draw between {white_player} and {black_player}"
+
+                elif rewards[Player.T.WHITE] > rewards[Player.T.BLACK]:
+                    self.__log = f"Player {white_player} wins against {black_player}"
+
+                else:
+                    self.__log = f"Player {black_player} wins against {white_player}"
+
+                print(self.__log)
+
 
     def get_log(self) -> str:
         return self.__log
