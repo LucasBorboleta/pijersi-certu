@@ -509,8 +509,10 @@ class GameGui(ttk.Frame):
         self.__turn_actions = list()
 
         self.__game = None
-        self.__game_setup = None
-        self.__game_setup_board_codes = None
+
+        self.__game_setup_board_codes_classic = rules.PijersiState.setup_board_codes(rules.Setup.T.CLASSIC)
+        self.__game_setup = rules.Setup.T.CLASSIC
+        self.__game_setup_board_codes = self.__game_setup_board_codes_classic
 
         self.__game_played = False
         self.__game_terminated = False
@@ -550,15 +552,12 @@ class GameGui(ttk.Frame):
         # Update widgets
 
         self.__draw_state()
+        self.__write_setup()
 
         self.__command_update_players()
 
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
         self.__variable_summary.set("(c) 2022 Lucas Borboleta ; pijersi software license : GNU GPL ; pijersi rules license : CC-BY-NC-SA")
-
-        self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
-        self.__game_setup_board_codes = rules.PijersiState.setup_board_codes(self.__game_setup)
-        self.__write_setup()
 
         if False:
             # Prepare the resizable feature
@@ -736,7 +735,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_setup,
                                                     values=setup_names)
         self.__combobox_setup.config(state="readonly")
-        self.__variable_setup.set(setup_names[0])
+        self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
 
         self.__variable_action = tk.StringVar()
 
@@ -996,19 +995,22 @@ class GameGui(ttk.Frame):
 
             # interpret setup
             if len(setup_items) == 0:
-                self.__game_setup_board_codes = None
+                self.__game_setup_board_codes = self.__game_setup_board_codes_classic
                 self.__game_setup = rules.Setup.T.CLASSIC
 
             else:
                 board_codes = self.__read_setup(setup_items)
+
                 if board_codes is not None:
                     self.__game_setup_board_codes = board_codes
                     self.__game_setup = rules.Setup.T.GIVEN
 
+                    if self.__game_setup_board_codes == self.__game_setup_board_codes_classic:
+                        self.__game_setup = rules.Setup.T.CLASSIC
+
                 else:
                     validated_edited_actions = False
-                    self.__game_setup_board_codes = None
-                    self.__game_setup = rules.Setup.T.GIVEN
+                    # >> left unchanged self.__game_setup and self.__game_setup_board_codes
 
             # check length of action items
             if validated_edited_actions and not len(actions_items) % 2 == 0:
@@ -2247,7 +2249,8 @@ class GameGui(ttk.Frame):
             else:
                 picture_bbox = None
 
-            image = ImageGrab.grab(bbox=picture_bbox)
+            image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
+            # >> all_screens – Capture all monitors. Windows OS only
             image.save(picture_png_file)
 
             self.__picture_turn_index += 1

@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.3.0"
+__version__ = "1.3.0.rc1"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
