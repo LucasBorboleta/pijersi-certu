@@ -893,8 +893,12 @@ class GameGui(ttk.Frame):
 
     def __command_update_turn(self, *_):
 
-        turn_index = int(self.__variable_turn.get())
-        assert 0 <= turn_index < len(self.__turn_states)
+        try:
+            turn_index = int(self.__variable_turn.get())
+        except:
+            turn_index = 0
+
+        turn_index = max(0, min( len(self.__turn_states) - 1, turn_index))
 
         self.__pijersi_state = self.__turn_states[turn_index]
 
@@ -1277,7 +1281,7 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
-            self.__combobox_setup.config(state="enabled")
+            self.__combobox_setup.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
 
