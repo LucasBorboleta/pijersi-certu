@@ -734,6 +734,7 @@ class GameGui(ttk.Frame):
                                                     width=setup_names_width,
                                                     textvariable=self.__variable_setup,
                                                     values=setup_names)
+        self.__combobox_setup.bind('<<ComboboxSelected>>', self.__command_setup)
         self.__combobox_setup.config(state="readonly")
         self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
 
@@ -947,6 +948,15 @@ class GameGui(ttk.Frame):
             self.__variable_log.set(message)
 
         self.__cmc_reset()
+
+
+    def __command_setup(self, event):
+        new_setup = rules.Setup.from_name(self.__variable_setup.get())
+        if new_setup == self.__game_setup:
+            print("DEBUG: no change of setup")
+        else:
+            print("DEBUG: change of setup")
+
 
     def __command_edit_actions(self):
 
