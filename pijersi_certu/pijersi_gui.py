@@ -951,11 +951,36 @@ class GameGui(ttk.Frame):
 
 
     def __command_setup(self, event):
-        new_setup = rules.Setup.from_name(self.__variable_setup.get())
-        if new_setup == self.__game_setup:
-            print("DEBUG: no change of setup")
-        else:
-            print("DEBUG: change of setup")
+
+        self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
+
+        if self.__game_setup != rules.Setup.T.GIVEN:
+            self.__game_setup_board_codes = rules.PijersiState.setup_board_codes(self.__game_setup)
+
+        self.__pijersi_state = rules.PijersiState(setup=self.__game_setup,
+                                                  board_codes=self.__game_setup_board_codes)
+
+        self.__legend = ""
+
+        self.__turn_states = list()
+        self.__turn_states.append(self.__pijersi_state)
+        self.__turn_actions = list()
+        self.__turn_actions.append("")
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__variable_turn.set(len(self.__turn_states) - 1)
+
+        self.__variable_log.set(f"Ready with '{self.__variable_setup.get()}' setup for a 'New' game")
+        self.__variable_summary.set("")
+
+        self.__text_actions.config(state="normal")
+        self.__text_actions.delete('1.0', tk.END)
+        self.__text_actions.config(state="disabled")
+        self.__write_setup()
+
+        self.__cmc_reset()
+        self.__draw_state()
+
+        self.__button_resume.config(state="disabled")
 
 
     def __command_edit_actions(self):
@@ -1118,7 +1143,7 @@ class GameGui(ttk.Frame):
                 self.__pijersi_state = self.__game.get_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
-                self.__variable_log.set(self.__game.get_log())
+                self.__variable_log.set("Ready to 'Resume' or to start a 'New' game")
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
@@ -1418,7 +1443,22 @@ class GameGui(ttk.Frame):
 
         # update widgets status
 
-        self.__progressbar['value'] = 0.
+        self.__pijersi_state = self.__game.get_state()
+        player = self.__pijersi_state.get_current_player()
+        backend_searcher = self.__backend_searchers[player]
+
+        if backend_searcher.is_interactive():
+            if player == rules.Player.T.WHITE:
+                self.__progressbar.configure(style="White.Horizontal.TProgressbar")
+
+            elif player == rules.Player.T.BLACK:
+                self.__progressbar.configure(style="Black.Horizontal.TProgressbar")
+
+            self.__progressbar['value'] = 50.
+        else:
+           self.__progressbar['value'] = 0.
+
+
 
         self.__button_new_stop.configure(text="Stop")
 
@@ -1459,7 +1499,13 @@ class GameGui(ttk.Frame):
 
             if backend_searcher.is_interactive():
 
-                self.__progressbar['value'] = 0.
+                if player == rules.Player.T.WHITE:
+                    self.__progressbar.configure(style="White.Horizontal.TProgressbar")
+
+                elif player == rules.Player.T.BLACK:
+                    self.__progressbar.configure(style="Black.Horizontal.TProgressbar")
+
+                self.__progressbar['value'] = 50.
 
                 if self.__action_validated and self.__action_input is not None:
                     ready_for_next_turn = True
