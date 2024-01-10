@@ -1,6 +1,7 @@
 # TODO
 The foreseen tasks on pijersi-certu are as follows:
 
-- [ ] Optimize the Minimax weights (maybe according to depth) using some stochastic algorithm; done for Minimax at depths 1, 2 and 3, but not yet for Minimax-4.
+- [ ] Re-optimize the Minimax weights using CMA-ES to account for random setups and to account for Minimax-4.
+- [ ] Implement the Arthur protocol for communication with AI engine.
 - [ ] Complete documentation and information relevant for GitHub publishing (code of conduct, etc.)
 
