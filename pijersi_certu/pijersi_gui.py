@@ -642,7 +642,8 @@ class GameGui(ttk.Frame):
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
-        self.__button_easy_mode.grid(row=1, column=0)
+        #self.__button_easy_mode.grid(row=1, column=0)
+        self.__button_easy_mode.pack_forget()
         self.__button_resume.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -1235,9 +1236,6 @@ class GameGui(ttk.Frame):
             self.__backend_futures = [None for player in rules.Player.T]
 
             self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
-
-            if self.__game_setup != rules.Setup.T.GIVEN:
-                self.__game_setup_board_codes = None
 
             if  self.__game_setup == rules.Setup.T.GIVEN and self.__game_setup_board_codes is None:
                 self.__game_setup = rules.Setup.T.CLASSIC
