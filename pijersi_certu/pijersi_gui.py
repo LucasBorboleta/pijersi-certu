@@ -504,7 +504,7 @@ class GameGui(ttk.Frame):
         self.__picture_turn_index = None
 
         self.__edit_actions = False
-        self.__saved_actions_text = None
+        self.__saved_actions_text = ""
 
         self.__turn_states = list()
         self.__turn_actions = list()
@@ -589,7 +589,7 @@ class GameGui(ttk.Frame):
         self.__style.theme_use('clam')
         self.__style.configure("White.Horizontal.TProgressbar", background='white')
         self.__style.configure("Black.Horizontal.TProgressbar", background='black')
-
+        
         # Frames
 
         self.__frame_left = ttk.Frame(self.__root)
@@ -660,7 +660,7 @@ class GameGui(ttk.Frame):
         self.__combobox_white_player = ttk.Combobox(self.__frame_players,
                                                     width=searcher_catalog_names_width,
                                                     textvariable=self.__variable_white_player,
-                                                    values=searcher_catalog_names)
+                                                    values=searcher_catalog_names)        
         self.__combobox_white_player.config(state="readonly")
         self.__variable_white_player.set(searcher_catalog_names[0])
 
@@ -1189,6 +1189,7 @@ class GameGui(ttk.Frame):
             if validated_edited_actions:
 
                 self.__edit_actions = False
+                self.__saved_actions_text = ""
 
                 # update widgets status
 
