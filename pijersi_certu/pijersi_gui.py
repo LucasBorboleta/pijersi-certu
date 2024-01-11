@@ -504,6 +504,7 @@ class GameGui(ttk.Frame):
         self.__picture_turn_index = None
 
         self.__edit_actions = False
+        self.__saved_actions_text = None
 
         self.__turn_states = list()
         self.__turn_actions = list()
@@ -742,10 +743,15 @@ class GameGui(ttk.Frame):
         self.__variable_action = tk.StringVar()
 
         self.__button_edit_actions = ttk.Button(self.__frame_human_actions,
-                                                text='Edit actions',
-                                                width=max(len('Edit actions'), len('Validate actions')),
+                                                text='Edit',
+                                                width=max(len('Edit'), len('Validate')),
                                                 command=self.__command_edit_actions)
         self.__button_edit_actions.config(state="enabled")
+
+        self.__button_reset_actions = ttk.Button(self.__frame_human_actions,
+                                                text='Undo',
+                                                command=self.__command_reset_actions)
+        self.__button_reset_actions.config(state="enabled")
 
         self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn :')
 
@@ -785,7 +791,8 @@ class GameGui(ttk.Frame):
 
         self.__label_setup.grid(row=0, column=0)
         self.__combobox_setup.grid(row=0, column=1)
-        self.__button_edit_actions.grid(row=0, column=3)
+        self.__button_edit_actions.grid(row=0, column=2)
+        self.__button_reset_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
         self.__button_make_pictures.grid(row=0, column=6)
@@ -804,6 +811,7 @@ class GameGui(ttk.Frame):
 
         self.__text_actions.config(state="disabled")
         self.__button_resume.config(state="disabled")
+        self.__button_reset_actions.config(state="disabled")
 
     def __create_cube_photos(self):
         if self.__cube_photos is None:
@@ -989,10 +997,13 @@ class GameGui(ttk.Frame):
         if not self.__edit_actions:
 
             self.__edit_actions = True
+            self.__saved_actions_text = self.__text_actions.get('1.0', tk.END)
 
-            self.__button_edit_actions.configure(text="Validate actions")
+            self.__button_edit_actions.configure(text="Validate")
 
             # update widgets status
+
+            self.__button_reset_actions.config(state="enabled")
 
             self.__text_actions.config(state="normal")
 
@@ -1181,7 +1192,9 @@ class GameGui(ttk.Frame):
 
                 # update widgets status
 
-                self.__button_edit_actions.configure(text='Edit actions')
+                self.__button_reset_actions.config(state="disabled")
+
+                self.__button_edit_actions.configure(text='Edit')
 
                 self.__text_actions.config(state="disabled")
 
@@ -1199,6 +1212,12 @@ class GameGui(ttk.Frame):
                     self.__button_resume.config(state="disabled")
 
             return
+
+
+    def __command_reset_actions(self):
+        self.__text_actions.delete('1.0', tk.END)
+        self.__text_actions.insert(tk.END, self.__saved_actions_text)
+
 
     def __command_make_pictures(self):
 
