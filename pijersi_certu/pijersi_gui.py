@@ -593,7 +593,6 @@ class GameGui(ttk.Frame):
 
         self.__style.map("TCombobox", fieldbackground=[('disabled', 'lightgrey'), ('active', 'white')])
         self.__style.map("TSpinbox", fieldbackground=[('disabled', 'lightgrey'), ('active', 'white')])
-        self.__style.map("TText", background=[('disabled', 'lightgrey'), ('active', 'white')])
 
         # Frames
 
@@ -779,8 +778,8 @@ class GameGui(ttk.Frame):
 
         self.__text_actions = tk.Text(self.__frame_text_actions,
                                       width=60,
-                                      background='lightgrey',
-                                      borderwidth=2, relief="groove")
+                                      borderwidth=2, relief="groove", 
+                                      background='lightgrey')
 
         self.__scrollbar_actions = ttk.Scrollbar(self.__frame_text_actions, orient='vertical')
 
@@ -1010,7 +1009,7 @@ class GameGui(ttk.Frame):
 
             self.__button_reset_actions.config(state="enabled")
 
-            self.__text_actions.config(state="normal")
+            self.__text_actions.config(state="normal", background='white')
 
             self.__button_new_stop.config(state="disabled")
             self.__combobox_white_player.config(state="disabled")
@@ -1202,7 +1201,7 @@ class GameGui(ttk.Frame):
 
                 self.__button_edit_actions.configure(text='Edit')
 
-                self.__text_actions.config(state="disabled")
+                self.__text_actions.config(state="disabled", background='lightgrey')
 
                 self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
