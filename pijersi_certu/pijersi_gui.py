@@ -587,9 +587,14 @@ class GameGui(ttk.Frame):
         # >> but 'vista' does not support to change style for TProgressbar
         # >> so 'clam' is used instead, as a second nice choice
         self.__style.theme_use('clam')
+
         self.__style.configure("White.Horizontal.TProgressbar", background='white')
         self.__style.configure("Black.Horizontal.TProgressbar", background='black')
-        
+
+        self.__style.map("TCombobox", fieldbackground=[('disabled', 'lightgrey'), ('active', 'white')])
+        self.__style.map("TSpinbox", fieldbackground=[('disabled', 'lightgrey'), ('active', 'white')])
+        self.__style.map("TText", background=[('disabled', 'lightgrey'), ('active', 'white')])
+
         # Frames
 
         self.__frame_left = ttk.Frame(self.__root)
@@ -660,7 +665,7 @@ class GameGui(ttk.Frame):
         self.__combobox_white_player = ttk.Combobox(self.__frame_players,
                                                     width=searcher_catalog_names_width,
                                                     textvariable=self.__variable_white_player,
-                                                    values=searcher_catalog_names)        
+                                                    values=searcher_catalog_names)
         self.__combobox_white_player.config(state="readonly")
         self.__variable_white_player.set(searcher_catalog_names[0])
 
