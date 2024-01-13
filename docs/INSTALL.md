@@ -8,7 +8,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 ## Installing as single executable for Windows platform
 
 - From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want.
-- The latest stable version is `v1.2.0`. The latest version is `v1.3.0-rc1`.
+- The latest stable version is `v1.2.0`. The latest version is `v1.3.0-rc2`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
@@ -16,8 +16,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version     | Hash   | Expected hash value                                              |
   | ----------- | ------ | ---------------------------------------------------------------- |
-  | v1.3.0-rc1  | SHA256 | 62C6391E9C3A5941C88A6319DFD60ECEA69898C7DE46687C53ADBA614E55F7DE |
-  | v1.3.0-rc1  | MD5    | 38D81759DBF813119D3D43D95F433C60                                 |
+  | v1.3.0-rc2  | SHA256 | A9494E334A51EEB29AB56209D1E96A1BD8D50261A2273138A6EEBFA5C146FD0E |
+  | v1.3.0-rc2  | MD5    | C1A231F17DB50959DD0A00ED470E7413                                 |
   | v1.2.0      | SHA256 | C75109044E6A71C0133B680CB87639A1BF5022F700E8FBC4D98AB5FAC61129C8 |
   | v1.2.0      | MD5    | 464E1A7F59EF6F4B3702067D0D6A14F3                                 |
   | v1.1.0      | SHA256 | 62245ffd476791e12bdfbbf03006edecbd9742a6faa2c14917eee37126e9dbd4 |
@@ -29,6 +29,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
+   | v1.3.0-rc1 | SHA256 | 62C6391E9C3A5941C88A6319DFD60ECEA69898C7DE46687C53ADBA614E55F7DE |
+   | v1.3.0-rc1 | MD5    | 38D81759DBF813119D3D43D95F433C60                                 |
    | v1.1.0-rc5 | SHA256 | 77A927D80F1335BAC0E0B898BEAF015878D838A4CF0E395805C121FC65C56BA0 |
    | v1.1.0-rc5 | MD5    | 5C48C83228F9D90621AB108717C403A3                                 |
    | v1.1.0-rc4 | SHA256 | 01CEE922B7837ED638D7E69D47B0CE9DA54B4512C9D0059700AF7598B1EE1ECA |
