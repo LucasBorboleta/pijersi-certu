@@ -778,7 +778,7 @@ class GameGui(ttk.Frame):
 
         self.__text_actions = tk.Text(self.__frame_text_actions,
                                       width=60,
-                                      borderwidth=2, relief="groove", 
+                                      borderwidth=2, relief="groove",
                                       background='lightgrey')
 
         self.__scrollbar_actions = ttk.Scrollbar(self.__frame_text_actions, orient='vertical')
@@ -1222,6 +1222,7 @@ class GameGui(ttk.Frame):
     def __command_reset_actions(self):
         self.__text_actions.delete('1.0', tk.END)
         self.__text_actions.insert(tk.END, self.__saved_actions_text)
+        self.__variable_log.set("")
 
 
     def __command_make_pictures(self):
@@ -2128,7 +2129,7 @@ class GameGui(ttk.Frame):
                 setup_cube_names = [cube_name for cube_name in setup_cubes]
 
                 if len(setup_hexagon_names) != len(setup_cube_names):
-                    self.__variable_log.set(f"Error: setup '{setup_item}' cubes and column range does not match")
+                    self.__variable_log.set(f"Error: setup '{setup_item}' cubes and column range not matching")
                     return None
 
                 for hexagon_name in setup_hexagon_names:
@@ -2150,7 +2151,7 @@ class GameGui(ttk.Frame):
                         return None
 
             else:
-                self.__variable_log.set(f"Error: setup '{setup_item}' failed")
+                self.__variable_log.set(f"Error: setup '{setup_item}' is not well-formed")
                 return None
 
         for (cube_name, cube_count) in cube_counts.items():
