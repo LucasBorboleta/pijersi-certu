@@ -31,7 +31,7 @@ import cProfile
 from pstats import SortKey
 
 
-__version__ = "1.3.0.rc2"
+__version__ = "1.3.0.rc3"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -1408,34 +1408,25 @@ class PijersiState:
 
     def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
 
-        rewards = [None for player in Player.T]
-
         if self.__player_is_arrived(Player.T.WHITE):
-            rewards[Player.T.WHITE] = Reward.WIN
-            rewards[Player.T.BLACK] = Reward.LOSS
+            return (Reward.WIN, Reward.LOSS)
 
         elif self.__player_is_arrived(Player.T.BLACK):
-            rewards[Player.T.BLACK] = Reward.WIN
-            rewards[Player.T.WHITE] = Reward.LOSS
+            return (Reward.LOSS, Reward.WIN)
 
         elif self.__credit == 0:
-            rewards[Player.T.WHITE] = Reward.DRAW
-            rewards[Player.T.BLACK] = Reward.DRAW
+            return (Reward.DRAW, Reward.DRAW)
 
         elif not self.__has_action():
 
             if self.__player == Player.T.WHITE:
-                rewards[Player.T.BLACK] = Reward.WIN
-                rewards[Player.T.WHITE] = Reward.LOSS
+                return (Reward.LOSS, Reward.WIN)
 
             elif self.__player == Player.T.BLACK:
-                rewards[Player.T.WHITE] = Reward.WIN
-                rewards[Player.T.BLACK] = Reward.LOSS
+                return (Reward.WIN, Reward.LOSS)
 
         else:
-            rewards = None
-
-        return rewards
+            return None
 
 
     def get_actions(self, use_cache: bool=True) -> Sequence[PijersiAction]:
@@ -2465,7 +2456,8 @@ class MinimaxSearcher(Searcher):
 
     __slots__ = ('__max_depth', '__state_evaluator',
                  '__searcher_parent', '__transposition_table_depth_0', '__transposition_table_depth_n', '__null_windowing_count',
-                 '__debugging', '__counting', '__alpha_cuts', '__beta_cuts', '__evaluation_count', '__fun_evaluation_count')
+                 '__debugging', '__counting', '__logging',
+                 '__alpha_cuts', '__beta_cuts', '__evaluation_count', '__fun_evaluation_count')
 
     __LOW_ALPHA_BETA_CUT = 0.50
     __LOW_ACTION_COUNT = int(1/__LOW_ALPHA_BETA_CUT)
@@ -2510,6 +2502,7 @@ class MinimaxSearcher(Searcher):
         self.__transposition_table_depth_n = {}
         self.__null_windowing_count = 0
 
+        self.__logging = False
         self.__debugging = False
         self.__counting = False
 
@@ -2571,11 +2564,13 @@ class MinimaxSearcher(Searcher):
                 self.check(initial_state, best_value, [best_action])
 
             valued_actions.sort(reverse=True)
-            print()
-            print(f"select action {best_action} with value {best_value:.2f} amongst {len(best_actions)} best actions")
-            print(f"best actions: {[str(action) for action in best_actions]}")
-            print(f"best branch: {[str(action) for action in best_branch]}")
-            print("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
+
+            if self.__logging:
+                print()
+                print(f"select action {best_action} with value {best_value:.2f} amongst {len(best_actions)} best actions")
+                print(f"best actions: {[str(action) for action in best_actions]}")
+                print(f"best branch: {[str(action) for action in best_branch]}")
+                print("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
 
             action = best_action
 
@@ -3634,6 +3629,31 @@ def test():
         print("=====================================")
 
 
+    def test_two_turns_between_minimax_players():
+
+        print("===========================================")
+        print(" test_two_turns_between_minimax_players ...")
+        print("===========================================")
+
+        game = Game()
+
+        game.set_white_searcher(MinimaxSearcher("minimax-3", max_depth=3))
+        game.set_black_searcher(MinimaxSearcher("minimax-3", max_depth=3))
+
+        game.start()
+
+        turn_index = 0
+        turn_count = 2
+        while game.has_next_turn() and turn_index < turn_count  :
+            turn_index += 1
+            game.next_turn()
+
+
+        print("===========================================")
+        print("test_two_turns_between_minimax_players done")
+        print("===========================================")
+
+
     if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
@@ -3655,6 +3675,9 @@ def test():
 
     if True:
         test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
+
+    if True:
+        test_two_turns_between_minimax_players()
 
 
 def profile():
