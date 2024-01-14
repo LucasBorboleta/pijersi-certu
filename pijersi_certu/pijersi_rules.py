@@ -2607,6 +2607,7 @@ class MinimaxSearcher(Searcher):
                 print()
                 print(f"time limit reached ; action returned by minimax at depth {action_search_index + 1}")
 
+            search_futures = [None for search_index in range(search_count)]
             concurrent_executor.shutdown(wait=False, cancel_futures=True)
             concurrent_executor = None
 

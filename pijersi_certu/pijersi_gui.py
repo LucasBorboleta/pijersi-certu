@@ -1644,9 +1644,9 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = True
 
+            self.__backend_futures = [None for player in rules.Player.T]
             self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
             self.__concurrent_executor = None
-            self.__backend_futures = [None for player in rules.Player.T]
 
             self.__button_new_stop.configure(text="New")
 
@@ -2771,9 +2771,7 @@ if __name__ == "__main__":
                 pass
         print("Terminating child processes done")
 
-
     print()
     print("PIJERSI-CERTU: Please close this window which should have closed automatically. Sorry about that ...")
 
     sys.exit()
-
