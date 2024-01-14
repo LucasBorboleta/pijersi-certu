@@ -33,6 +33,8 @@ print()
 print("Checking virtual environment ...")
 if not os.path.isdir(_venv_home):
     print("    Creating virtual environment ...")
+    print("        using sys.executable = ", sys.executable)
+
     subprocess.run(args=[sys.executable, "-m", "venv", ".env"], shell=False, check=True)
     print("    Creating virtual environment done")
     _install_dependencies = True
@@ -60,6 +62,7 @@ print("Determining the python executable done")
 if _install_dependencies:
     print()
     print("Installing dependencies ...")
+    print("    using _venv_python_executable = ", _venv_python_executable)
 
     if os.name == 'nt':
         # windows fix of "import _ssl" failure after "import ssl" during "pip" execution
