@@ -1159,7 +1159,6 @@ class GameGui(ttk.Frame):
                 self.__pijersi_state = self.__game.get_state()
 
                 self.__variable_summary.set(self.__game.get_summary())
-                self.__variable_log.set("Ready to 'Resume' or to start a 'New' game")
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
@@ -1172,6 +1171,9 @@ class GameGui(ttk.Frame):
                         self.__legend = " " + self.__make_legend_score(self.__pijersi_state)
                     else:
                         self.__legend = ""
+
+                if validated_edited_actions:
+                    self.__variable_log.set("Ready to 'Resume' or to start a 'New' game")
 
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
