@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""pijersi_build_app.py builds a one-file executable for Windows OS."""
+"""pijersi_build_ugi_server.py builds a one-file UGI server executable for Windows OS."""
 
 
 _COPYRIGHT_AND_LICENSE = """
@@ -70,10 +70,10 @@ subprocess.run(args=[_venv_python_executable, "-m", "pip", "install", "pyinstall
 print()
 print("Installing PyInstaller done")
 
-artefact_name = "pijersi_certu"
+artefact_name = "pijersi_certu_ugi_server"
 
 print()
-print(f"Building {artefact_name} application ...")
+print(f"Building {artefact_name} ...")
 os.chdir(os.path.join(_product_home, "pijersi_certu"))
 
 if os.path.isdir("tmp_dist"):
@@ -85,17 +85,17 @@ if os.path.isdir("tmp_build"):
 if os.path.isfile(f"{artefact_name}.spec"):
    os.remove(f"{artefact_name}.spec")
 
+
 subprocess.run(args=[_venv_python_executable,
                      "-m", "PyInstaller",
                      "--distpath",  "tmp_dist",
                      "--workpath", "tmp_build",
-                     "--add-data", "pictures;pictures",
                      "--add-data", "openings-minimax-*.txt;.",
                      "--onefile",
                      "--noupx",
                      "-n", f"{artefact_name}",
                      "-i", "pictures\pijersi.ico",
-                     "pijersi_gui.py"],
+                     "pijersi_ugi.py"],
                shell=False, check=True)
 
 if os.path.isdir("tmp_build"):
@@ -105,9 +105,11 @@ if os.path.isfile(f"{artefact_name}.spec"):
    os.remove(f"{artefact_name}.spec")
 
 print()
-print(f"Building {artefact_name} application done")
+print(f"Building {artefact_name} done")
 
 print()
 _ = input("press enter to terminate")
+
+
 
 
