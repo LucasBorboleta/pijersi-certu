@@ -107,10 +107,6 @@ class UgiClient:
         _ = self.__server_process.wait(timeout=1)
 
 
-    def test(self, x):
-        self.__send(['test', str(x)])
-
-
 class UgiServer:
 
     def __init__(self, channel: UgiChannel):
@@ -153,23 +149,25 @@ class UgiServer:
         while self.__running:
             data = self.__recv()
 
-            assert len(data) >= 1
-            name = data[0]
-            args = data[1:]
-
-            assert name in commands
-            commands[name](args)
+            if len(data) == 0:
+                continue
+            else:
+                name = data[0]
+                args = data[1:]
+            
+            if name not in commands:
+                continue
+            else:
+                commands[name](args)
 
 
     def __ugi(self, args: List[str]):
         self.__log(f"__ugi: args = {args}")
-        assert len(args) == 0
         self.__send(['ugiok'])
 
 
     def __quit(self, args: List[str]):
         self.__log(f"__quit: args = {args}")
-        assert len(args) == 0
         self.stop()
 
 

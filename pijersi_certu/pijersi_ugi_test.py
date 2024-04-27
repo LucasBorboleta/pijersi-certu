@@ -28,10 +28,10 @@ from pijersi_ugi import make_ugi_client
 
 def log(msg: str=None):
     if msg is None:
-        sys.stderr.write("\n")
+        print("", file=sys.stderr, flush=True)
     else:
-        sys.stderr.write(f"pijersi_ugi_test: {msg}\n")
-    sys.stderr.flush()
+        for line in msg.split('\n'):
+            print(f"pijersi_ugi_test: {line}", file=sys.stderr, flush=True)
 
 
 def test_ugi_protocol():
@@ -51,11 +51,13 @@ def test_ugi_protocol():
     client = make_ugi_client(server_executable_path, cerr=sys.stderr)
 
     log()
-    client.ugi()
-    client.test(1)
-    client.test(2)
-    client.test(3)
-    client.quit()
+    
+    try:
+        client.ugi()
+
+        
+    finally:
+        client.quit()
 
     log()
     log("test_ugi_protocol: done")
