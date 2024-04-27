@@ -16,8 +16,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
-from subprocess import Popen
+import os
 from subprocess import PIPE
+from subprocess import Popen
 import sys
 
 from typing import List
@@ -25,6 +26,11 @@ from typing import Self
 from typing import TextIO
 from typing import Tuple
 
+
+_package_home = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(_package_home)
+
+import pijersi_rules as rules
 
 class UgiChannel:
 
@@ -66,11 +72,11 @@ class UgiClient:
     def __init__(self, server_process: Popen, channel: UgiChannel):
         self.__server_process = server_process
         self.__channel = channel
-        self.__debug = True
+        self.__debugging = True
 
 
     def __log(self, msg: str):
-        if self.__debug:
+        if self.__debugging:
             sys.stderr.write(f"UgiClient.{msg}\n")
             sys.stderr.flush()
 
@@ -96,6 +102,9 @@ class UgiClient:
     def quit(self):
         self.__send(['quit'])
 
+        # wait just for nicely logging when debugging
+        _ = self.__server_process.wait(timeout=1)
+
 
     def test(self, x):
         self.__send(['test', str(x)])
@@ -106,11 +115,11 @@ class UgiServer:
     def __init__(self, channel: UgiChannel):
         self.__channel = channel
         self.__running = False
-        self.__debug = True
+        self.__debugging = True
 
 
     def __log(self, msg: str):
-        if self.__debug:
+        if self.__debugging:
             sys.stderr.write(f"UgiServer.{msg}\n")
             sys.stderr.flush()
 
@@ -167,12 +176,17 @@ class UgiServer:
         self.__log(f"__test: args = {args}")
 
 
-def make_ugi_server_process() -> Tuple[Popen, UgiChannel]:
+def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr) -> Tuple[Popen, UgiChannel]:
 
-    server_process = Popen(args=[sys.executable, sys.argv[0], "--ugi-server"],
-                                    shell=False,
-                                    text=True,
-                                    stdin=PIPE, stdout=PIPE)
+    if server_executable_path.endswith(".py"):
+        popen_args = [sys.executable, server_executable_path]
+    else:
+        popen_args = [server_executable_path]
+
+    server_process = Popen(args=popen_args,
+                           shell=False,
+                           text=True,
+                           stdin=PIPE, stdout=PIPE, stderr=cerr)
 
     server_channel = UgiChannel(cin=server_process.stdin, cout=server_process.stdout)
 
@@ -185,8 +199,8 @@ def start_ugi_server_implementation():
     server.start()
 
 
-def make_ugi_client() -> UgiClient:
-    (server_process, server_channel) = make_ugi_server_process()
+def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:
+    (server_process, server_channel) = make_ugi_server_process(server_executable_path, cerr)
 
     client_channel = server_channel.make_dual_channel()
     client = UgiClient(server_process=server_process, channel=client_channel)
@@ -194,32 +208,6 @@ def make_ugi_client() -> UgiClient:
     return client
 
 
-def test_ugi_protocol():
-
-    print()
-    print("test_ugi_protocol: ...")
-
-    client = make_ugi_client()
-
-    client.ugi()
-    client.test(1)
-    client.test(2)
-    client.test(3)
-    client.quit()
-
-    print()
-    print("test_ugi_protocol: done")
-
-
 if __name__ == "__main__":
-
-    if len(sys.argv) >= 2:
-        if sys.argv[1] == "--ugi-server":
-            start_ugi_server_implementation()
-            sys.exit()
-
-    else:
-        test_ugi_protocol()
-
-        print()
-        _ = input("press enter to terminate")
+    start_ugi_server_implementation()
+    sys.exit()
