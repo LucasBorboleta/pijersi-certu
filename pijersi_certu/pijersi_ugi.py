@@ -6,6 +6,7 @@
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
+PIJERSI-CERTU-UGI-SERVER implements the Universal Game Protocol (UGI).
 
 Copyright (C) 2019 Lucas Borboleta (lucas.borboleta@free.fr).
 
@@ -77,8 +78,8 @@ class UgiClient:
 
     def __log(self, msg: str):
         if self.__debugging:
-            sys.stderr.write(f"UgiClient.{msg}\n")
-            sys.stderr.flush()
+            for line in msg.split('\n'):
+                print(f"UgiClient.{line}", file=sys.stderr, flush=True)
 
 
     def __send(self, data: List[str]):
@@ -120,8 +121,8 @@ class UgiServer:
 
     def __log(self, msg: str):
         if self.__debugging:
-            sys.stderr.write(f"UgiServer.{msg}\n")
-            sys.stderr.flush()
+            for line in msg.split('\n'):
+                print(f"UgiServer.{line}", file=sys.stderr, flush=True)
 
 
     def __send(self, data: List[str]):
@@ -194,9 +195,17 @@ def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr
 
 
 def start_ugi_server_implementation():
+
+    print("", file=sys.stderr, flush=True)
+    print(f"Hello from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
+    print(_COPYRIGHT_AND_LICENSE, file=sys.stderr, flush=True)
+
     server_channel = UgiChannel.make_std_channel()
     server = UgiServer(channel=server_channel)
     server.start()
+
+    print("", file=sys.stderr, flush=True)
+    print(f"Bye from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
 
 
 def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:
