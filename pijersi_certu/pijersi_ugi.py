@@ -53,6 +53,8 @@ class UgiChannel:
 
 
     def send(self, data: List[str]):
+        assert len(data) != 0
+
         line = UgiChannel.SEPARATOR.join(data) + UgiChannel.TERMINATOR
         self.__cout.write(line)
         self.__cout.flush()
@@ -69,6 +71,7 @@ class UgiChannel:
         else:
             data = cleaned_line.split(UgiChannel.SEPARATOR)
 
+        assert len(data) != 0
         return data
 
 
@@ -113,7 +116,17 @@ class UgiClient:
         self.__log_debug(f"__send: {data}")
 
 
-    def setoption(self, name: str, value:str):
+    def isready(self) -> bool:
+        self.__log_debug("isready: ...")
+        self.__send(['isready'])
+
+        reply = self.__recv()
+        self.__log_debug(f"isready: reply {reply}")
+        self.__log_debug("isready: done")
+        return (reply == ['readyok'])
+
+
+    def setoption(self, name: str, value: str):
         self.__log_debug("setoption: ...")
         self.__send(['setoption', 'name', name, 'value', value])
         self.__log_debug("setoption: done")
@@ -127,14 +140,11 @@ class UgiClient:
             reply = self.__recv()
             self.__log_debug(f"ugi: reply {reply}")
 
-            if len(reply) == 0:
-                self.__log_info(f"ugi: ignoring empty reply '{reply}'")
-                continue
-
             reply_head = reply[0]
             reply_tail = reply[1:]
 
             if reply_head == 'ugiok':
+
                 if len(reply_tail) != 0:
                     self.__log_info(f"ugi: ignoring extra tokens in reply '{reply}'")
                 break
@@ -238,51 +248,58 @@ class UgiServer:
 
 
     def run(self):
-        assert not self.__running
-        self.__running = True
+        try:
+            assert not self.__running
+            self.__running = True
 
-        commands = {}
-        commands['ugi'] = self.__ugi
-        commands['quit'] = self.__quit
-        commands['setoption'] = self.__setoption
+            commands = {}
+            commands['ugi'] = self.__ugi
+            commands['quit'] = self.__quit
+            commands['setoption'] = self.__setoption
+            commands['isready'] = self.__isready
 
+            while self.__running:
+                data = self.__recv()
 
-        while self.__running:
-            data = self.__recv()
-
-            if len(data) == 0:
-                self.__log_error("no command received ; UGI server terminates itself !")
-                self.terminate()
-                continue
-            else:
                 cmd_name = data[0]
                 cmd_args = data[1:]
 
-            if cmd_name not in commands:
-                self.__log_error(f"unknown command '{cmd_name}' ; UGI server terminates itself !")
-                self.terminate()
-                continue
-            else:
-                commands[cmd_name](cmd_args)
+                if cmd_name not in commands:
+                    self.__log_error(f"unknown command '{cmd_name}' ; UGI server terminates itself !")
+                    self.terminate()
+                    continue
+                else:
+                    commands[cmd_name](cmd_args)
+        finally:
+            self.terminate()
 
 
     def terminate(self):
         self.__running = False
 
 
+    def __isready(self, args: List[str]):
+
+        if len(args) != 0:
+            self.__log_info(f"""ignoring extra tokens in command 'isready {" ".join(args)}'""")
+
+        self.__send(['readyok'])
+
+
     def __quit(self, args: List[str]):
-        self.__log_debug(f"__quit: args = {args}")
+
+        if len(args) != 0:
+            self.__log_info(f"""ignoring extra tokens in command 'quit {" ".join(args)}'""")
+
         self.terminate()
 
 
     def __setoption(self, args: List[str]):
-        self.__log_debug(f"__setoption: args = {args}")
 
         if len(args) != 4 or args[0] != 'name' or args[2] != 'value':
             self.__log_info("__setoption: cannot find/match tokens 'name' and 'value' ; " +
                             f"""ignoring command 'setoption {" ".join(args)}'""")
         else:
-
             option_name = args[1]
             option_value = args[3]
 
@@ -297,7 +314,9 @@ class UgiServer:
 
 
     def __ugi(self, args: List[str]):
-        self.__log_debug(f"__ugi: args = {args}")
+
+        if len(args) != 0:
+            self.__log_info(f"""ignoring extra tokens in command 'ugi {" ".join(args)}'""")
 
         self.__send(['id', 'name', self.__server_name])
         self.__send(['id', 'author', self.__server_author])
@@ -309,7 +328,6 @@ class UgiServer:
                                'max', '4'])
 
         self.__send(['ugiok'])
-
 
 
 def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:

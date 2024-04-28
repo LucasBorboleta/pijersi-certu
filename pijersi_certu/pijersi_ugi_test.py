@@ -56,6 +56,9 @@ def test_ugi_protocol():
         client.ugi()
         client.setoption(name='depth', value='2')
 
+        isready = client.isready()
+        assert isready == True
+
     finally:
         client.quit()
 
