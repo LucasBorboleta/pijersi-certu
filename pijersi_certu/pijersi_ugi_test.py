@@ -54,10 +54,34 @@ def test_ugi_protocol():
 
     try:
         client.ugi()
+
         client.setoption(name='depth', value='2')
 
         isready = client.isready()
-        assert isready == True
+        assert isready == ['readyok']
+
+        client.uginewgame()
+
+        gameover = client.query_gameover()
+        assert gameover == ['false']
+
+        p1turn = client.query_p1turn()
+        assert p1turn == ['true']
+
+        result = client.query_result()
+        assert result == ['none']
+
+        islegal = client.query_islegal('a5b5d6')
+        assert islegal == ['true']
+
+        islegal = client.query_islegal('b7c6')
+        assert islegal == ['true']
+
+        islegal = client.query_islegal('b4c4c4')
+        assert islegal == ['true']
+
+        islegal = client.query_islegal('b4c2')
+        assert islegal == ['false']
 
     finally:
         client.quit()

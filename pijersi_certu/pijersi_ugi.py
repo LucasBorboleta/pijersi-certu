@@ -117,19 +117,53 @@ class UgiClient:
 
 
     def isready(self) -> bool:
-        self.__log_debug("isready: ...")
         self.__send(['isready'])
 
         reply = self.__recv()
-        self.__log_debug(f"isready: reply {reply}")
-        self.__log_debug("isready: done")
-        return (reply == ['readyok'])
+        return reply
+
+
+    def query_gameover(self) -> List[str]:
+        self.__send(['query', 'gameover'])
+
+        gameover = self.__recv()
+        return gameover
+
+
+    def query_islegal(self, move: str) -> List[str]:
+        self.__send(['query', 'islegal', move])
+
+        islegal = self.__recv()
+        return islegal
+
+
+    def query_p1turn(self) -> List[str]:
+        self.__send(['query', 'p1turn'])
+
+        result = self.__recv()
+        return result
+
+
+    def query_result(self) -> List[str]:
+        self.__send(['query', 'result'])
+
+        result = self.__recv()
+        return result
+
+
+    def quit(self):
+        self.__send(['quit'])
+
+        # wait just for nicely logging when debugging
+        _ = self.__server_process.wait(timeout=1)
+
+
+    def uginewgame(self):
+        self.__send(['uginewgame'])
 
 
     def setoption(self, name: str, value: str):
-        self.__log_debug("setoption: ...")
         self.__send(['setoption', 'name', name, 'value', value])
-        self.__log_debug("setoption: done")
 
 
     def ugi(self):
@@ -165,7 +199,6 @@ class UgiClient:
                     self.__log_info(f"ugi: unexpected token '{reply_tail[0]}' ; ignoring reply '{reply}'")
                     continue
 
-
             elif reply_head == 'option':
 
                 if len(reply_tail) < 2 or reply_tail[0] != 'name':
@@ -193,13 +226,6 @@ class UgiClient:
         self.__log_debug("ugi: done")
 
 
-    def quit(self):
-        self.__send(['quit'])
-
-        # wait just for nicely logging when debugging
-        _ = self.__server_process.wait(timeout=1)
-
-
 class UgiServer:
 
     def __init__(self, channel: UgiChannel):
@@ -216,6 +242,7 @@ class UgiServer:
         self.__options['depth'] = 2
         self.__option_converters['depth'] = int
 
+        self.__pijser_state = None
 
 
     def __log(self, message: str, category=''):
@@ -253,10 +280,12 @@ class UgiServer:
             self.__running = True
 
             commands = {}
-            commands['ugi'] = self.__ugi
+            commands['isready'] = self.__isready
+            commands['query'] = self.__query
             commands['quit'] = self.__quit
             commands['setoption'] = self.__setoption
-            commands['isready'] = self.__isready
+            commands['ugi'] = self.__ugi
+            commands['uginewgame'] = self.__uginewgame
 
             while self.__running:
                 data = self.__recv()
@@ -286,6 +315,95 @@ class UgiServer:
         self.__send(['readyok'])
 
 
+    def __query(self, args: List[str]):
+
+        if len(args) < 1:
+            self.__log_info("nothing to query ; UGI server terminates itself !")
+            self.terminate()
+            return
+
+        query_name = args[0]
+        query_args = args[1:]
+
+        if query_name not in  ['gameover', 'p1turn', 'result', 'islegal']:
+            self.__log_info("unknown query '{query_name}' ; UGI server terminates itself !")
+            self.terminate()
+            return
+
+        if self.__pijersi_state is None:
+            self.__log_info("no pijersi state to query ; UGI server terminates itself !")
+            self.terminate()
+            return
+
+        if query_name == 'gameover':
+
+            if self.__pijersi_state.is_terminal():
+                self.__send(['true'])
+            else:
+                self.__send(['false'])
+
+        elif query_name == 'p1turn':
+
+            if self.__pijersi_state.is_terminal():
+                self.__send(['false'])
+
+            elif self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
+                self.__send(['true'])
+
+            else:
+                self.__send(['false'])
+
+        elif query_name == 'result':
+
+            if not self.__pijersi_state.is_terminal():
+                self.__send(['none'])
+            else:
+                reward = self.__pijersi_state.get_rewards()
+
+                if reward[0] == rules.Reward.WIN:
+                    self.__send(['p1win'])
+
+                elif reward[1] == rules.Reward.WIN:
+                    self.__send(['p2win'])
+
+                elif reward[0] == rules.Reward.DRAW:
+                    self.__send(['draw'])
+
+        elif query_name == 'islegal':
+
+            if len(query_args) < 1:
+
+                self.__log_info(f"""missing move in command 'query {" ".join(args)}' ; """ +
+                                "UGI server terminates itself !")
+                self.terminate()
+                return
+
+            if len(query_args) > 1:
+                self.__log_info(f"""ignoring extra tokens in command 'query {" ".join(args)}'""")
+
+            move = query_args[0]
+
+            legal_moves = []
+
+            if not self.__pijersi_state.is_terminal():
+                for action in self.__pijersi_state.get_action_simple_names():
+                    if len(action) == 5:
+                        if action[2] == '=':
+                            legal_move = action[0:2] + action[3:5] + action[3:5]
+                        else:
+                            legal_move = action[0:2] + action[3:5]
+
+                    elif len(action) == 8:
+                        legal_move = action[0:2] + action[3:5] + action[6:8]
+
+                    legal_moves.append(legal_move)
+
+            if move in legal_moves:
+                self.__send(['true'])
+            else:
+                self.__send(['false'])
+
+
     def __quit(self, args: List[str]):
 
         if len(args) != 0:
@@ -297,14 +415,14 @@ class UgiServer:
     def __setoption(self, args: List[str]):
 
         if len(args) != 4 or args[0] != 'name' or args[2] != 'value':
-            self.__log_info("__setoption: cannot find/match tokens 'name' and 'value' ; " +
+            self.__log_info("cannot find/match tokens 'name' and 'value' ; " +
                             f"""ignoring command 'setoption {" ".join(args)}'""")
         else:
             option_name = args[1]
             option_value = args[3]
 
             if option_name not in self.__options:
-                self.__log_info(f"__setoption: unknown option '{option_name}' ; " +
+                self.__log_info(f"unknown option '{option_name}' ; " +
                                 f"""ignoring command 'setoption {" ".join(args)}'""")
 
             else:
@@ -328,6 +446,14 @@ class UgiServer:
                                'max', '4'])
 
         self.__send(['ugiok'])
+
+
+    def __uginewgame(self, args: List[str]):
+
+        if len(args) != 0:
+            self.__log_info(f"""ignoring extra tokens in command 'uginewgame {" ".join(args)}'""")
+
+        self.__pijersi_state = rules.PijersiState()
 
 
 def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:
