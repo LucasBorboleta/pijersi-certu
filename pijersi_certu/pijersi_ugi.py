@@ -62,9 +62,13 @@ class UgiChannel:
         line = self.__cin.readline()
         self.__cin.flush()
 
-        data = (line
-                .strip(UgiChannel.SEPARATOR + UgiChannel.TERMINATOR)
-                .split(UgiChannel.SEPARATOR))
+        cleaned_line = line.strip(UgiChannel.SEPARATOR + UgiChannel.TERMINATOR)
+
+        if len(cleaned_line) == 0:
+            data = []
+        else:
+            data = cleaned_line.split(UgiChannel.SEPARATOR)
+
         return data
 
 
@@ -76,27 +80,35 @@ class UgiClient:
         self.__debugging = True
 
 
-    def __log(self, msg: str):
+    def __log(self, message: str, category=''):
+        for line in message.split('\n'):
+            print(f"{category}UgiClient:{line}", file=sys.stderr, flush=True)
+
+
+    def __log_debug(self, message: str):
         if self.__debugging:
-            for line in msg.split('\n'):
-                print(f"UgiClient.{line}", file=sys.stderr, flush=True)
+            self.__log(message, category='debug:')
+
+
+    def __log_error(self, message: str):
+        self.__log(message, category='error:')
 
 
     def __send(self, data: List[str]):
         self.__channel.send(data)
-        self.__log(f"__send: {data}")
+        self.__log_debug(f"__send: {data}")
 
 
     def __recv(self) -> List[str]:
         data =  self.__channel.recv()
-        self.__log(f"__recv: {data}")
+        self.__log_debug(f"__recv: {data}")
         return data
 
 
     def ugi(self):
         self.__send(['ugi'])
         answer = self.__recv()
-        self.__log(f"ugi: answer {answer}")
+        self.__log_debug(f"ugi: answer {answer}")
         assert answer == ['ugiok']
 
 
@@ -115,20 +127,28 @@ class UgiServer:
         self.__debugging = True
 
 
-    def __log(self, msg: str):
+    def __log(self, message: str, category=''):
+        for line in message.split('\n'):
+            print(f"{category}UgiServer:{line}", file=sys.stderr, flush=True)
+
+
+    def __log_debug(self, message: str):
         if self.__debugging:
-            for line in msg.split('\n'):
-                print(f"UgiServer.{line}", file=sys.stderr, flush=True)
+            self.__log(message, category='debug:')
+
+
+    def __log_error(self, message: str):
+        self.__log(message, category='error:')
 
 
     def __send(self, data: List[str]):
         self.__channel.send(data)
-        self.__log(f"__send: {data}")
+        self.__log_debug(f"__send: {data}")
 
 
     def __recv(self) -> List[str]:
         data = self.__channel.recv()
-        self.__log(f"__recv: {data}")
+        self.__log_debug(f"__recv: {data}")
         return data
 
 
@@ -143,36 +163,35 @@ class UgiServer:
         commands = {}
         commands['ugi'] = self.__ugi
         commands['quit'] = self.__quit
-        commands['test'] = self.__test
 
 
         while self.__running:
             data = self.__recv()
 
             if len(data) == 0:
+                self.__log_error("no command received ; UGI server stops itself !")
+                self.stop()
                 continue
             else:
                 name = data[0]
                 args = data[1:]
-            
+
             if name not in commands:
+                self.__log_error(f"unknown command '{name}' ; UGI server stops itself !")
+                self.stop()
                 continue
             else:
                 commands[name](args)
 
 
     def __ugi(self, args: List[str]):
-        self.__log(f"__ugi: args = {args}")
+        self.__log_debug(f"__ugi: args = {args}")
         self.__send(['ugiok'])
 
 
     def __quit(self, args: List[str]):
-        self.__log(f"__quit: args = {args}")
+        self.__log_debug(f"__quit: args = {args}")
         self.stop()
-
-
-    def __test(self, args: List[str]):
-        self.__log(f"__test: args = {args}")
 
 
 def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr) -> Tuple[Popen, UgiChannel]:

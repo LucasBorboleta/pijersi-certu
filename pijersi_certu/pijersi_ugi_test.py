@@ -51,11 +51,10 @@ def test_ugi_protocol():
     client = make_ugi_client(server_executable_path, cerr=sys.stderr)
 
     log()
-    
+
     try:
         client.ugi()
 
-        
     finally:
         client.quit()
 
