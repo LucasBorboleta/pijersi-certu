@@ -123,6 +123,13 @@ class UgiClient:
         return reply
 
 
+    def query_fen(self) -> List[str]:
+        self.__send(['query', 'fen'])
+
+        fen = self.__recv()
+        return fen
+
+
     def query_gameover(self) -> List[str]:
         self.__send(['query', 'gameover'])
 
@@ -325,7 +332,7 @@ class UgiServer:
         query_name = args[0]
         query_args = args[1:]
 
-        if query_name not in  ['gameover', 'p1turn', 'result', 'islegal']:
+        if query_name not in  ['gameover', 'p1turn', 'result', 'islegal', 'fen']:
             self.__log_info("unknown query '{query_name}' ; UGI server terminates itself !")
             self.terminate()
             return
@@ -383,7 +390,7 @@ class UgiServer:
 
             move = query_args[0]
 
-            if self.__pijersi_state.is_terminal():
+            if self.__pijersi_state is None or self.__pijersi_state.is_terminal():
                 legal_moves = []
             else:
                 legal_moves = self.__pijersi_state.get_action_ugi_names()
@@ -392,6 +399,29 @@ class UgiServer:
                 self.__send(['true'])
             else:
                 self.__send(['false'])
+
+        elif query_name == 'fen':
+
+            fen = [self.__pijersi_state.get_hex_ugi_states()]
+
+            if self.__pijersi_state is not None and not self.__pijersi_state.is_terminal():
+                turn = self.__pijersi_state.get_turn()
+                credit = self.__pijersi_state.get_credit()
+                max_credit = self.__pijersi_state.get_max_credit()
+
+                full_move = (turn  + 1) // 2
+                half_move = max_credit - credit
+
+                if self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
+                    fen.append('w')
+                else:
+                    fen.append('b')
+
+                fen.append(str(half_move))
+                fen.append(str(full_move))
+
+            self.__send(fen)
+
 
 
     def __quit(self, args: List[str]):

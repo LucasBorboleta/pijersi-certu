@@ -83,6 +83,9 @@ def test_ugi_protocol():
         islegal = client.query_islegal('b4c2')
         assert islegal == ['false']
 
+        fen = client.query_fen()
+        assert fen == ['s-p-r-s-p-r-/p-r-s-wwr-s-p-/6/7/6/P-S-R-WWS-R-P-/R-P-S-R-P-S-', 'w', '0', '1']
+
     finally:
         client.quit()
 

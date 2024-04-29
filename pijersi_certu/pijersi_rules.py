@@ -1593,6 +1593,60 @@ class PijersiState:
         return [HexState.decode(code) for code in self.__board_codes]
 
 
+    def get_hex_ugi_states(self) -> str:
+
+        hex_rows = []
+        hex_rows.append(['g1', 'g2', 'g3', 'g4', 'g5', 'g6'])
+        hex_rows.append(['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7'])
+        hex_rows.append(['e1', 'e2', 'e3', 'e4', 'e5', 'e6'])
+        hex_rows.append(['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'])
+        hex_rows.append(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
+        hex_rows.append(['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'])
+        hex_rows.append(['a1', 'a2', 'a3', 'a4', 'a5', 'a6'])
+
+        hex_states = self.get_hex_states()
+
+        fen_lines = []
+        for hex_row in hex_rows:
+            fen_line = ""
+            empty_space_count = 0
+            for hex_name in hex_row:
+                hex_state = hex_states[Hexagon.get(hex_name).index]
+
+                if hex_state.is_empty:
+                    # Hexagon is empty
+                    empty_space_count += 1
+
+                elif hex_state.has_stack:
+                    # Hexagon with a stack
+
+                    if empty_space_count != 0:
+                        fen_line += str(empty_space_count)
+                        empty_space_count = 0
+
+                    fen_line += Cube.to_name(hex_state.player, hex_state.bottom)
+                    fen_line += Cube.to_name(hex_state.player, hex_state.top)
+
+                elif hex_state.bottom is not None:
+                    # Hexagon with a single cube at bottom
+
+                    if empty_space_count != 0:
+                        fen_line += str(empty_space_count)
+                        empty_space_count = 0
+
+                    fen_line += Cube.to_name(hex_state.player, hex_state.bottom)
+                    fen_line += '-'
+
+            if empty_space_count != 0:
+                fen_line += str(empty_space_count)
+                empty_space_count = 0
+
+            fen_lines.append(fen_line)
+
+        fen = '/'.join(fen_lines)
+        return fen
+
+
     def get_board_codes(self) -> BoardCodes:
         return self.__board_codes
 
