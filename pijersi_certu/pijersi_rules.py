@@ -853,7 +853,8 @@ class PijersiState:
     __init_done = False
     __max_credit = 20
     __slots__ = ('__board_codes', '__player', '__credit', '__turn', '__setup',
-                 '__actions', '__actions_by_names', '__actions_by_simple_names',
+                 '__actions',
+                 '__actions_by_names', '__actions_by_simple_names', '__actions_by_ugi_names',
                  '__is_terminal_cache', '__has_action_cache', '__player_is_arrived_cache')
 
 
@@ -900,6 +901,7 @@ class PijersiState:
         self.__actions = None
         self.__actions_by_names = None
         self.__actions_by_simple_names = None
+        self.__actions_by_ugi_names = None
         self.__is_terminal_cache = None
         self.__has_action_cache = None
         self.__player_is_arrived_cache = None
@@ -1448,6 +1450,28 @@ class PijersiState:
         return list(self.__actions_by_simple_names.keys())
 
 
+    def get_action_ugi_names(self) -> Sequence[str]:
+
+        if self.__actions_by_ugi_names is None:
+            self.__actions_by_ugi_names = {}
+
+            for action in self.get_actions():
+                action_name = str(action).replace('!', '')
+
+                if len(action_name) == 5:
+                    if action_name[2] == '=':
+                        action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[3:5]
+                    else:
+                        action_ugi_name = action_name[0:2] + action_name[3:5]
+
+                elif len(action_name) == 8:
+                    action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[6:8]
+
+                self.__actions_by_ugi_names[action_ugi_name] = action
+
+        return list(self.__actions_by_ugi_names.keys())
+
+
     def get_action_by_name(self, action_name: str) -> PijersiAction:
         _ = self.get_action_names()
         return self.__actions_by_names[action_name]
@@ -1456,6 +1480,11 @@ class PijersiState:
     def get_action_by_simple_name(self, action_name: str) -> PijersiAction:
         _ = self.get_action_simple_names()
         return self.__actions_by_simple_names[action_name]
+
+
+    def get_action_by_ugi_name(self, action_name: str) -> PijersiAction:
+        _ = self.get_action_ugi_names()
+        return self.__actions_by_ugi_names[action_name]
 
 
     def take_action(self, action: PijersiAction) -> Self:
@@ -1476,6 +1505,11 @@ class PijersiState:
 
     def take_action_by_simple_name(self, action_name: str) -> Self:
         return self.take_action_by_name(action_name)
+
+
+    def take_action_by_ugi_name(self, action_name: str) -> Self:
+        action = self.get_action_by_ugi_name(action_name)
+        return self.take_action(action)
 
 
     def get_fighter_counts(self)-> Sequence[int]:

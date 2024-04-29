@@ -383,20 +383,10 @@ class UgiServer:
 
             move = query_args[0]
 
-            legal_moves = []
-
-            if not self.__pijersi_state.is_terminal():
-                for action in self.__pijersi_state.get_action_simple_names():
-                    if len(action) == 5:
-                        if action[2] == '=':
-                            legal_move = action[0:2] + action[3:5] + action[3:5]
-                        else:
-                            legal_move = action[0:2] + action[3:5]
-
-                    elif len(action) == 8:
-                        legal_move = action[0:2] + action[3:5] + action[6:8]
-
-                    legal_moves.append(legal_move)
+            if self.__pijersi_state.is_terminal():
+                legal_moves = []
+            else:
+                legal_moves = self.__pijersi_state.get_action_ugi_names()
 
             if move in legal_moves:
                 self.__send(['true'])
