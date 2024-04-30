@@ -116,6 +116,72 @@ class UgiClient:
         self.__log_debug(f"__send: {data}")
 
 
+    def go_depth(self, depth: int) -> str:
+        assert depth >= 1
+        self.__send(['go', 'depth', str(depth)])
+
+        while True:
+            reply = self.__recv()
+            self.__log_debug(f"go_depth: reply {reply}")
+
+            reply_head = reply[0]
+            reply_tail = reply[1:]
+
+            if reply_head == 'bestmove':
+
+                assert len(reply_tail) >= 1
+                bestmove = reply_tail[0]
+
+                if len(reply_tail) > 1:
+                    self.__log_info(f"go_depth: ignoring extra tokens in reply '{reply}'")
+
+            elif reply_head == 'info':
+                self.__log_info(f"go_depth: '{reply}'")
+
+            else:
+                self.__log_info(f"go_depth: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
+                continue
+
+        self.__log_debug("go_depth: done")
+
+        return bestmove
+
+
+    def go_manual(self, move: str):
+        self.__send(['go', 'manual', move])
+
+
+    def go_movetime(self, time_ms: float) -> str:
+        assert time_ms > 0
+        self.__send(['go', 'movetime', time_ms])
+
+        while True:
+            reply = self.__recv()
+            self.__log_debug(f"go_movetime: reply {reply}")
+
+            reply_head = reply[0]
+            reply_tail = reply[1:]
+
+            if reply_head == 'bestmove':
+
+                assert len(reply_tail) >= 1
+                bestmove = reply_tail[0]
+
+                if len(reply_tail) > 1:
+                    self.__log_info(f"go_movetime: ignoring extra tokens in reply '{reply}'")
+
+            elif reply_head == 'info':
+                self.__log_info(f"go_movetime: '{reply}'")
+
+            else:
+                self.__log_info(f"go_movetime: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
+                continue
+
+        self.__log_debug("go_movetime: done")
+
+        return bestmove
+
+
     def isready(self) -> bool:
         self.__send(['isready'])
 
@@ -250,6 +316,7 @@ class UgiServer:
         self.__option_converters['depth'] = int
 
         self.__pijser_state = None
+        self.__max_depth = 4
 
 
     def __log(self, message: str, category=''):
@@ -288,6 +355,7 @@ class UgiServer:
 
             commands = {}
             commands['isready'] = self.__isready
+            commands['go'] = self.__go
             commands['query'] = self.__query
             commands['quit'] = self.__quit
             commands['setoption'] = self.__setoption
@@ -313,6 +381,33 @@ class UgiServer:
     def terminate(self):
         self.__running = False
 
+
+    def __go(self, args: List[str]):
+
+        if len(args) != 2:
+            self.__log_info("wrong go arguments ; UGI server terminates itself !")
+            self.terminate()
+            return
+
+        if args[0] == 'manual':
+            move = args[1]
+            new_pijersi_state = self.__pijersi_state.take_action_by_ugi_name(move)
+            self.__pijersi_state = new_pijersi_state
+
+        elif args[0] == 'depth':
+            depth = int(args[1])
+
+            self.__send(['bestmove', bestmove])
+
+        elif args[0] == 'movetime':
+            time_ms = float(args[1])
+
+            self.__send(['bestmove', bestmove])
+
+        else:
+            self.__log_info("wrong go arguments ; UGI server terminates itself !")
+            self.terminate()
+            return
 
     def __isready(self, args: List[str]):
 

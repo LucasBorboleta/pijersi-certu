@@ -86,6 +86,22 @@ def test_ugi_protocol():
         fen = client.query_fen()
         assert fen == ['s-p-r-s-p-r-/p-r-s-wwr-s-p-/6/7/6/P-S-R-WWS-R-P-/R-P-S-R-P-S-', 'w', '0', '1']
 
+        client.go_manual('b7c6')
+        fen = client.query_fen()
+        assert fen == ['s-p-r-s-p-r-/p-r-s-wwr-s-p-/6/7/5P-/P-S-R-WWS-R-1/R-P-S-R-P-S-', 'b', '1', '1']
+
+        client.go_manual('f7f6d5')
+        fen = client.query_fen()
+        assert fen == ['s-p-r-s-p-r-/p-r-s-wwr-2/6/4sp2/5P-/P-S-R-WWS-R-1/R-P-S-R-P-S-', 'w', '2', '2']
+
+        client.go_manual('a6b6d5')
+        fen = client.query_fen()
+        assert fen == ['s-p-r-s-p-r-/p-r-s-wwr-2/6/4RS2/5P-/P-S-R-WWS-2/R-P-S-R-P-1', 'b', '0', '2']
+
+        client.go_manual('g6g5f6')
+        fen = client.query_fen()
+        assert fen == ['s-p-r-s-2/p-r-s-wwr-pr1/6/4RS2/5P-/P-S-R-WWS-2/R-P-S-R-P-1', 'w', '1', '3']
+
     finally:
         client.quit()
 
