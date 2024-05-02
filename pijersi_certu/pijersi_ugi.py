@@ -144,7 +144,7 @@ class UgiClient:
         return bestmove
 
 
-    def go_depth(self, depth: int) -> str:
+    def go_depth_and_wait(self, depth: int) -> str:
         assert depth >= 1
         self.__send(['go', 'depth', str(depth)])
 
@@ -156,7 +156,7 @@ class UgiClient:
         self.__send(['go', 'manual', move])
 
 
-    def go_movetime(self, time_ms: float) -> str:
+    def go_movetime_and_wait(self, time_ms: float) -> str:
         assert time_ms > 0
         self.__send(['go', 'movetime', str(time_ms)])
 
@@ -210,7 +210,10 @@ class UgiClient:
         self.__send(['quit'])
 
         # wait just for nicely logging when debugging
-        _ = self.__server_process.wait(timeout=1)
+        try:
+            _ = self.__server_process.wait(timeout=1)
+        except:
+            pass
 
 
     def uginewgame(self):
@@ -298,7 +301,6 @@ class UgiServer:
         self.__option_converters['depth'] = int
 
         self.__pijser_state = None
-        self.__max_depth = 4
 
 
     def __log(self, message: str, category=''):
@@ -393,8 +395,20 @@ class UgiServer:
         elif args[0] == 'movetime':
             time_ms = float(args[1])
 
-            time_s = 1_000*time_ms
-            searcher = rules.MinimaxSearcher(f"minimax{self.__max_depth}-{time_s:.0f}s", max_depth=self.__max_depth)
+            time_s = time_ms/1_000
+
+            if time_s <= 20:
+                depth = 2
+
+            elif time_s <=  2*60:
+                depth = 3
+
+            else:
+                depth = 4
+
+            searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s",
+                                             max_depth=depth,
+                                             time_limit=time_s)
 
             action = searcher.search(self.__pijersi_state)
             bestmove = action.to_ugi_name()

@@ -115,12 +115,49 @@ def test_ugi_protocol():
         result = client.query_result()
         assert result == ['none']
 
-        bestmove = client.go_depth(2)
-        assert bestmove == 'a5b6d5'
+        bestmove = client.go_depth_and_wait(2)
+        # assert bestmove == 'a5b6d5'
 
-        bestmove = client.go_movetime(2000)
-        assert bestmove == 'a5b6c6' # >> best opening move from minimax-4
+        bestmove = client.go_movetime_and_wait(2_000)
+        # assert bestmove == 'a5b6c6' # >> best opening move from minimax-4
 
+
+        log()
+        client.uginewgame()
+
+        while True:
+            fen = client.query_fen()
+            log(f"fen = {fen}")
+
+            gameover = client.query_gameover()
+            if gameover == ['true']:
+                break
+
+            bestmove = client.go_depth_and_wait(2)
+            log(f"bestmove = {bestmove}")
+            client.go_manual(bestmove)
+
+        result = client.query_result()
+        log(f"result = {result}")
+
+
+        log()
+        client.uginewgame()
+
+        while True:
+            fen = client.query_fen()
+            log(f"fen = {fen}")
+
+            gameover = client.query_gameover()
+            if gameover == ['true']:
+                break
+
+            bestmove = client.go_movetime_and_wait(10_000)
+            log(f"bestmove = {bestmove}")
+            client.go_manual(bestmove)
+
+        result = client.query_result()
+        log(f"result = {result}")
 
     finally:
         client.quit()

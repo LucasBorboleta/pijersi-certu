@@ -71,6 +71,10 @@ _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
 
+def log(text: str=""):
+    print(text, file=sys.stderr, flush=True)
+
+
 class Setup:
     SetupT = TypeVar("SetupT", bound="Setup.T")
 
@@ -434,7 +438,7 @@ class Hexagon:
     @staticmethod
     def print_hexagons():
         for hexagon in Hexagon.__all_sorted_hexagons:
-            print(hexagon)
+            log(hexagon)
 
 
     @staticmethod
@@ -1278,90 +1282,90 @@ class PijersiState:
 
 
         def print_table_has_cube():
-            print()
-            print("-- print_table_has_cube --")
-            print(PijersiState.__TABLE_HAS_CUBE)
+            log()
+            log("-- print_table_has_cube --")
+            log(PijersiState.__TABLE_HAS_CUBE)
 
 
         def print_table_has_stack():
-            print()
-            print("-- print_table_has_stack --")
-            print(PijersiState.__TABLE_HAS_STACK)
+            log()
+            log("-- print_table_has_stack --")
+            log(PijersiState.__TABLE_HAS_STACK)
 
 
         def print_table_cube_count():
-            print()
-            print("-- print_table_cube_count --")
-            print(PijersiState.__TABLE_CUBE_COUNT)
+            log()
+            log("-- print_table_cube_count --")
+            log(PijersiState.__TABLE_CUBE_COUNT)
 
 
         def print_table_has_fighter():
-            print()
-            print("-- print_table_has_fighter --")
-            print(PijersiState.__TABLE_HAS_FIGHTER)
+            log()
+            log("-- print_table_has_fighter --")
+            log(PijersiState.__TABLE_HAS_FIGHTER)
 
 
         def print_table_fighter_count():
-            print()
-            print("-- print_table_fighter_count --")
-            print(PijersiState.__TABLE_FIGHTER_COUNT)
+            log()
+            log("-- print_table_fighter_count --")
+            log(PijersiState.__TABLE_FIGHTER_COUNT)
 
 
         def print_table_cube_count_by_sort():
-            print()
-            print("-- print_table_cube_count_by_sort --")
-            print(PijersiState.__TABLE_CUBE_COUNT_BY_SORT)
+            log()
+            log("-- print_table_cube_count_by_sort --")
+            log(PijersiState.__TABLE_CUBE_COUNT_BY_SORT)
 
 
         def print_table_make_path1():
-            print()
-            print("-- print_table_make_path1 --")
-            print(PijersiState.__TABLE_MAKE_PATH1)
+            log()
+            log("-- print_table_make_path1 --")
+            log(PijersiState.__TABLE_MAKE_PATH1)
 
 
         def print_table_make_path2():
-            print()
-            print("-- print_table_make_path2 --")
-            print(PijersiState.__TABLE_MAKE_PATH2)
+            log()
+            log("-- print_table_make_path2 --")
+            log(PijersiState.__TABLE_MAKE_PATH2)
 
 
         def print_table_goal_indices():
-            print()
-            print("-- print_table_goal_indices --")
-            print(PijersiState.__TABLE_GOAL_INDICES)
+            log()
+            log("-- print_table_goal_indices --")
+            log(PijersiState.__TABLE_GOAL_INDICES)
 
 
         def print_table_goal_distances():
-            print()
-            print("-- print_table_goal_distances --")
-            print(PijersiState.__TABLE_GOAL_DISTANCES)
+            log()
+            log("-- print_table_goal_distances --")
+            log(PijersiState.__TABLE_GOAL_DISTANCES)
 
 
         def print_table_center_distances():
-            print()
-            print("-- print_table_center_distances --")
-            print(PijersiState.__TABLE_CENTER_DISTANCES)
+            log()
+            log("-- print_table_center_distances --")
+            log(PijersiState.__TABLE_CENTER_DISTANCES)
 
 
         def print_tables_try_cube_path1():
-            print()
-            print("-- print_tables_try_cube_path1 --")
-            print(PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE)
-            print(PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE)
+            log()
+            log("-- print_tables_try_cube_path1 --")
+            log(PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE)
+            log(PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE)
 
 
         def print_tables_try_stack_path1():
-            print()
-            print("-- print_tables_try_stack_path1 --")
-            print(PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE)
-            print(PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE)
+            log()
+            log("-- print_tables_try_stack_path1 --")
+            log(PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE)
+            log(PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE)
 
 
         def print_tables_try_stack_path2():
-            print()
-            print("-- print_tables_try_stack_path2 --")
-            print(PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE)
-            print(PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
+            log()
+            log("-- print_tables_try_stack_path2 --")
+            log(PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE)
+            log(PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
 
 
         print_table_cube_count()
@@ -1660,10 +1664,10 @@ class PijersiState:
 
 
     def show(self):
-        print()
-        print(self.get_show_text())
-        print()
-        print(self.get_summary())
+        log()
+        log(self.get_show_text())
+        log()
+        log(self.get_summary())
 
 
     def get_summary(self) -> str:
@@ -2283,11 +2287,11 @@ class HumanSearcher(Searcher):
         while not action_validated:
             action_input = Notation.simplify_notation(input("HumanSearcher: action? "))
             (action_validated, validation_message) = Notation.validate_simple_notation(action_input, action_names)
-            print(validation_message)
+            log(validation_message)
 
         action = state.get_action_by_simple_name(action_input)
 
-        print(f"HumanSearcher: action {action} has been selected")
+        log(f"HumanSearcher: action {action} has been selected")
 
         return action
 
@@ -2644,14 +2648,14 @@ class MinimaxSearcher(Searcher):
                     beta_cut_mean = 0
                     beta_cut_q95 = 0
 
-                print()
-                print( f"{self.__evaluation_count} state evaluations" + " / " +
+                log()
+                log( f"{self.__evaluation_count} state evaluations" + " / " +
                        f"alpha_cut #{len(self.__alpha_cuts)} cuts / #ratio at cut: mean={100*alpha_cut_mean:.0f}% q95={100*alpha_cut_q95:.0f}%" + " / " +
                        f"beta_cut #{len(self.__beta_cuts)} cuts / #ratio at cut: mean={100*beta_cut_mean:.0f}% q95={100*beta_cut_q95:.0f}%")
 
-                print(f"{self.__fun_evaluation_count} function calls to state evaluation")
-                print(f"{len(self.__transposition_table_depth_0)} values in transposition table depth-0")
-                print(f"{len(self.__transposition_table_depth_n)} values in transposition table depth-n")
+                log(f"{self.__fun_evaluation_count} function calls to state evaluation")
+                log(f"{len(self.__transposition_table_depth_0)} values in transposition table depth-0")
+                log(f"{len(self.__transposition_table_depth_n)} values in transposition table depth-n")
 
             if do_check:
                 self.check(initial_state, best_value, [best_action])
@@ -2659,11 +2663,11 @@ class MinimaxSearcher(Searcher):
             valued_actions.sort(reverse=True)
 
             if self.__logging:
-                print()
-                print(f"select action {best_action} with value {best_value:.2f} amongst {len(best_actions)} best actions")
-                print(f"best actions: {[str(action) for action in best_actions]}")
-                print(f"best branch: {[str(action) for action in best_branch]}")
-                print("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
+                log()
+                log(f"select action {best_action} with value {best_value:.2f} amongst {len(best_actions)} best actions")
+                log(f"best actions: {[str(action) for action in best_actions]}")
+                log(f"best branch: {[str(action) for action in best_branch]}")
+                log("first actions: ", [f"{action}:{action.value:.2f}" for action in valued_actions[:min(6, len(valued_actions))]])
 
             action = best_action
 
@@ -2677,7 +2681,7 @@ class MinimaxSearcher(Searcher):
                 search_futures[search_index] = concurrent_executor.submit(minimax_search_task, depth=search_index + 1, state=state)
 
             #-- watch end of minimax of highest depth after each sleeping of "wait_slice" seconds
-            wait_slice_min = 0.5
+            wait_slice_min = 0.1
             wait_count = int(self.get_time_limit()/wait_slice_min) + 1
             wait_slice = self.get_time_limit()/wait_count
             for _ in range(wait_count):
@@ -2694,11 +2698,19 @@ class MinimaxSearcher(Searcher):
                     action = search_futures[search_index].result()
                     action_search_index = search_index
 
+            #-- ensure an action can be returned; at least by minimax-1
+            if action is None:
+                log()
+                log("no action found after time limit ; force new search by minimax-1")
+                fallback_minimax_searcher = MinimaxSearcher("minimax-1", max_depth=1)
+                action = fallback_minimax_searcher.search(state)
+                action_search_index = 0
+
             assert action is not None
 
             if action_search_index != search_count - 1:
-                print()
-                print(f"time limit reached ; action returned by minimax at depth {action_search_index + 1}")
+                log()
+                log(f"time limit reached ; action returned by minimax at depth {action_search_index + 1}")
 
             search_futures = [None for search_index in range(search_count)]
             concurrent_executor.shutdown(wait=False, cancel_futures=True)
@@ -2711,27 +2723,27 @@ class MinimaxSearcher(Searcher):
 
         (best_value_ref, valued_actions_ref) = self.minimax(state=initial_state, player=1)
 
-        print()
-        print(f"check: best_value_ref={best_value_ref:.2f}")
-        print(f"check: best_value={best_value:.2f}")
-        print()
+        log()
+        log(f"check: best_value_ref={best_value_ref:.2f}")
+        log(f"check: best_value={best_value:.2f}")
+        log()
 
         best_actions_ref = []
         for action_ref in valued_actions_ref:
             if action_ref.value == best_value_ref:
                 best_actions_ref.append(action_ref)
-                print(f"check: best (action_ref, action_value_ref)= ({action_ref}, {action_ref.value:.2f})")
+                log(f"check: best (action_ref, action_value_ref)= ({action_ref}, {action_ref.value:.2f})")
 
-        print()
-        print(f"check: {len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.2f}")
+        log()
+        log(f"check: {len(best_actions_ref)} best_actions_ref with best value {best_value_ref:.2f}")
 
         best_actions = []
         for action in valued_actions:
             if action.value == best_value:
                 best_actions.append(action)
-                print(f"check: best (action, action_value)= ({action}, {action.value:.2f})")
+                log(f"check: best (action, action_value)= ({action}, {action.value:.2f})")
 
-        print()
+        log()
 
         action_names_ref = set(map(str, valued_actions_ref))
         action_names = set(map(str, valued_actions))
@@ -2762,11 +2774,11 @@ class MinimaxSearcher(Searcher):
             value = self.__transposition_table_depth_0[key]
             if False and self.__debugging:
                 player = state.get_current_maximizer_player()
-                print(f"HE: succeeded transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
+                log(f"HE: succeeded transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
 
         except:
             if False and self.__debugging:
-                print(f"HE: failed transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
+                log(f"HE: failed transposition table depth-0 at depth {depth}/{self.__max_depth} for player {player}")
 
             self.__fun_evaluation_count += 1
 
@@ -2855,13 +2867,13 @@ class MinimaxSearcher(Searcher):
             state_value = self.__transposition_table_depth_n[state_key]
             if False and self.__debugging:
                 player = state.get_current_maximizer_player()
-                print(f"HG: succeeded transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
+                log(f"HG: succeeded transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
             return (state_value, [], [])
 
         except:
             if False and self.__debugging:
                 player = state.get_current_maximizer_player()
-                print(f"HG: failed transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
+                log(f"HG: failed transposition table depth-n at depth {depth}/{self.__max_depth} for player {player}")
 
 
         if alpha is None:
@@ -2890,9 +2902,8 @@ class MinimaxSearcher(Searcher):
                 make_opening_file = True
 
             else:
-                if self.__debugging:
-                    print()
-                    print(f"reading openings file {opening_file_path} ...")
+                log()
+                log(f"reading openings file {opening_file_path} ...")
 
                 with open(opening_file_path, 'r') as opening_stream:
                     opening_lines = opening_stream.readlines()
@@ -2914,8 +2925,7 @@ class MinimaxSearcher(Searcher):
 
                     valued_actions.append(action)
 
-                if self.__debugging:
-                    print(f"reading openings file {opening_file_path} done")
+                log(f"reading openings file {opening_file_path} done")
                 return (action_value, [], valued_actions)
 
         # >> A few heuristics for generating efficient alpha-beta cuts
@@ -2931,7 +2941,7 @@ class MinimaxSearcher(Searcher):
                 unique_actions.append(action)
 
         if self.__debugging:
-            print(f"HF: keeping {len(unique_actions)} unique actions over {len(actions)} actions at {depth}/{self.__max_depth} for player {player}")
+            log(f"HF: keeping {len(unique_actions)} unique actions over {len(actions)} actions at {depth}/{self.__max_depth} for player {player}")
 
         actions = unique_actions
         unique_actions = None
@@ -2947,7 +2957,7 @@ class MinimaxSearcher(Searcher):
             pre_depth = self.__max_depth - 1
 
             if self.__debugging:
-                print(f"HB: iterative deepening at depth {pre_depth} ...")
+                log(f"HB: iterative deepening at depth {pre_depth} ...")
 
             pre_minimax_searcher = MinimaxSearcher(f"minimax-pre-{pre_depth}", max_depth=pre_depth, searcher_parent=self)
             (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
@@ -2956,7 +2966,7 @@ class MinimaxSearcher(Searcher):
             self.__fun_evaluation_count += pre_minimax_searcher.__fun_evaluation_count
 
             if self.__debugging:
-                print(f"HB: iterative deepening at depth {pre_depth} done")
+                log(f"HB: iterative deepening at depth {pre_depth} done")
 
         if self.__max_depth >= 2:
             # >> HB: sort actions according to Minimax at inferior depth
@@ -2965,7 +2975,7 @@ class MinimaxSearcher(Searcher):
 
             if len(actions_with_value) != 0:
                 if self.__debugging:
-                    print(f"HB: sorting {len(actions_with_value)} actions with value at depth {depth}/{self.__max_depth} for player {player}")
+                    log(f"HB: sorting {len(actions_with_value)} actions with value at depth {depth}/{self.__max_depth} for player {player}")
                 actions_with_value.sort(reverse=(player == 1))
 
         else:
@@ -3008,10 +3018,10 @@ class MinimaxSearcher(Searcher):
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                          alpha=alpha, beta=beta)
                         if False and self.__debugging:
-                            print(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
                         if False and self.__debugging:
-                            print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
 
                 # >> HB: store value just for sorting
                 action.value = child_value
@@ -3040,7 +3050,7 @@ class MinimaxSearcher(Searcher):
 
                     if self.__debugging:
                         if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
-                            print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
 
                     best_child_break = True
                     break
@@ -3051,7 +3061,7 @@ class MinimaxSearcher(Searcher):
 
                 if depth >= 2:
                     if self.__debugging:
-                        print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
+                        log(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
                         child_state = state.take_action(action)
@@ -3097,7 +3107,7 @@ class MinimaxSearcher(Searcher):
 
                         if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
-                                print(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                                log(f"beta-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
 
                         best_child_break = True
                         break
@@ -3106,7 +3116,7 @@ class MinimaxSearcher(Searcher):
 
             if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    print(f"no beta-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
+                    log(f"no beta-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
 
         elif player == -1:
 
@@ -3141,10 +3151,10 @@ class MinimaxSearcher(Searcher):
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                          alpha=alpha, beta=beta)
                         if False and self.__debugging:
-                            print(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
                         if False and self.__debugging:
-                            print(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"HD: null-window succeeded for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
 
                 # >> HB: store value just for sorting
                 action.value = child_value
@@ -3173,7 +3183,7 @@ class MinimaxSearcher(Searcher):
 
                     if self.__debugging:
                         if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
-                            print(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                            log(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
 
                     best_child_break = True
                     break
@@ -3184,7 +3194,7 @@ class MinimaxSearcher(Searcher):
 
                 if depth >= 2:
                     if self.__debugging:
-                        print(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
+                        log(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
                         child_state = state.take_action(action)
@@ -3230,7 +3240,7 @@ class MinimaxSearcher(Searcher):
 
                         if self.__debugging:
                             if action_count/len(actions) > self.__LOW_ALPHA_BETA_CUT:
-                                print(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
+                                log(f"alpha-cut after action {action_count}/{len(actions)} > {100*self.__LOW_ALPHA_BETA_CUT:.0f}% at depth {depth}/{self.__max_depth} for player {player}")
 
                         best_child_break = True
                         break
@@ -3239,7 +3249,7 @@ class MinimaxSearcher(Searcher):
 
             if self.__debugging:
                 if not best_child_break and action_count > self.__LOW_ACTION_COUNT:
-                    print(f"no alpha-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
+                    log(f"no alpha-cut on {len(actions)} actions at depth {depth}/{self.__max_depth} for player {player}")
 
         else:
             assert player in (-1, 1)
@@ -3247,14 +3257,14 @@ class MinimaxSearcher(Searcher):
         # Manage openings file
 
         if make_opening_file:
-            print()
-            print(f"writing openings file {opening_file_path} ...")
+            log()
+            log(f"writing openings file {opening_file_path} ...")
 
             opening_lines = [str(action) + " " + str(best_child_value) + "\n" for action in valued_actions if action.value == best_child_value]
             with open(opening_file_path, 'w') as opening_stream:
                 opening_stream.writelines(opening_lines)
 
-            print(f"writing openings file {opening_file_path} done")
+            log(f"writing openings file {opening_file_path} done")
 
         return (best_child_value, [best_action] + best_child_branch, valued_actions)
 
@@ -3342,8 +3352,8 @@ class Game:
             rewards = self.__pijersi_state.get_rewards()
 
             if self.__enabled_log:
-                print()
-                print("-"*40)
+                log()
+                log("-"*40)
 
                 white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
@@ -3357,7 +3367,7 @@ class Game:
                 else:
                     self.__log = f"Player {black_player} wins against {white_player}"
 
-                print(self.__log)
+                log(self.__log)
 
 
     def get_log(self) -> str:
@@ -3410,8 +3420,8 @@ class Game:
 
             if self.__enabled_log:
                 player_name = f"{Player.to_name(player)}-{self.__searcher[player].get_name()}"
-                print()
-                print(f"Player {player_name} is thinking ...")
+                log()
+                log(f"Player {player_name} is thinking ...")
                 turn_start = time.time() if self.__turn_start is None else self.__turn_start
 
             action = self.__searcher[player].search(self.__pijersi_state)
@@ -3423,12 +3433,12 @@ class Game:
                 turn_end = time.time() if self.__turn_end is None else self.__turn_end
                 turn_duration = turn_end - turn_start
                 self.__turn_duration[player].append(turn_duration)
-                print(f"Player {player_name} is done after %.1f seconds" % turn_duration)
+                log(f"Player {player_name} is done after %.1f seconds" % turn_duration)
 
                 action_count = len(self.__pijersi_state.get_actions())
                 self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
-                print(self.__log)
-                print("-"*40)
+                log(self.__log)
+                log("-"*40)
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
 
@@ -3441,8 +3451,8 @@ class Game:
             player = self.__pijersi_state.get_current_player()
 
             if self.__enabled_log:
-                print()
-                print("-"*40)
+                log()
+                log("-"*40)
 
                 white_time = sum(self.__turn_duration[Player.T.WHITE])
                 black_time = sum(self.__turn_duration[Player.T.BLACK])
@@ -3459,7 +3469,7 @@ class Game:
                 else:
                     self.__log = f"Player {black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
 
-                print(self.__log)
+                log(self.__log)
 
 
 Hexagon.init()
@@ -3484,22 +3494,22 @@ if __name__ == "__main__":
     # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
     freeze_support()
 
-    print()
-    print("Hello")
-    print()
-    print(f"Python sys.version = {sys.version}")
+    log()
+    log("Hello")
+    log()
+    log(f"Python sys.version = {sys.version}")
 
-    print()
-    print("Bye")
+    log()
+    log("Bye")
 
     # >> clean any residual process
     if len(multiprocessing.active_children()) > 0:
-        print()
-        print(f"{len(multiprocessing.active_children())} child processes are still alive")
-        print("Terminating child processes ...")
+        log()
+        log(f"{len(multiprocessing.active_children())} child processes are still alive")
+        log("Terminating child processes ...")
         for child_process in multiprocessing.active_children():
             try:
                 child_process.terminate()
             except:
                 pass
-        print("Terminating child processes done")
+        log("Terminating child processes done")
