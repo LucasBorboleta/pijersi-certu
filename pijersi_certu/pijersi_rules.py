@@ -846,6 +846,24 @@ class PijersiAction:
         return self.value == other.value and self.path_vertices == other.path_vertices
 
 
+    def to_ugi_name(self) -> Optional[str]:
+        action_name = str(self).replace('!', '')
+
+        if len(action_name) == 5:
+            if action_name[2] == '=':
+                action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[3:5]
+            else:
+                action_ugi_name = action_name[0:2] + action_name[3:5]
+
+        elif len(action_name) == 8:
+            action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[6:8]
+
+        else:
+            action_ugi_name = None
+
+        return action_ugi_name
+
+
 class PijersiState:
 
     Self = TypeVar("Self", bound="PijersiState")
@@ -1456,17 +1474,7 @@ class PijersiState:
             self.__actions_by_ugi_names = {}
 
             for action in self.get_actions():
-                action_name = str(action).replace('!', '')
-
-                if len(action_name) == 5:
-                    if action_name[2] == '=':
-                        action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[3:5]
-                    else:
-                        action_ugi_name = action_name[0:2] + action_name[3:5]
-
-                elif len(action_name) == 8:
-                    action_ugi_name = action_name[0:2] + action_name[3:5] + action_name[6:8]
-
+                action_ugi_name = action.to_ugi_name()
                 self.__actions_by_ugi_names[action_ugi_name] = action
 
         return list(self.__actions_by_ugi_names.keys())
@@ -2882,8 +2890,9 @@ class MinimaxSearcher(Searcher):
                 make_opening_file = True
 
             else:
-                print()
-                print(f"reading openings file {opening_file_path} ...")
+                if self.__debugging:
+                    print()
+                    print(f"reading openings file {opening_file_path} ...")
 
                 with open(opening_file_path, 'r') as opening_stream:
                     opening_lines = opening_stream.readlines()
@@ -2905,7 +2914,8 @@ class MinimaxSearcher(Searcher):
 
                     valued_actions.append(action)
 
-                print(f"reading openings file {opening_file_path} done")
+                if self.__debugging:
+                    print(f"reading openings file {opening_file_path} done")
                 return (action_value, [], valued_actions)
 
         # >> A few heuristics for generating efficient alpha-beta cuts

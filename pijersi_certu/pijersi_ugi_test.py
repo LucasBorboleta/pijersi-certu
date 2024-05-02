@@ -60,6 +60,7 @@ def test_ugi_protocol():
         isready = client.isready()
         assert isready == ['readyok']
 
+
         client.uginewgame()
 
         gameover = client.query_gameover()
@@ -101,6 +102,25 @@ def test_ugi_protocol():
         client.go_manual('g6g5f6')
         fen = client.query_fen()
         assert fen == ['s-p-r-s-2/p-r-s-wwr-pr1/6/4RS2/5P-/P-S-R-WWS-2/R-P-S-R-P-1', 'w', '1', '3']
+
+
+        client.uginewgame()
+
+        gameover = client.query_gameover()
+        assert gameover == ['false']
+
+        p1turn = client.query_p1turn()
+        assert p1turn == ['true']
+
+        result = client.query_result()
+        assert result == ['none']
+
+        bestmove = client.go_depth(2)
+        assert bestmove == 'a5b6d5'
+
+        bestmove = client.go_movetime(2000)
+        assert bestmove == 'a5b6c6' # >> best opening move from minimax-4
+
 
     finally:
         client.quit()

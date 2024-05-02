@@ -338,6 +338,26 @@ def test():
         print("===========================================")
 
 
+
+    def test_action_ugi_name():
+
+        print("===========================")
+        print("test_action_ugi_name ...")
+        print("===========================")
+
+        depth = 2
+        searcher = MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
+        pijersi_state = PijersiState()
+        action = searcher.search(pijersi_state)
+        bestmove = action.to_ugi_name()
+        print(f"bestmove = {bestmove}")
+        assert bestmove == 'a5b6d5'
+
+        print("===========================")
+        print("test_action_ugi_name done")
+        print("===========================")
+
+
     if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
@@ -362,6 +382,9 @@ def test():
 
     if True:
         test_two_turns_between_minimax_players()
+
+    if True:
+        test_action_ugi_name()
 
 
 def profile():

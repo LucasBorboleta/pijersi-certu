@@ -116,13 +116,11 @@ class UgiClient:
         self.__log_debug(f"__send: {data}")
 
 
-    def go_depth(self, depth: int) -> str:
-        assert depth >= 1
-        self.__send(['go', 'depth', str(depth)])
+    def __go_handle_reply(self) -> str:
 
         while True:
             reply = self.__recv()
-            self.__log_debug(f"go_depth: reply {reply}")
+            self.__log_debug(f"__go_handle_reply: reply {reply}")
 
             reply_head = reply[0]
             reply_tail = reply[1:]
@@ -133,17 +131,24 @@ class UgiClient:
                 bestmove = reply_tail[0]
 
                 if len(reply_tail) > 1:
-                    self.__log_info(f"go_depth: ignoring extra tokens in reply '{reply}'")
+                    self.__log_info(f"__go_handle_reply: ignoring extra tokens in reply '{reply}'")
+                break
 
             elif reply_head == 'info':
-                self.__log_info(f"go_depth: '{reply}'")
+                self.__log_info(f"__go_handle_reply: '{reply}'")
 
             else:
-                self.__log_info(f"go_depth: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
+                self.__log_info(f"__go_handle_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
                 continue
 
-        self.__log_debug("go_depth: done")
+        return bestmove
 
+
+    def go_depth(self, depth: int) -> str:
+        assert depth >= 1
+        self.__send(['go', 'depth', str(depth)])
+
+        bestmove = self.__go_handle_reply()
         return bestmove
 
 
@@ -153,32 +158,9 @@ class UgiClient:
 
     def go_movetime(self, time_ms: float) -> str:
         assert time_ms > 0
-        self.__send(['go', 'movetime', time_ms])
+        self.__send(['go', 'movetime', str(time_ms)])
 
-        while True:
-            reply = self.__recv()
-            self.__log_debug(f"go_movetime: reply {reply}")
-
-            reply_head = reply[0]
-            reply_tail = reply[1:]
-
-            if reply_head == 'bestmove':
-
-                assert len(reply_tail) >= 1
-                bestmove = reply_tail[0]
-
-                if len(reply_tail) > 1:
-                    self.__log_info(f"go_movetime: ignoring extra tokens in reply '{reply}'")
-
-            elif reply_head == 'info':
-                self.__log_info(f"go_movetime: '{reply}'")
-
-            else:
-                self.__log_info(f"go_movetime: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
-                continue
-
-        self.__log_debug("go_movetime: done")
-
+        bestmove = self.__go_handle_reply()
         return bestmove
 
 
@@ -389,6 +371,11 @@ class UgiServer:
             self.terminate()
             return
 
+        if self.__pijersi_state is None:
+            self.__log_info("no pijersi state ; UGI server terminates itself !")
+            self.terminate()
+            return
+
         if args[0] == 'manual':
             move = args[1]
             new_pijersi_state = self.__pijersi_state.take_action_by_ugi_name(move)
@@ -397,17 +384,27 @@ class UgiServer:
         elif args[0] == 'depth':
             depth = int(args[1])
 
+            searcher = rules.MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
+
+            action = searcher.search(self.__pijersi_state)
+            bestmove = action.to_ugi_name()
             self.__send(['bestmove', bestmove])
 
         elif args[0] == 'movetime':
             time_ms = float(args[1])
 
+            time_s = 1_000*time_ms
+            searcher = rules.MinimaxSearcher(f"minimax{self.__max_depth}-{time_s:.0f}s", max_depth=self.__max_depth)
+
+            action = searcher.search(self.__pijersi_state)
+            bestmove = action.to_ugi_name()
             self.__send(['bestmove', bestmove])
 
         else:
             self.__log_info("wrong go arguments ; UGI server terminates itself !")
             self.terminate()
             return
+
 
     def __isready(self, args: List[str]):
 
@@ -500,17 +497,18 @@ class UgiServer:
             fen = [self.__pijersi_state.get_hex_ugi_states()]
 
             if self.__pijersi_state is not None and not self.__pijersi_state.is_terminal():
+
+                if self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
+                    fen.append('w')
+                else:
+                    fen.append('b')
+
                 turn = self.__pijersi_state.get_turn()
                 credit = self.__pijersi_state.get_credit()
                 max_credit = self.__pijersi_state.get_max_credit()
 
                 full_move = (turn  + 1) // 2
                 half_move = max_credit - credit
-
-                if self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
-                    fen.append('w')
-                else:
-                    fen.append('b')
 
                 fen.append(str(half_move))
                 fen.append(str(full_move))
