@@ -17,21 +17,27 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
+import ctypes
 import os
 from subprocess import PIPE
 from subprocess import Popen
 import sys
+import time
 
 from typing import List
 from typing import Self
 from typing import TextIO
 from typing import Tuple
 
+from concurrent.futures import ProcessPoolExecutor as PoolExecutor
+from multiprocessing import freeze_support
+import multiprocessing
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
 import pijersi_rules as rules
+
 
 class UgiChannel:
 
@@ -366,6 +372,34 @@ class UgiServer:
         self.__running = False
 
 
+    def __run_searcher(self, searcher) -> str:
+
+        the_synchronized_stop = multiprocessing.Value(ctypes.c_bool)
+        with the_synchronized_stop.get_lock():
+            the_synchronized_stop.value = False
+
+        concurrent_executor = PoolExecutor(max_workers=1, initializer=init_synchronized_data, initargs=(the_synchronized_stop,))
+        
+        search_future = concurrent_executor.submit(search_task, searcher, self.__pijersi_state)        
+
+        iter_index = 0
+        iter_count = 10
+        while not search_future.done():
+            time.sleep(0.01)
+            iter_index += 1
+            if iter_index >= iter_count:
+                with the_synchronized_stop.get_lock():
+                    the_synchronized_stop.value = True
+                    break
+        
+        action = search_future.result()
+        bestmove = action.to_ugi_name()
+                    
+        concurrent_executor.shutdown(wait=False, cancel_futures=True)
+        
+        return bestmove
+  
+    
     def __go(self, args: List[str]):
 
         if len(args) != 2:
@@ -388,8 +422,7 @@ class UgiServer:
 
             searcher = rules.MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
 
-            action = searcher.search(self.__pijersi_state)
-            bestmove = action.to_ugi_name()
+            bestmove = self.__run_searcher(searcher)
             self.__send(['bestmove', bestmove])
 
         elif args[0] == 'movetime':
@@ -406,19 +439,16 @@ class UgiServer:
             else:
                 depth = 4
 
-            searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s",
-                                             max_depth=depth,
-                                             time_limit=time_s)
+            searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s", max_depth=depth, time_limit=time_s)
 
-            action = searcher.search(self.__pijersi_state)
-            bestmove = action.to_ugi_name()
+            bestmove = self.__run_searcher(searcher)
             self.__send(['bestmove', bestmove])
 
         else:
             self.__log_info("wrong go arguments ; UGI server terminates itself !")
             self.terminate()
             return
-
+  
 
     def __isready(self, args: List[str]):
 
@@ -623,6 +653,31 @@ def run_ugi_server_implementation():
     print(f"Bye from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
 
 
+def search_task(searcher, pijersi_state):
+    global synchronized_stop
+
+    action = searcher.search(pijersi_state, synchronized_stop)
+    return action
+  
+          
+def init_synchronized_data(the_synchronized_stop):
+    global synchronized_stop
+    synchronized_stop = the_synchronized_stop
+
+
 if __name__ == "__main__":
+    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
+    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
+    freeze_support()
+    
     run_ugi_server_implementation()
-    sys.exit()
+
+    # >> clean any residual process
+    if len(multiprocessing.active_children()) > 0:
+
+        for child_process in multiprocessing.active_children():
+            try:
+                child_process.terminate()
+            except:
+                pass
+            

@@ -19,6 +19,9 @@ You should have received a copy of the GNU General Public License along with thi
 import os
 import sys
 
+from multiprocessing import freeze_support
+import multiprocessing
+
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
@@ -121,43 +124,44 @@ def test_ugi_protocol():
         bestmove = client.go_movetime_and_wait(2_000)
         # assert bestmove == 'a5b6c6' # >> best opening move from minimax-4
 
+        if True:
+            log()
+            client.uginewgame()
+    
+            while True:
+                fen = client.query_fen()
+                log(f"fen = {fen}")
+    
+                gameover = client.query_gameover()
+                if gameover == ['true']:
+                    break
+    
+                bestmove = client.go_movetime_and_wait(10_000)
+                log(f"bestmove = {bestmove}")
+                client.go_manual(bestmove)
+    
+            result = client.query_result()
+            log(f"result = {result}")
 
-        log()
-        client.uginewgame()
+        if False:
+            log()
+            client.uginewgame()
+    
+            while True:
+                fen = client.query_fen()
+                log(f"fen = {fen}")
+    
+                gameover = client.query_gameover()
+                if gameover == ['true']:
+                    break
+    
+                bestmove = client.go_depth_and_wait(2)
+                log(f"bestmove = {bestmove}")
+                client.go_manual(bestmove)
+    
+            result = client.query_result()
+            log(f"result = {result}")
 
-        while True:
-            fen = client.query_fen()
-            log(f"fen = {fen}")
-
-            gameover = client.query_gameover()
-            if gameover == ['true']:
-                break
-
-            bestmove = client.go_depth_and_wait(2)
-            log(f"bestmove = {bestmove}")
-            client.go_manual(bestmove)
-
-        result = client.query_result()
-        log(f"result = {result}")
-
-
-        log()
-        client.uginewgame()
-
-        while True:
-            fen = client.query_fen()
-            log(f"fen = {fen}")
-
-            gameover = client.query_gameover()
-            if gameover == ['true']:
-                break
-
-            bestmove = client.go_movetime_and_wait(10_000)
-            log(f"bestmove = {bestmove}")
-            client.go_manual(bestmove)
-
-        result = client.query_result()
-        log(f"result = {result}")
 
     finally:
         client.quit()
@@ -167,8 +171,20 @@ def test_ugi_protocol():
 
 
 if __name__ == "__main__":
-
+    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
+    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
+    freeze_support()
+    
     test_ugi_protocol()
+
+    # >> clean any residual process
+    if len(multiprocessing.active_children()) > 0:
+
+        for child_process in multiprocessing.active_children():
+            try:
+                child_process.terminate()
+            except:
+                pass
 
     log()
     _ = input("press enter to terminate")

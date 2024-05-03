@@ -2613,7 +2613,7 @@ class MinimaxSearcher(Searcher):
         return False
 
 
-    def search(self, state: PijersiState) -> PijersiAction:
+    def search(self, state: PijersiState, synchronized_stop=None) -> PijersiAction:
 
         do_check = False
 
@@ -2688,6 +2688,12 @@ class MinimaxSearcher(Searcher):
                 time.sleep(wait_slice)
                 if search_futures[search_count - 1].done():
                     break
+                
+                if synchronized_stop is not None:
+                    with synchronized_stop.get_lock():
+                        if synchronized_stop.value:
+                            log(f"rules: received synchronized_stop = {synchronized_stop.value}")
+                            break
 
             #-- collect the answer of the highest depth minmax that is finished
             action = None
