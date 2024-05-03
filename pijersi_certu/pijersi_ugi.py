@@ -379,8 +379,8 @@ class UgiServer:
             the_synchronized_stop.value = False
 
         concurrent_executor = PoolExecutor(max_workers=1, initializer=init_synchronized_data, initargs=(the_synchronized_stop,))
-        
-        search_future = concurrent_executor.submit(search_task, searcher, self.__pijersi_state)        
+
+        search_future = concurrent_executor.submit(search_task, searcher, self.__pijersi_state)
 
         iter_index = 0
         iter_count = 10
@@ -391,15 +391,15 @@ class UgiServer:
                 with the_synchronized_stop.get_lock():
                     the_synchronized_stop.value = True
                     break
-        
+
         action = search_future.result()
         bestmove = action.to_ugi_name()
-                    
+
         concurrent_executor.shutdown(wait=False, cancel_futures=True)
-        
+
         return bestmove
-  
-    
+
+
     def __go(self, args: List[str]):
 
         if len(args) != 2:
@@ -448,7 +448,7 @@ class UgiServer:
             self.__log_info("wrong go arguments ; UGI server terminates itself !")
             self.terminate()
             return
-  
+
 
     def __isready(self, args: List[str]):
 
@@ -658,8 +658,8 @@ def search_task(searcher, pijersi_state):
 
     action = searcher.search(pijersi_state, synchronized_stop)
     return action
-  
-          
+
+
 def init_synchronized_data(the_synchronized_stop):
     global synchronized_stop
     synchronized_stop = the_synchronized_stop
@@ -669,15 +669,9 @@ if __name__ == "__main__":
     # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
     # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
     freeze_support()
-    
+
     run_ugi_server_implementation()
 
-    # >> clean any residual process
-    if len(multiprocessing.active_children()) > 0:
+    sys.exit()
 
-        for child_process in multiprocessing.active_children():
-            try:
-                child_process.terminate()
-            except:
-                pass
-            
+

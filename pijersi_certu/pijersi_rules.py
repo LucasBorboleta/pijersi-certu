@@ -2688,7 +2688,7 @@ class MinimaxSearcher(Searcher):
                 time.sleep(wait_slice)
                 if search_futures[search_count - 1].done():
                     break
-                
+
                 if synchronized_stop is not None:
                     with synchronized_stop.get_lock():
                         if synchronized_stop.value:

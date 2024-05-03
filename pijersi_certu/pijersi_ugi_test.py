@@ -127,38 +127,38 @@ def test_ugi_protocol():
         if True:
             log()
             client.uginewgame()
-    
+
             while True:
                 fen = client.query_fen()
                 log(f"fen = {fen}")
-    
+
                 gameover = client.query_gameover()
                 if gameover == ['true']:
                     break
-    
+
                 bestmove = client.go_movetime_and_wait(10_000)
                 log(f"bestmove = {bestmove}")
                 client.go_manual(bestmove)
-    
+
             result = client.query_result()
             log(f"result = {result}")
 
         if False:
             log()
             client.uginewgame()
-    
+
             while True:
                 fen = client.query_fen()
                 log(f"fen = {fen}")
-    
+
                 gameover = client.query_gameover()
                 if gameover == ['true']:
                     break
-    
+
                 bestmove = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove}")
                 client.go_manual(bestmove)
-    
+
             result = client.query_result()
             log(f"result = {result}")
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
     # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
     freeze_support()
-    
+
     test_ugi_protocol()
 
     # >> clean any residual process
