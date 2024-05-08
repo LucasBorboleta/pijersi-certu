@@ -79,6 +79,15 @@ class UgiChannel:
 
         assert len(data) != 0
         return data
+    
+    
+    def has_input_data(self) -> bool:
+        return self.__cin.tell() != os.SEEK_END
+    
+    
+    def has_output_data(self) -> bool:
+        return self.__cout.tell() != os.SEEK_END
+        
 
 
 class UgiClient:
@@ -122,11 +131,11 @@ class UgiClient:
         self.__log_debug(f"__send: {data}")
 
 
-    def __go_handle_reply(self) -> str:
+    def __handle_bestmove_reply(self) -> str:
 
         while True:
             reply = self.__recv()
-            self.__log_debug(f"__go_handle_reply: reply {reply}")
+            self.__log_debug(f"__handle_bestmove_reply: reply {reply}")
 
             reply_head = reply[0]
             reply_tail = reply[1:]
@@ -137,24 +146,29 @@ class UgiClient:
                 bestmove = reply_tail[0]
 
                 if len(reply_tail) > 1:
-                    self.__log_info(f"__go_handle_reply: ignoring extra tokens in reply '{reply}'")
+                    self.__log_info(f"__handle_bestmove_reply: ignoring extra tokens in reply '{reply}'")
                 break
 
             elif reply_head == 'info':
-                self.__log_info(f"__go_handle_reply: '{reply}'")
+                self.__log_info(f"__handle_bestmove_reply: '{reply}'")
 
             else:
-                self.__log_info(f"__go_handle_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
+                self.__log_info(f"__handle_bestmove_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
                 continue
 
         return bestmove
+
+
+    def go_depth(self, depth: int) -> str:
+        assert depth >= 1
+        self.__send(['go', 'depth', str(depth)])
 
 
     def go_depth_and_wait(self, depth: int) -> str:
         assert depth >= 1
         self.__send(['go', 'depth', str(depth)])
 
-        bestmove = self.__go_handle_reply()
+        bestmove = self.__handle_bestmove_reply()
         return bestmove
 
 
@@ -162,11 +176,16 @@ class UgiClient:
         self.__send(['go', 'manual', move])
 
 
+    def go_movetime(self, time_ms: float) -> str:
+        assert time_ms > 0
+        self.__send(['go', 'movetime', str(time_ms)])
+
+
     def go_movetime_and_wait(self, time_ms: float) -> str:
         assert time_ms > 0
         self.__send(['go', 'movetime', str(time_ms)])
 
-        bestmove = self.__go_handle_reply()
+        bestmove = self.__handle_bestmove_reply()
         return bestmove
 
 
@@ -228,6 +247,13 @@ class UgiClient:
 
     def setoption(self, name: str, value: str):
         self.__send(['setoption', 'name', name, 'value', value])
+
+
+    def stop(self) -> str:
+        self.__send(['stop'])
+
+        bestmove = self.__handle_bestmove_reply()
+        return bestmove
 
 
     def ugi(self):
@@ -307,6 +333,7 @@ class UgiServer:
         self.__option_converters['depth'] = int
 
         self.__pijser_state = None
+        self.__stop_searcher = False
 
 
     def __log(self, message: str, category=''):
@@ -338,6 +365,10 @@ class UgiServer:
         self.__log_debug(f"__send: {data}")
 
 
+    def has_input_data(self) -> bool:
+        return self.__channel.has_input_data()
+
+
     def run(self):
         try:
             assert not self.__running
@@ -349,6 +380,7 @@ class UgiServer:
             commands['query'] = self.__query
             commands['quit'] = self.__quit
             commands['setoption'] = self.__setoption
+            commands['stop'] = self.__stop
             commands['ugi'] = self.__ugi
             commands['uginewgame'] = self.__uginewgame
 
@@ -373,6 +405,8 @@ class UgiServer:
 
 
     def __run_searcher(self, searcher) -> str:
+        
+        self.__stop_searcher = False
 
         the_synchronized_stop = multiprocessing.Value(ctypes.c_bool)
         with the_synchronized_stop.get_lock():
@@ -382,14 +416,18 @@ class UgiServer:
 
         search_future = concurrent_executor.submit(search_task, searcher, self.__pijersi_state)
 
-        iter_index = 0
-        iter_count = 10
         while not search_future.done():
             time.sleep(0.01)
-            iter_index += 1
-            if iter_index >= iter_count:
+            
+            if False and self.has_input_data(): # >> cannot work !
+                data = self.__recv()
+                if len(data) >= 1 and data[0] == 'stop':
+                    self.__stop_searcher = True
+               
+            if self.__stop_searcher:
                 with the_synchronized_stop.get_lock():
                     the_synchronized_stop.value = True
+                    self.__log_error(f"__run_searcher: the_synchronized_stop = {the_synchronized_stop.value}")
                     break
 
         action = search_future.result()
@@ -438,7 +476,7 @@ class UgiServer:
 
             else:
                 depth = 4
-
+                
             searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s", max_depth=depth, time_limit=time_s)
 
             bestmove = self.__run_searcher(searcher)
@@ -586,6 +624,14 @@ class UgiServer:
                 self.__options[option_name] = self.__option_converters[option_name](option_value)
 
         self.__log_debug(f"__setoption: __options = {self.__options}")
+
+
+    def __stop(self, args: List[str]):
+
+        if len(args) != 0:
+            self.__log_info(f"""ignoring extra tokens in command 'stop {" ".join(args)}'""")
+
+        self.__stop_searcher = True
 
 
     def __ugi(self, args: List[str]):

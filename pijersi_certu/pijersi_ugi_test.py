@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 import os
 import sys
+import time
 
 from multiprocessing import freeze_support
 import multiprocessing
@@ -128,16 +129,27 @@ def test_ugi_protocol():
             log()
             client.uginewgame()
 
+            iter_index = -1
             while True:
+                iter_index += 1
+
                 fen = client.query_fen()
+                log()
                 log(f"fen = {fen}")
 
                 gameover = client.query_gameover()
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_movetime_and_wait(10_000)
-                log(f"bestmove = {bestmove}")
+                if iter_index % 2 == 0:
+                    bestmove = client.go_movetime_and_wait(10_000)
+                    log(f"bestmove = {bestmove} after client.go_movetime_and_wait")
+                else:
+                    client.go_movetime(10_000)
+                    time.sleep(0.001)
+                    bestmove = client.stop()
+                    log(f"bestmove = {bestmove} after client.go_movetime")
+
                 client.go_manual(bestmove)
 
             result = client.query_result()

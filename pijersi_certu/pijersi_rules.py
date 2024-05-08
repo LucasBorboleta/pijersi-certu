@@ -2681,8 +2681,9 @@ class MinimaxSearcher(Searcher):
                 search_futures[search_index] = concurrent_executor.submit(minimax_search_task, depth=search_index + 1, state=state)
 
             #-- watch end of minimax of highest depth after each sleeping of "wait_slice" seconds
-            wait_slice_min = 0.1
-            wait_count = int(self.get_time_limit()/wait_slice_min) + 1
+            wait_slice_min = 0.01
+            wait_count = math.ceil(max(wait_slice_min, self.get_time_limit())/wait_slice_min)
+
             wait_slice = self.get_time_limit()/wait_count
             for _ in range(wait_count):
                 time.sleep(wait_slice)
@@ -2692,7 +2693,6 @@ class MinimaxSearcher(Searcher):
                 if synchronized_stop is not None:
                     with synchronized_stop.get_lock():
                         if synchronized_stop.value:
-                            log(f"rules: received synchronized_stop = {synchronized_stop.value}")
                             break
 
             #-- collect the answer of the highest depth minmax that is finished
