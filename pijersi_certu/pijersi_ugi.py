@@ -79,15 +79,7 @@ class UgiChannel:
 
         assert len(data) != 0
         return data
-    
-    
-    def has_input_data(self) -> bool:
-        return self.__cin.tell() != os.SEEK_END
-    
-    
-    def has_output_data(self) -> bool:
-        return self.__cout.tell() != os.SEEK_END
-        
+           
 
 
 class UgiClient:
@@ -250,8 +242,10 @@ class UgiClient:
 
 
     def stop(self) -> str:
+        self.__log_error("stop: not implemented !")
+        assert False
+        
         self.__send(['stop'])
-
         bestmove = self.__handle_bestmove_reply()
         return bestmove
 
@@ -333,7 +327,10 @@ class UgiServer:
         self.__option_converters['depth'] = int
 
         self.__pijser_state = None
-        self.__stop_searcher = False
+        
+        self.__concurrent_executor = None
+        self.__search_future = None
+        self.__synchronized_stop = None
 
 
     def __log(self, message: str, category=''):
@@ -363,10 +360,6 @@ class UgiServer:
     def __send(self, data: List[str]):
         self.__channel.send(data)
         self.__log_debug(f"__send: {data}")
-
-
-    def has_input_data(self) -> bool:
-        return self.__channel.has_input_data()
 
 
     def run(self):
@@ -406,47 +399,46 @@ class UgiServer:
 
     def __run_searcher(self, searcher) -> str:
         
-        self.__stop_searcher = False
+        assert self.__concurrent_executor is None
+        assert self.__search_future is None
+        assert self.__synchronized_stop is None
+        
+        self.__synchronized_stop = multiprocessing.Value(ctypes.c_bool)
+        with self.__synchronized_stop.get_lock():
+            self.__synchronized_stop.value = False
 
-        the_synchronized_stop = multiprocessing.Value(ctypes.c_bool)
-        with the_synchronized_stop.get_lock():
-            the_synchronized_stop.value = False
+        self.__concurrent_executor = PoolExecutor(max_workers=1, initializer=init_synchronized_stop, initargs=(self.__synchronized_stop,))
 
-        concurrent_executor = PoolExecutor(max_workers=1, initializer=init_synchronized_data, initargs=(the_synchronized_stop,))
+        self.__search_future = self.__concurrent_executor.submit(search_task, searcher, self.__pijersi_state)
 
-        search_future = concurrent_executor.submit(search_task, searcher, self.__pijersi_state)
-
-        while not search_future.done():
+        while not self.__search_future.done():
             time.sleep(0.01)
             
-            if False and self.has_input_data(): # >> cannot work !
-                data = self.__recv()
-                if len(data) >= 1 and data[0] == 'stop':
-                    self.__stop_searcher = True
-               
-            if self.__stop_searcher:
-                with the_synchronized_stop.get_lock():
-                    the_synchronized_stop.value = True
-                    self.__log_error(f"__run_searcher: the_synchronized_stop = {the_synchronized_stop.value}")
+            if False:
+                with self.__synchronized_stop.get_lock():
+                    self.__synchronized_stop.value = True
                     break
-
-        action = search_future.result()
+    
+        action = self.__search_future.result()
         bestmove = action.to_ugi_name()
-
-        concurrent_executor.shutdown(wait=False, cancel_futures=True)
-
+    
+        self.__synchronized_stop = None
+        self.__search_future = None
+        self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
+        self.__concurrent_executor = None
+        
         return bestmove
 
 
     def __go(self, args: List[str]):
 
         if len(args) != 2:
-            self.__log_info("wrong go arguments ; UGI server terminates itself !")
+            self.__log_error("wrong go arguments ; UGI server terminates itself !")
             self.terminate()
             return
 
         if self.__pijersi_state is None:
-            self.__log_info("no pijersi state ; UGI server terminates itself !")
+            self.__log_error("no pijersi state ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -481,9 +473,9 @@ class UgiServer:
 
             bestmove = self.__run_searcher(searcher)
             self.__send(['bestmove', bestmove])
-
+            
         else:
-            self.__log_info("wrong go arguments ; UGI server terminates itself !")
+            self.__log_error("wrong go arguments ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -499,7 +491,7 @@ class UgiServer:
     def __query(self, args: List[str]):
 
         if len(args) < 1:
-            self.__log_info("nothing to query ; UGI server terminates itself !")
+            self.__log_error("nothing to query ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -507,12 +499,12 @@ class UgiServer:
         query_args = args[1:]
 
         if query_name not in  ['gameover', 'p1turn', 'result', 'islegal', 'fen']:
-            self.__log_info("unknown query '{query_name}' ; UGI server terminates itself !")
+            self.__log_error("unknown query '{query_name}' ; UGI server terminates itself !")
             self.terminate()
             return
 
         if self.__pijersi_state is None:
-            self.__log_info("no pijersi state to query ; UGI server terminates itself !")
+            self.__log_error("no pijersi state to query ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -554,7 +546,7 @@ class UgiServer:
 
             if len(query_args) < 1:
 
-                self.__log_info(f"""missing move in command 'query {" ".join(args)}' ; """ +
+                self.__log_error(f"""missing move in command 'query {" ".join(args)}' ; """ +
                                 "UGI server terminates itself !")
                 self.terminate()
                 return
@@ -627,11 +619,20 @@ class UgiServer:
 
 
     def __stop(self, args: List[str]):
+        self.__log_error("'stop' not implemented ; UGI server terminates itself !")
+        self.terminate()
+        return        
 
         if len(args) != 0:
             self.__log_info(f"""ignoring extra tokens in command 'stop {" ".join(args)}'""")
-
-        self.__stop_searcher = True
+        
+        if self.__synchronized_stop is None:
+            self.__log_error("""no __synchronized_stop ; UGI server terminates itself !""")
+            self.terminate()
+            return
+            
+        with self.__synchronized_stop.get_lock():
+            self.__synchronized_stop.value = True
 
 
     def __ugi(self, args: List[str]):
@@ -699,16 +700,17 @@ def run_ugi_server_implementation():
     print(f"Bye from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
 
 
+
+def init_synchronized_stop(the_synchronized_stop):
+    global synchronized_stop
+    synchronized_stop = the_synchronized_stop
+
+
 def search_task(searcher, pijersi_state):
     global synchronized_stop
 
     action = searcher.search(pijersi_state, synchronized_stop)
     return action
-
-
-def init_synchronized_data(the_synchronized_stop):
-    global synchronized_stop
-    synchronized_stop = the_synchronized_stop
 
 
 if __name__ == "__main__":
