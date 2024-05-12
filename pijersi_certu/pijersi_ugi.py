@@ -327,10 +327,6 @@ class UgiServer:
         self.__option_converters['depth'] = int
 
         self.__pijser_state = None
-        
-        self.__concurrent_executor = None
-        self.__search_future = None
-        self.__synchronized_stop = None
 
 
     def __log(self, message: str, category=''):
@@ -373,7 +369,6 @@ class UgiServer:
             commands['query'] = self.__query
             commands['quit'] = self.__quit
             commands['setoption'] = self.__setoption
-            commands['stop'] = self.__stop
             commands['ugi'] = self.__ugi
             commands['uginewgame'] = self.__uginewgame
 
@@ -398,35 +393,8 @@ class UgiServer:
 
 
     def __run_searcher(self, searcher) -> str:
-        
-        assert self.__concurrent_executor is None
-        assert self.__search_future is None
-        assert self.__synchronized_stop is None
-        
-        self.__synchronized_stop = multiprocessing.Value(ctypes.c_bool)
-        with self.__synchronized_stop.get_lock():
-            self.__synchronized_stop.value = False
-
-        self.__concurrent_executor = PoolExecutor(max_workers=1, initializer=init_synchronized_stop, initargs=(self.__synchronized_stop,))
-
-        self.__search_future = self.__concurrent_executor.submit(search_task, searcher, self.__pijersi_state)
-
-        while not self.__search_future.done():
-            time.sleep(0.01)
-            
-            if False:
-                with self.__synchronized_stop.get_lock():
-                    self.__synchronized_stop.value = True
-                    break
-    
-        action = self.__search_future.result()
+        action = searcher.search(self.__pijersi_state)
         bestmove = action.to_ugi_name()
-    
-        self.__synchronized_stop = None
-        self.__search_future = None
-        self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
-        self.__concurrent_executor = None
-        
         return bestmove
 
 
@@ -616,23 +584,6 @@ class UgiServer:
                 self.__options[option_name] = self.__option_converters[option_name](option_value)
 
         self.__log_debug(f"__setoption: __options = {self.__options}")
-
-
-    def __stop(self, args: List[str]):
-        self.__log_error("'stop' not implemented ; UGI server terminates itself !")
-        self.terminate()
-        return        
-
-        if len(args) != 0:
-            self.__log_info(f"""ignoring extra tokens in command 'stop {" ".join(args)}'""")
-        
-        if self.__synchronized_stop is None:
-            self.__log_error("""no __synchronized_stop ; UGI server terminates itself !""")
-            self.terminate()
-            return
-            
-        with self.__synchronized_stop.get_lock():
-            self.__synchronized_stop.value = True
 
 
     def __ugi(self, args: List[str]):

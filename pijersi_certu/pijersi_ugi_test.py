@@ -146,12 +146,13 @@ def test_ugi_protocol():
             result = client.query_result()
             log(f"result = {result}")
 
-        if False:
+        if True:
             log()
             client.uginewgame()
 
             while True:
                 fen = client.query_fen()
+                log()
                 log(f"fen = {fen}")
 
                 gameover = client.query_gameover()
@@ -159,7 +160,7 @@ def test_ugi_protocol():
                     break
 
                 bestmove = client.go_depth_and_wait(2)
-                log(f"bestmove = {bestmove}")
+                log(f"bestmove = {bestmove} after client.go_depth_and_wait")
                 client.go_manual(bestmove)
 
             result = client.query_result()
