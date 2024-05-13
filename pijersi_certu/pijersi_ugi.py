@@ -23,6 +23,7 @@ from subprocess import Popen
 import sys
 
 from typing import List
+from typing import Optional
 from typing import Self
 from typing import TextIO
 from typing import Tuple
@@ -172,6 +173,14 @@ class UgiClient:
 
         reply = self.__recv()
         return reply
+
+
+    def position_startpos(self, moves: Optional[List[str]]) -> None:
+        if len(moves) == 0:
+            self.__send(['position', 'startpos'])
+        else:
+            self.__send(['position', 'startpos', 'moves'] + moves)
+
 
 
     def query_fen(self) -> List[str]:
@@ -345,7 +354,7 @@ class UgiServer:
         self.__log_debug(f"__send: {data}")
 
 
-    def run(self):
+    def run(self) -> None:
         try:
             assert not self.__running
             self.__running = True
@@ -353,6 +362,7 @@ class UgiServer:
             commands = {}
             commands['isready'] = self.__isready
             commands['go'] = self.__go
+            commands['position'] = self.__position
             commands['query'] = self.__query
             commands['quit'] = self.__quit
             commands['setoption'] = self.__setoption
@@ -375,11 +385,11 @@ class UgiServer:
             self.terminate()
 
 
-    def terminate(self):
+    def terminate(self) -> None:
         self.__running = False
 
 
-    def __go(self, args: List[str]):
+    def __go(self, args: List[str]) -> None:
 
         if len(args) != 2:
             self.__log_error("wrong number of 'go' arguments ; UGI server terminates itself !")
@@ -430,7 +440,7 @@ class UgiServer:
             return
 
 
-    def __isready(self, args: List[str]):
+    def __isready(self, args: List[str]) -> None:
 
         if len(args) != 0:
             self.__log_info(f"""ignoring extra tokens in command 'isready {" ".join(args)}'""")
@@ -438,7 +448,36 @@ class UgiServer:
         self.__send(['readyok'])
 
 
-    def __query(self, args: List[str]):
+    def __position(self, args: List[str]) -> None:
+        if len(args) < 1:
+            self.__log_error("missing arguments for 'position' ; UGI server terminates itself !")
+            self.terminate()
+            return
+
+        if args[0] == 'startpos':
+            self.__pijersi_state = rules.PijersiState()
+
+            if len(args) >= 2:
+                if args[1] != 'moves':
+                    self.__log_error(f"""missing 'moves' in 'position {" ".join(args)}' ; UGI server terminates itself !""")
+                    self.terminate()
+                    return
+
+                moves = args[2:]
+                for move in moves:
+                    new_pijersi_state = self.__pijersi_state.take_action_by_ugi_name(move)
+                    self.__pijersi_state = new_pijersi_state
+                    
+                self.__log_info(f"__position: moves = {moves}")
+
+
+        else:
+            self.__log_error(f"""unexpected argument '{args[0]}' in 'position {" ".join(args)}' ; UGI server terminates itself !""")
+            self.terminate()
+            return
+
+
+    def __query(self, args: List[str]) -> None:
 
         if len(args) < 1:
             self.__log_error("nothing to query ; UGI server terminates itself !")
@@ -449,7 +488,7 @@ class UgiServer:
         query_args = args[1:]
 
         if query_name not in  ['gameover', 'p1turn', 'result', 'islegal', 'fen']:
-            self.__log_error("unknown query '{query_name}' ; UGI server terminates itself !")
+            self.__log_error(f"unknown query '{query_name}' ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -550,7 +589,7 @@ class UgiServer:
             self.__send(fen)
 
 
-    def __quit(self, args: List[str]):
+    def __quit(self, args: List[str]) -> None:
 
         if len(args) != 0:
             self.__log_info(f"""ignoring extra tokens in command 'quit {" ".join(args)}'""")
@@ -558,7 +597,7 @@ class UgiServer:
         self.terminate()
 
 
-    def __setoption(self, args: List[str]):
+    def __setoption(self, args: List[str]) -> None:
 
         if len(args) != 4 or args[0] != 'name' or args[2] != 'value':
             self.__log_info("cannot find/match tokens 'name' and 'value' ; " +
@@ -577,7 +616,7 @@ class UgiServer:
         self.__log_debug(f"__setoption: __options = {self.__options}")
 
 
-    def __ugi(self, args: List[str]):
+    def __ugi(self, args: List[str]) -> None:
 
         if len(args) != 0:
             self.__log_info(f"""ignoring extra tokens in command 'ugi {" ".join(args)}'""")
@@ -594,7 +633,7 @@ class UgiServer:
         self.__send(['ugiok'])
 
 
-    def __uginewgame(self, args: List[str]):
+    def __uginewgame(self, args: List[str]) -> None:
 
         if len(args) != 0:
             self.__log_info(f"""ignoring extra tokens in command 'uginewgame {" ".join(args)}'""")
