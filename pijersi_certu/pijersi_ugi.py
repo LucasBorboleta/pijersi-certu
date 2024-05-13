@@ -175,12 +175,23 @@ class UgiClient:
         return reply
 
 
+    def position_fen(self, fen: Optional[List[str]]=None, moves: Optional[List[str]]=None) -> None:
+        send_args = ['position', 'fen']
+
+        if fen is not None:
+            send_args += fen
+
+        if moves is not None and len(moves) != 0:
+            send_args += ['moves'] + moves
+
+        self.__send(send_args)
+
+
     def position_startpos(self, moves: Optional[List[str]]) -> None:
-        if len(moves) == 0:
+        if moves is None or len(moves) == 0:
             self.__send(['position', 'startpos'])
         else:
             self.__send(['position', 'startpos', 'moves'] + moves)
-
 
 
     def query_fen(self) -> List[str]:
@@ -467,9 +478,56 @@ class UgiServer:
                 for move in moves:
                     new_pijersi_state = self.__pijersi_state.take_action_by_ugi_name(move)
                     self.__pijersi_state = new_pijersi_state
-                    
-                self.__log_info(f"__position: moves = {moves}")
 
+
+        elif args[0] == 'fen':
+
+            if "moves" in args:
+                fen = args[1:args.index("moves")]
+                moves = args[args.index("moves") + 1:]
+            else:
+                fen = args[1:]
+                moves = []
+
+            if len(fen) == 0:
+                self.__pijersi_state = rules.PijersiState()
+            else:
+
+                if len(fen) != 4:
+                    self.__log_error(f"""missing 'fen' tokens in 'position {" ".join(args)}' ; UGI server terminates itself !""")
+                    self.terminate()
+                    return
+
+                fen_positions = fen[0]
+                player = fen[1]
+                half_move = int(fen[2])
+                full_move = int(fen[3])
+
+                pijersi_board_codes = rules.PijersiState.setup_from_ugi_fen(fen_positions)
+
+                if player == 'w':
+                    pijersi_player = rules.Player.T.WHITE
+
+                elif player == 'b':
+                    pijersi_player = rules.Player.T.BLACK
+
+                else:
+                    assert player in ['w', 'b']
+
+                pijersi_credit = self.__pijersi_state.get_max_credit() - half_move
+
+                pijersi_turn = 2*full_move
+                if pijersi_player == rules.Player.T.BLACK:
+                    pijersi_turn += 1
+
+                self.__pijersi_state = rules.PijersiState(board_codes=pijersi_board_codes,
+                                                          player=pijersi_player,
+                                                          credit=pijersi_credit,
+                                                          turn=pijersi_turn,
+                                                          setup=rules.Setup.T.GIVEN)
+            for move in moves:
+                new_pijersi_state = self.__pijersi_state.take_action_by_ugi_name(move)
+                self.__pijersi_state = new_pijersi_state
 
         else:
             self.__log_error(f"""unexpected argument '{args[0]}' in 'position {" ".join(args)}' ; UGI server terminates itself !""")
@@ -567,7 +625,7 @@ class UgiServer:
                 self.terminate()
                 return
 
-            fen = [self.__pijersi_state.get_hex_ugi_states()]
+            fen = [self.__pijersi_state.get_hex_states_as_ugi_fen()]
 
             if not self.__pijersi_state.is_terminal():
 

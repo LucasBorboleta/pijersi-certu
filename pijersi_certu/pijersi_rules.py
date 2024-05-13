@@ -1605,16 +1605,9 @@ class PijersiState:
         return [HexState.decode(code) for code in self.__board_codes]
 
 
-    def get_hex_ugi_states(self) -> str:
+    def get_hex_states_as_ugi_fen(self) -> str:
 
-        hex_rows = []
-        hex_rows.append(['g1', 'g2', 'g3', 'g4', 'g5', 'g6'])
-        hex_rows.append(['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7'])
-        hex_rows.append(['e1', 'e2', 'e3', 'e4', 'e5', 'e6'])
-        hex_rows.append(['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'])
-        hex_rows.append(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
-        hex_rows.append(['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'])
-        hex_rows.append(['a1', 'a2', 'a3', 'a4', 'a5', 'a6'])
+        hex_rows = [hex_row for (_, hex_row) in Hexagon.get_layout()]
 
         hex_states = self.get_hex_states()
 
@@ -1889,6 +1882,39 @@ class PijersiState:
 
         for (black_cube_hex, black_cube) in zip(black_cube_hexs, black_cubes):
             PijersiState.set_cube_from_names(board_codes, black_cube_hex, black_cube)
+
+        return board_codes
+
+
+    @staticmethod
+    def setup_from_ugi_fen(fen: str) -> BoardCodes :
+        board_codes = PijersiState.empty_board_codes()
+
+        fen_canonized = ""
+        for fen_item in fen:
+            if fen_item in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
+                fen_canonized += int(fen_item)*'--'
+            else:
+                fen_canonized += fen_item
+
+        fen_lines = fen_canonized.split('/')
+
+        hex_rows = [hex_row for (_, hex_row) in Hexagon.get_layout()]
+
+        for (fen_line, hex_row)  in zip(fen_lines, hex_rows):
+
+            hex_named_states = zip(fen_line[::2], fen_line[1::2])
+
+            for ((bottom_name, top_name), hex_name) in zip(hex_named_states, hex_row):
+
+                if bottom_name != '-' and top_name != '-':
+                    PijersiState.set_stack_from_names(board_codes, hex_name, bottom_name=bottom_name, top_name=top_name)
+
+                elif bottom_name != '-' and top_name == '-':
+                    PijersiState.set_cube_from_names(board_codes, hex_name, bottom_name)
+
+                else:
+                    assert bottom_name == '-' and top_name == '-'
 
         return board_codes
 

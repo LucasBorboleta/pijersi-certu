@@ -183,9 +183,64 @@ def test_ugi_protocol():
 
                 bestmove = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove} after client.go_depth_and_wait")
-                moves.append(bestmove)
 
+                moves.append(bestmove)
                 client.position_startpos(moves)
+
+            result = client.query_result()
+            log(f"result = {result}")
+
+        if True:
+            log()
+            client.uginewgame()
+            fen = client.query_fen()
+            client.position_fen(fen=fen)
+
+            again_fen = client.query_fen()
+            assert again_fen == fen
+
+            while True:
+                fen = client.query_fen()
+                log()
+                log(f"fen = {fen}")
+
+                gameover = client.query_gameover()
+                if gameover == ['true']:
+                    break
+
+                bestmove = client.go_depth_and_wait(2)
+                log(f"bestmove = {bestmove} after client.go_depth_and_wait")
+
+                moves = [bestmove]
+                client.position_fen(fen=fen, moves=moves)
+
+            result = client.query_result()
+            log(f"result = {result}")
+
+        if True:
+            log()
+            client.uginewgame()
+            fen = client.query_fen()
+            client.position_fen(fen=fen)
+
+            start_fen = fen
+
+            moves = []
+
+            while True:
+                fen = client.query_fen()
+                log()
+                log(f"fen = {fen}")
+
+                gameover = client.query_gameover()
+                if gameover == ['true']:
+                    break
+
+                bestmove = client.go_depth_and_wait(2)
+                log(f"bestmove = {bestmove} after client.go_depth_and_wait")
+
+                moves.append(bestmove)
+                client.position_fen(fen=start_fen, moves=moves)
 
             result = client.query_result()
             log(f"result = {result}")
