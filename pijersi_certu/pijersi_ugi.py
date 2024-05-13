@@ -17,21 +17,17 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
-import ctypes
 import os
 from subprocess import PIPE
 from subprocess import Popen
 import sys
-import time
 
 from typing import List
 from typing import Self
 from typing import TextIO
 from typing import Tuple
 
-from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from multiprocessing import freeze_support
-import multiprocessing
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
@@ -79,7 +75,7 @@ class UgiChannel:
 
         assert len(data) != 0
         return data
-           
+
 
 
 class UgiClient:
@@ -94,21 +90,21 @@ class UgiClient:
         self.__options = {}
 
 
-    def __log(self, message: str, category=''):
+    def __log(self, message: str, category='') -> None:
         for line in message.split('\n'):
-            print(f"{category}UgiClient:{line}", file=sys.stderr, flush=True)
+            print(f"{category}:UgiClient:{line}", file=sys.stderr, flush=True)
 
 
-    def __log_debug(self, message: str):
+    def __log_debug(self, message: str) -> None:
         if self.__debugging:
             self.__log(message, category='debug:')
 
 
-    def __log_error(self, message: str):
+    def __log_error(self, message: str) -> None:
         self.__log(message, category='error:')
 
 
-    def __log_info(self, message: str):
+    def __log_info(self, message: str) -> None:
         self.__log(message, category='info:')
 
 
@@ -118,7 +114,7 @@ class UgiClient:
         return data
 
 
-    def __send(self, data: List[str]):
+    def __send(self, data: List[str]) -> None:
         self.__channel.send(data)
         self.__log_debug(f"__send: {data}")
 
@@ -151,11 +147,6 @@ class UgiClient:
         return bestmove
 
 
-    def go_depth(self, depth: int) -> str:
-        assert depth >= 1
-        self.__send(['go', 'depth', str(depth)])
-
-
     def go_depth_and_wait(self, depth: int) -> str:
         assert depth >= 1
         self.__send(['go', 'depth', str(depth)])
@@ -164,13 +155,8 @@ class UgiClient:
         return bestmove
 
 
-    def go_manual(self, move: str):
+    def go_manual(self, move: str) -> None:
         self.__send(['go', 'manual', move])
-
-
-    def go_movetime(self, time_ms: float) -> str:
-        assert time_ms > 0
-        self.__send(['go', 'movetime', str(time_ms)])
 
 
     def go_movetime_and_wait(self, time_ms: float) -> str:
@@ -244,7 +230,7 @@ class UgiClient:
     def stop(self) -> str:
         self.__log_error("stop: not implemented !")
         assert False
-        
+
         self.__send(['stop'])
         bestmove = self.__handle_bestmove_reply()
         return bestmove
@@ -323,6 +309,7 @@ class UgiServer:
         self.__options = {}
         self.__option_converters = {}
 
+        # options with default values and associated converters
         self.__options['depth'] = 2
         self.__option_converters['depth'] = int
 
@@ -331,7 +318,7 @@ class UgiServer:
 
     def __log(self, message: str, category=''):
         for line in message.split('\n'):
-            print(f"{category}UgiServer:{line}", file=sys.stderr, flush=True)
+            print(f"{category}:UgiServer:{line}", file=sys.stderr, flush=True)
 
 
     def __log_debug(self, message: str):
@@ -392,16 +379,10 @@ class UgiServer:
         self.__running = False
 
 
-    def __run_searcher(self, searcher) -> str:
-        action = searcher.search(self.__pijersi_state)
-        bestmove = action.to_ugi_name()
-        return bestmove
-
-
     def __go(self, args: List[str]):
 
         if len(args) != 2:
-            self.__log_error("wrong go arguments ; UGI server terminates itself !")
+            self.__log_error("wrong number of 'go' arguments ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -417,10 +398,10 @@ class UgiServer:
 
         elif args[0] == 'depth':
             depth = int(args[1])
-
             searcher = rules.MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
 
-            bestmove = self.__run_searcher(searcher)
+            action = searcher.search(self.__pijersi_state)
+            bestmove = action.to_ugi_name()
             self.__send(['bestmove', bestmove])
 
         elif args[0] == 'movetime':
@@ -436,14 +417,15 @@ class UgiServer:
 
             else:
                 depth = 4
-                
+
             searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s", max_depth=depth, time_limit=time_s)
 
-            bestmove = self.__run_searcher(searcher)
+            action = searcher.search(self.__pijersi_state)
+            bestmove = action.to_ugi_name()
             self.__send(['bestmove', bestmove])
-            
+
         else:
-            self.__log_error("wrong go arguments ; UGI server terminates itself !")
+            self.__log_error("wrong 'go' arguments ; UGI server terminates itself !")
             self.terminate()
             return
 
@@ -524,7 +506,12 @@ class UgiServer:
 
             move = query_args[0]
 
-            if self.__pijersi_state is None or self.__pijersi_state.is_terminal():
+            if self.__pijersi_state is None:
+                self.__log_error("no pijersi state; UGI server terminates itself !")
+                self.terminate()
+                return
+
+            if self.__pijersi_state.is_terminal():
                 legal_moves = []
             else:
                 legal_moves = self.__pijersi_state.get_action_ugi_names()
@@ -536,9 +523,14 @@ class UgiServer:
 
         elif query_name == 'fen':
 
+            if self.__pijersi_state is None:
+                self.__log_error("no pijersi state; UGI server terminates itself !")
+                self.terminate()
+                return
+
             fen = [self.__pijersi_state.get_hex_ugi_states()]
 
-            if self.__pijersi_state is not None and not self.__pijersi_state.is_terminal():
+            if not self.__pijersi_state.is_terminal():
 
                 if self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
                     fen.append('w')
@@ -556,7 +548,6 @@ class UgiServer:
                 fen.append(str(full_move))
 
             self.__send(fen)
-
 
 
     def __quit(self, args: List[str]):
@@ -637,7 +628,7 @@ def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr
     return (server_process, server_channel)
 
 
-def run_ugi_server_implementation():
+def run_ugi_server_implementation() -> None:
 
     print("", file=sys.stderr, flush=True)
     print(f"Hello from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
@@ -649,19 +640,6 @@ def run_ugi_server_implementation():
 
     print("", file=sys.stderr, flush=True)
     print(f"Bye from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
-
-
-
-def init_synchronized_stop(the_synchronized_stop):
-    global synchronized_stop
-    synchronized_stop = the_synchronized_stop
-
-
-def search_task(searcher, pijersi_state):
-    global synchronized_stop
-
-    action = searcher.search(pijersi_state, synchronized_stop)
-    return action
 
 
 if __name__ == "__main__":
