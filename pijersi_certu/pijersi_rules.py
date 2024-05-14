@@ -71,8 +71,12 @@ _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
 
-def log(text: str=""):
-    print(text, file=sys.stderr, flush=True)
+def log(msg: str=None):
+    if msg is None:
+        print("", file=sys.stderr, flush=True)
+    else:
+        for line in msg.split('\n'):
+            print(f"{line}", file=sys.stderr, flush=True)
 
 
 class Setup:
@@ -1652,6 +1656,29 @@ class PijersiState:
         return fen
 
 
+    def get_ugi_fen(self) -> Sequence[str]:
+        fen = [self.get_hex_states_as_ugi_fen()]
+
+        if not self.is_terminal():
+
+            if self.get_current_player() == Player.T.WHITE:
+                fen.append('w')
+            else:
+                fen.append('b')
+
+            turn = self.get_turn()
+            credit = self.get_credit()
+            max_credit = self.get_max_credit()
+
+            full_move = (turn  + 1) // 2
+            half_move = max_credit - credit
+
+            fen.append(str(half_move))
+            fen.append(str(full_move))
+
+        return fen
+
+
     def get_board_codes(self) -> BoardCodes:
         return self.__board_codes
 
@@ -2633,10 +2660,6 @@ class MinimaxSearcher(Searcher):
         self.__beta_cuts = []
         self.__evaluation_count = 0
         self.__fun_evaluation_count = 0
-
-
-    def is_interactive(self) -> bool:
-        return False
 
 
     def search(self, state: PijersiState, synchronized_stop=None) -> PijersiAction:

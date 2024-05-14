@@ -26,7 +26,7 @@ _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
 
-from pijersi_ugi import make_ugi_client
+import pijersi_ugi as ugi
 
 
 def log(msg: str=None):
@@ -51,7 +51,7 @@ def test_ugi_protocol():
     log()
     log(f"server_executable_path = {server_executable_path}")
 
-    client = make_ugi_client(server_executable_path, cerr=sys.stderr)
+    client = ugi.make_ugi_client(server_executable_path, cerr=sys.stderr)
 
     log()
 

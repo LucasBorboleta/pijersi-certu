@@ -47,8 +47,21 @@ from pijersi_rules import PijersiState
 from pijersi_rules import RandomSearcher
 from pijersi_rules import Reward
 
+from pijersi_ugi import make_ugi_client
+from pijersi_ugi import UgiSearcher
+
+
 import cProfile
 from pstats import SortKey
+
+
+def log(msg: str=None):
+    if msg is None:
+        print("", file=sys.stderr, flush=True)
+    else:
+        for line in msg.split('\n'):
+            print(f"{line}", file=sys.stderr, flush=True)
+
 
 def test():
 
@@ -87,18 +100,18 @@ def test():
 
     def test_iterate_hex_states() -> None:
 
-        print()
-        print("-- test_iterate_hex_states --")
+        log()
+        log("-- test_iterate_hex_states --")
 
         hex_codes = set()
 
         for hex_state in HexState.iterate_hex_states():
             hex_code = hex_state.encode()
-            print(f"hex_state = {hex_state} ; hex_code={hex_code}")
+            log(f"hex_state = {hex_state} ; hex_code={hex_code}")
             assert hex_code not in hex_codes
             hex_codes.add(hex_code)
 
-        print(f"len(hex_codes) = {len(hex_codes)} ; min(hex_codes) = {min(hex_codes)} ; max(hex_codes) = {max(hex_codes)}")
+        log(f"len(hex_codes) = {len(hex_codes)} ; min(hex_codes) = {min(hex_codes)} ; max(hex_codes) = {max(hex_codes)}")
         assert len(hex_codes) <= HexState.CODE_BASE
         assert min(hex_codes) == 0
         assert max(hex_codes) <= HexState.CODE_BASE
@@ -106,22 +119,22 @@ def test():
 
     def test_encode_and_decode_hex_state():
 
-        print()
-        print("-- test_encode_and_decode_hex_state --")
+        log()
+        log("-- test_encode_and_decode_hex_state --")
 
         hex_state_count = 100
 
         for _ in range(hex_state_count):
 
             hex_state = generate_random_hex_state()
-            print()
-            print(f"hex_state = {hex_state}")
+            log()
+            log(f"hex_state = {hex_state}")
 
             hex_state_code = hex_state.encode()
-            print(f"hex_state_code = {hex_state_code}")
+            log(f"hex_state_code = {hex_state_code}")
 
             hex_decoded_state = HexState.decode(hex_state_code)
-            print(f"hex_decoded_state = {hex_decoded_state}")
+            log(f"hex_decoded_state = {hex_decoded_state}")
             assert hex_decoded_state == hex_state
 
         hex_state_count = 100
@@ -129,58 +142,58 @@ def test():
         for _ in range(hex_state_count):
 
             hex_state = generate_random_hex_state(is_empty=False, has_stack=True, bottom=Cube.T.WISE)
-            print()
-            print(f"hex_state = {hex_state}")
+            log()
+            log(f"hex_state = {hex_state}")
 
             hex_state_code = hex_state.encode()
-            print(f"hex_state_code = {hex_state_code}")
+            log(f"hex_state_code = {hex_state_code}")
 
             hex_decoded_state = HexState.decode(hex_state_code)
-            print(f"hex_decoded_state = {hex_decoded_state}")
+            log(f"hex_decoded_state = {hex_decoded_state}")
             assert hex_decoded_state == hex_state
 
 
     def test_encode_and_decode_path_states() -> None:
 
-        print()
-        print("-- test_encode_and_decode_path_states --")
+        log()
+        log("-- test_encode_and_decode_path_states --")
 
         path_state_count = 100
         path_length = 3
 
         for _ in range(path_state_count):
             path_state = generate_random_path_state(path_length)
-            print()
-            print(f"path_state = {path_state}")
+            log()
+            log(f"path_state = {path_state}")
 
             path_code = PijersiState.encode_path_states(path_state)
-            print(f"path_code = {path_code}")
+            log(f"path_code = {path_code}")
 
             path_codes = PijersiState.decode_path_code(path_code, path_length)
-            print(f"path_codes = {path_codes}")
+            log(f"path_codes = {path_codes}")
 
             path_decoded_state = PijersiState.decode_path_codes(path_codes)
-            print(f"path_decoded_state = {path_decoded_state}")
+            log(f"path_decoded_state = {path_decoded_state}")
             assert path_decoded_state == path_state
 
 
     def test_first_get_summary():
 
-        print()
-        print("-- test_first_get_summary --")
+        log()
+        log("-- test_first_get_summary --")
 
         new_state = PijersiState()
         summary = new_state.get_summary()
-        print()
-        print(f"summary = {summary}")
+        log()
+        log(f"summary = {summary}")
         assert summary == "Turn 1 / player white / credit 20 / alive P:4 R:4 S:4 W:2 p:4 r:4 s:4 w:2"
 
 
     def test_game_between_random_players():
 
-        print("=====================================")
-        print(" test_game_between_random_players ...")
-        print("=====================================")
+        log("=====================================")
+        log(" test_game_between_random_players ...")
+        log("=====================================")
 
         default_max_credit = PijersiState.get_max_credit()
         PijersiState.set_max_credit(10_000)
@@ -197,16 +210,16 @@ def test():
 
         PijersiState.set_max_credit(default_max_credit)
 
-        print("=====================================")
-        print("test_game_between_random_players done")
-        print("=====================================")
+        log("=====================================")
+        log("test_game_between_random_players done")
+        log("=====================================")
 
 
     def test_game_between_random_and_human_players():
 
-        print("==============================================")
-        print("test_game_between_random_and_human_players ...")
-        print("==============================================")
+        log("==============================================")
+        log("test_game_between_random_and_human_players ...")
+        log("==============================================")
 
         default_max_credit = PijersiState.get_max_credit()
         PijersiState.set_max_credit(10)
@@ -226,16 +239,16 @@ def test():
 
         PijersiState.set_max_credit(default_max_credit)
 
-        print("===============================================")
-        print("test_game_between_random_and_human_players done")
-        print("===============================================")
+        log("===============================================")
+        log("test_game_between_random_and_human_players done")
+        log("===============================================")
 
 
     def test_game_between_minimax_players(min_depth: int=1, max_depth: int=3, game_count: int=5, use_random_searcher: bool=True):
 
-        print("=====================================")
-        print(" test_game_between_minimax_players ...")
-        print("=====================================")
+        log("=====================================")
+        log(" test_game_between_minimax_players ...")
+        log("=====================================")
 
         searcher_dict = {}
 
@@ -271,7 +284,7 @@ def test():
 
                     game.start()
                     while game.has_next_turn():
-                        print("--> " + x_searcher.get_name() + " versus " +
+                        log("--> " + x_searcher.get_name() + " versus " +
                                        y_searcher.get_name() +  f" game_index: {game_index}")
                         game.next_turn()
 
@@ -290,34 +303,34 @@ def test():
                         y_points += 1
 
 
-                print("game_count:", game_count, "/ x_points:", x_points, "/ y_points:", y_points)
+                log("game_count:", game_count, "/ x_points:", x_points, "/ y_points:", y_points)
 
                 searcher_points[x_searcher.get_name()] += x_points
                 searcher_points[y_searcher.get_name()] += y_points
 
-        print()
+        log()
         for (searcher_name, points) in sorted(searcher_points.items()):
-            print(f"searcher {searcher_name} has {points} points")
+            log(f"searcher {searcher_name} has {points} points")
 
-        print()
+        log()
         searcher_count = len(searcher_dict)
         searcher_game_count = 2*(searcher_count - 1)*game_count
-        print("number of searchers:", searcher_count)
-        print("number of games per searcher:", searcher_game_count)
-        print()
+        log("number of searchers:", searcher_count)
+        log("number of games per searcher:", searcher_game_count)
+        log()
         for (searcher_name, points) in sorted(searcher_points.items()):
-            print(f"searcher {searcher_name} has {points/searcher_game_count:.3f} average points per game")
+            log(f"searcher {searcher_name} has {points/searcher_game_count:.3f} average points per game")
 
-        print("=====================================")
-        print("test_game_between_minimax_players done")
-        print("=====================================")
+        log("=====================================")
+        log("test_game_between_minimax_players done")
+        log("=====================================")
 
 
     def test_two_turns_between_minimax_players():
 
-        print("===========================================")
-        print(" test_two_turns_between_minimax_players ...")
-        print("===========================================")
+        log("===========================================")
+        log(" test_two_turns_between_minimax_players ...")
+        log("===========================================")
 
         game = Game()
 
@@ -333,58 +346,109 @@ def test():
             game.next_turn()
 
 
-        print("===========================================")
-        print("test_two_turns_between_minimax_players done")
-        print("===========================================")
+        log("===========================================")
+        log("test_two_turns_between_minimax_players done")
+        log("===========================================")
 
 
 
     def test_action_ugi_name():
 
-        print("===========================")
-        print("test_action_ugi_name ...")
-        print("===========================")
+        log("===========================")
+        log("test_action_ugi_name ...")
+        log("===========================")
 
         depth = 2
         searcher = MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
         pijersi_state = PijersiState()
         action = searcher.search(pijersi_state)
         bestmove = action.to_ugi_name()
-        print(f"bestmove = {bestmove}")
+        log(f"bestmove = {bestmove}")
         assert bestmove == 'a5b6d5'
 
-        print("===========================")
-        print("test_action_ugi_name done")
-        print("===========================")
+        log("===========================")
+        log("test_action_ugi_name done")
+        log("===========================")
 
 
-    if True:
+    def test_game_between_ugi_players(depth: int=1, time_limit: int=20):
+
+        log("=====================================")
+        log(" test_game_between_ugi_players ...")
+        log("=====================================")
+
+
+        if True:
+            server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
+        else:
+            server_executable_path = os.path.join(_package_home, "pijersi_certu_ugi_server.exe")
+
+        white_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
+        white_ugi_client.ugi()
+        isready = white_ugi_client.isready()
+        assert isready == ['readyok']
+        white_ugi_client.uginewgame()
+        white_searcher_name = f"{white_ugi_client.get_server_name()}-{depth}"
+
+
+        black_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
+        black_ugi_client.ugi()
+        isready = black_ugi_client.isready()
+        assert isready == ['readyok']
+        black_ugi_client.uginewgame()
+        black_searcher_name = f"{black_ugi_client.get_server_name()}-{time_limit}s"
+
+        game = Game()
+
+        white_searcher = UgiSearcher(name=white_searcher_name, ugi_client=white_ugi_client, max_depth=depth)
+        black_searcher = UgiSearcher(name=black_searcher_name, ugi_client=black_ugi_client, time_limit=time_limit)
+
+        game.set_white_searcher(white_searcher)
+        game.set_black_searcher(black_searcher)
+
+        game.start()
+
+        while game.has_next_turn():
+            game.next_turn()
+
+        white_ugi_client.quit()
+        black_ugi_client.quit()
+
+        log("=====================================")
+        log("test_game_between_ugi_players done")
+        log("=====================================")
+
+
+    if False:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
-        PijersiState.print_tables()
+        PijersiState.log_tables()
         test_first_get_summary()
 
-    if True:
+    if False:
         test_game_between_random_players()
 
     if False:
         test_game_between_random_and_human_players()
 
-    if True:
+    if False:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
-    if True:
+    if False:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
-    if True:
+    if False:
         test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
 
-    if True:
+    if False:
         test_two_turns_between_minimax_players()
 
-    if True:
+    if False:
         test_action_ugi_name()
+
+    if True:
+        test_game_between_ugi_players(depth=1, time_limit=30)
 
 
 def profile():
@@ -392,8 +456,8 @@ def profile():
 
     def profile_get_actions():
 
-        print()
-        print("-- profile_get_actions --")
+        log()
+        log("-- profile_get_actions --")
 
         profile_data['pijersi_state'] = PijersiState()
 
@@ -402,8 +466,8 @@ def profile():
 
     def profile_is_terminal():
 
-        print()
-        print("-- profile_is_terminal --")
+        log()
+        log("-- profile_is_terminal --")
 
         profile_data['pijersi_state'] = PijersiState()
 
@@ -449,28 +513,28 @@ if __name__ == "__main__":
     # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
     freeze_support()
 
-    print()
-    print("Hello")
-    print()
-    print(f"Python sys.version = {sys.version}")
+    log()
+    log("Hello")
+    log()
+    log(f"Python sys.version = {sys.version}")
 
     main()
 
-    print()
-    print("Bye")
+    log()
+    log("Bye")
 
     # >> clean any residual process
     if len(multiprocessing.active_children()) > 0:
-        print()
-        print(f"{len(multiprocessing.active_children())} child processes are still alive")
-        print("Terminating child processes ...")
+        log()
+        log(f"{len(multiprocessing.active_children())} child processes are still alive")
+        log("Terminating child processes ...")
         for child_process in multiprocessing.active_children():
             try:
                 child_process.terminate()
             except:
                 pass
-        print("Terminating child processes done")
+        log("Terminating child processes done")
 
     if True:
-        print()
+        log()
         _ = input("main: done ; press enter to terminate")

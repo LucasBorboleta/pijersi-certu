@@ -5,8 +5,7 @@
 
 
 _COPYRIGHT_AND_LICENSE = """
-PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
-PIJERSI-CERTU-UGI-SERVER implements the Universal Game Protocol (UGI).
+PIJERSI-CMALO-UGI-SERVER implements the Universal Game Protocol (UGI).
 
 Copyright (C) 2019 Lucas Borboleta (lucas.borboleta@free.fr).
 
@@ -34,6 +33,14 @@ _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
 import pijersi_rules as rules
+
+
+def log(msg: str=None):
+    if msg is None:
+        print("", file=sys.stderr, flush=True)
+    else:
+        for line in msg.split('\n'):
+            print(f"{line}", file=sys.stderr, flush=True)
 
 
 class UgiChannel:
@@ -89,6 +96,16 @@ class UgiClient:
         self.__server_name = None
         self.__server_author = None
         self.__options = {}
+
+
+    def get_server_name(self) -> str:
+        assert self.__server_name is not None
+        return self.__server_name
+
+
+    def get_server_author(self) -> str:
+        assert self.__server_author is not None
+        return self.__server_author
 
 
     def __log(self, message: str, category='') -> None:
@@ -323,7 +340,7 @@ class UgiServer:
         self.__running = False
         self.__debugging = False
 
-        self.__server_name = 'certu'
+        self.__server_name = 'cmalo'
         self.__server_author = 'lucas.borboleta@free.fr'
 
         self.__options = {}
@@ -625,24 +642,7 @@ class UgiServer:
                 self.terminate()
                 return
 
-            fen = [self.__pijersi_state.get_hex_states_as_ugi_fen()]
-
-            if not self.__pijersi_state.is_terminal():
-
-                if self.__pijersi_state.get_current_player() == rules.Player.T.WHITE:
-                    fen.append('w')
-                else:
-                    fen.append('b')
-
-                turn = self.__pijersi_state.get_turn()
-                credit = self.__pijersi_state.get_credit()
-                max_credit = self.__pijersi_state.get_max_credit()
-
-                full_move = (turn  + 1) // 2
-                half_move = max_credit - credit
-
-                fen.append(str(half_move))
-                fen.append(str(full_move))
+            fen = self.__pijersi_state.get_ugi_fen()
 
             self.__send(fen)
 
@@ -699,6 +699,36 @@ class UgiServer:
         self.__pijersi_state = rules.PijersiState()
 
 
+class UgiSearcher(rules.Searcher):
+
+    __slots__ = ('__ugi_client', '__max_depth', '__time_limit')
+
+    def __init__(self, name: str, ugi_client: UgiClient, max_depth: int=None, time_limit: Optional[int]=None):
+        super().__init__(name)
+
+        self.__ugi_client = ugi_client
+
+        assert max_depth is None or time_limit is None
+        assert not (max_depth is None and time_limit is None)
+        self.__max_depth = max_depth
+        self.__time_limit = time_limit
+
+
+    def search(self, state: rules.PijersiState) -> rules.PijersiAction:
+        fen = state.get_ugi_fen()
+        self.__ugi_client.position_fen(fen=fen)
+
+        if self.__max_depth is not None:
+            ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
+
+        elif self.__time_limit is not None:
+            ugi_action = self.__ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
+
+        action = state.get_action_by_ugi_name(ugi_action)
+
+        return action
+
+
 def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:
     (server_process, server_channel) = make_ugi_server_process(server_executable_path, cerr)
 
@@ -727,16 +757,15 @@ def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr
 
 def run_ugi_server_implementation() -> None:
 
-    print("", file=sys.stderr, flush=True)
-    print(f"Hello from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
-    print(_COPYRIGHT_AND_LICENSE, file=sys.stderr, flush=True)
+    log()
+    log(f"Hello from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
 
     server_channel = UgiChannel.make_std_channel()
     server = UgiServer(channel=server_channel)
     server.run()
 
-    print("", file=sys.stderr, flush=True)
-    print(f"Bye from PIJERSI-CERTU-UGI-SERVER-v{rules.__version__}", file=sys.stderr, flush=True)
+    log()
+    log(f"Bye from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
 
 
 if __name__ == "__main__":
