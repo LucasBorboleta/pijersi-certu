@@ -27,6 +27,7 @@ sys.path.append(_package_home)
 
 
 import pijersi_ugi as ugi
+from pijersi_ugi import UGI_CLIENTS
 
 
 def log(msg: str=None):

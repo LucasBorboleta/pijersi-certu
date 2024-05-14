@@ -49,7 +49,7 @@ from pijersi_rules import Reward
 
 from pijersi_ugi import make_ugi_client
 from pijersi_ugi import UgiSearcher
-
+from pijersi_ugi import UGI_CLIENTS
 
 import cProfile
 from pstats import SortKey
@@ -303,7 +303,7 @@ def test():
                         y_points += 1
 
 
-                log("game_count:", game_count, "/ x_points:", x_points, "/ y_points:", y_points)
+                log(f"game_count: {game_count} / x_points: {x_points} / y_points: {y_points}")
 
                 searcher_points[x_searcher.get_name()] += x_points
                 searcher_points[y_searcher.get_name()] += y_points
@@ -315,8 +315,8 @@ def test():
         log()
         searcher_count = len(searcher_dict)
         searcher_game_count = 2*(searcher_count - 1)*game_count
-        log("number of searchers:", searcher_count)
-        log("number of games per searcher:", searcher_game_count)
+        log(f"number of searchers: {searcher_count}")
+        log(f"number of games per searcher: {searcher_game_count}")
         log()
         for (searcher_name, points) in sorted(searcher_points.items()):
             log(f"searcher {searcher_name} has {points/searcher_game_count:.3f} average points per game")
@@ -387,12 +387,13 @@ def test():
         isready = ugi_client.isready()
         assert isready == ['readyok']
         ugi_client_name = ugi_client.get_server_name()
+        UGI_CLIENTS[ugi_client_name] = ugi_client
 
         depth_searcher_name = f"{ugi_client_name}-{depth}-inf"
-        time_searcher_name = f"{ugi_client_name}-x-{time_limit}s"
+        time_searcher_name = f"{ugi_client_name}-{time_limit}s"
 
-        depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth)
-        time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit)
+        depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client_name=ugi_client_name, max_depth=depth)
+        time_searcher = UgiSearcher(name=time_searcher_name, ugi_client_name=ugi_client_name, time_limit=time_limit)
 
         game = Game()
         game.set_white_searcher(depth_searcher)
@@ -414,7 +415,7 @@ def test():
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
-        PijersiState.log_tables()
+        PijersiState.print_tables()
         test_first_get_summary()
 
     if False:

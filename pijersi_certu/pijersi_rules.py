@@ -4,7 +4,7 @@
 """pijersi_rules.py implements the rules engine for the PIJERSI boardgame."""
 
 
-__version__ = "1.4.0"
+__version__ = "2.0.0"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -1288,88 +1288,88 @@ class PijersiState:
         def print_table_has_cube():
             log()
             log("-- print_table_has_cube --")
-            log(PijersiState.__TABLE_HAS_CUBE)
+            log(f"{PijersiState.__TABLE_HAS_CUBE}")
 
 
         def print_table_has_stack():
             log()
             log("-- print_table_has_stack --")
-            log(PijersiState.__TABLE_HAS_STACK)
+            log(f"{PijersiState.__TABLE_HAS_STACK}")
 
 
         def print_table_cube_count():
             log()
             log("-- print_table_cube_count --")
-            log(PijersiState.__TABLE_CUBE_COUNT)
+            log("f{PijersiState.__TABLE_CUBE_COUNT}")
 
 
         def print_table_has_fighter():
             log()
             log("-- print_table_has_fighter --")
-            log(PijersiState.__TABLE_HAS_FIGHTER)
+            log(f"{PijersiState.__TABLE_HAS_FIGHTER}")
 
 
         def print_table_fighter_count():
             log()
             log("-- print_table_fighter_count --")
-            log(PijersiState.__TABLE_FIGHTER_COUNT)
+            log(f"{PijersiState.__TABLE_FIGHTER_COUNT}")
 
 
         def print_table_cube_count_by_sort():
             log()
             log("-- print_table_cube_count_by_sort --")
-            log(PijersiState.__TABLE_CUBE_COUNT_BY_SORT)
+            log(f"{PijersiState.__TABLE_CUBE_COUNT_BY_SORT}")
 
 
         def print_table_make_path1():
             log()
             log("-- print_table_make_path1 --")
-            log(PijersiState.__TABLE_MAKE_PATH1)
+            log(f"{PijersiState.__TABLE_MAKE_PATH1}")
 
 
         def print_table_make_path2():
             log()
             log("-- print_table_make_path2 --")
-            log(PijersiState.__TABLE_MAKE_PATH2)
+            log(f"{PijersiState.__TABLE_MAKE_PATH2}")
 
 
         def print_table_goal_indices():
             log()
             log("-- print_table_goal_indices --")
-            log(PijersiState.__TABLE_GOAL_INDICES)
+            log(f"{PijersiState.__TABLE_GOAL_INDICES}")
 
 
         def print_table_goal_distances():
             log()
             log("-- print_table_goal_distances --")
-            log(PijersiState.__TABLE_GOAL_DISTANCES)
+            log(f"{PijersiState.__TABLE_GOAL_DISTANCES}")
 
 
         def print_table_center_distances():
             log()
             log("-- print_table_center_distances --")
-            log(PijersiState.__TABLE_CENTER_DISTANCES)
+            log(f"{PijersiState.__TABLE_CENTER_DISTANCES}")
 
 
         def print_tables_try_cube_path1():
             log()
             log("-- print_tables_try_cube_path1 --")
-            log(PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE)
-            log(PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE)
+            log(f"{PijersiState.__TABLE_TRY_CUBE_PATH1_NEXT_CODE}")
+            log(f"{PijersiState.__TABLE_TRY_CUBE_PATH1_CAPTURE_CODE}")
 
 
         def print_tables_try_stack_path1():
             log()
             log("-- print_tables_try_stack_path1 --")
-            log(PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE)
-            log(PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE)
+            log(f"{PijersiState.__TABLE_TRY_STACK_PATH1_NEXT_CODE}")
+            log(f"{PijersiState.__TABLE_TRY_STACK_PATH1_CAPTURE_CODE}")
 
 
         def print_tables_try_stack_path2():
             log()
             log("-- print_tables_try_stack_path2 --")
-            log(PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE)
-            log(PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE)
+            log(f"{PijersiState.__TABLE_TRY_STACK_PATH2_NEXT_CODE}")
+            log(f"{PijersiState.__TABLE_TRY_STACK_PATH2_CAPTURE_CODE}")
 
 
         print_table_cube_count()
@@ -2662,7 +2662,7 @@ class MinimaxSearcher(Searcher):
         self.__fun_evaluation_count = 0
 
 
-    def search(self, state: PijersiState, synchronized_stop=None) -> PijersiAction:
+    def search(self, state: PijersiState) -> PijersiAction:
 
         do_check = False
 
@@ -2738,11 +2738,6 @@ class MinimaxSearcher(Searcher):
                 time.sleep(wait_slice)
                 if search_futures[search_count - 1].done():
                     break
-
-                if synchronized_stop is not None:
-                    with synchronized_stop.get_lock():
-                        if synchronized_stop.value:
-                            break
 
             #-- collect the answer of the highest depth minmax that is finished
             action = None
@@ -3529,19 +3524,6 @@ class Game:
 
 Hexagon.init()
 PijersiState.init()
-
-
-SEARCHER_CATALOG = SearcherCatalog()
-SEARCHER_CATALOG.add( HumanSearcher("human") )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-20s", max_depth=2, time_limit=20) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax2-inf", max_depth=2) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-2mn", max_depth=3, time_limit=2*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax3-inf", max_depth=3) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-10mn", max_depth=4, time_limit=10*60) )
-SEARCHER_CATALOG.add( MinimaxSearcher("minimax4-inf", max_depth=4) )
-if False:
-    SEARCHER_CATALOG.add( RandomSearcher("random") )
-    SEARCHER_CATALOG.add( MinimaxSearcher("minimax1", max_depth=1) )
 
 
 if __name__ == "__main__":

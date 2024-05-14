@@ -35,6 +35,9 @@ sys.path.append(_package_home)
 import pijersi_rules as rules
 
 
+UGI_CLIENTS = {}
+
+
 def log(msg: str=None):
     if msg is None:
         print("", file=sys.stderr, flush=True)
@@ -701,12 +704,12 @@ class UgiServer:
 
 class UgiSearcher(rules.Searcher):
 
-    __slots__ = ('__ugi_client', '__max_depth', '__time_limit')
+    __slots__ = ('__ugi_client_name', '__max_depth', '__time_limit')
 
-    def __init__(self, name: str, ugi_client: UgiClient, max_depth: int=None, time_limit: Optional[int]=None):
+    def __init__(self, name: str, ugi_client_name: str, max_depth: int=None, time_limit: Optional[int]=None):
         super().__init__(name)
 
-        self.__ugi_client = ugi_client
+        self.__ugi_client_name = ugi_client_name
 
         assert max_depth is None or time_limit is None
         assert not (max_depth is None and time_limit is None)
@@ -715,16 +718,19 @@ class UgiSearcher(rules.Searcher):
 
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
-        self.__ugi_client.uginewgame()
+
+        ugi_client = UGI_CLIENTS[self.__ugi_client_name]
+
+        ugi_client.uginewgame()
 
         fen = state.get_ugi_fen()
-        self.__ugi_client.position_fen(fen=fen)
+        ugi_client.position_fen(fen=fen)
 
         if self.__max_depth is not None:
-            ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
+            ugi_action = ugi_client.go_depth_and_wait(self.__max_depth)
 
         elif self.__time_limit is not None:
-            ugi_action = self.__ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
+            ugi_action = ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
 
         action = state.get_action_by_ugi_name(ugi_action)
 
