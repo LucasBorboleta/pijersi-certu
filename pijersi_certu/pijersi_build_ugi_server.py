@@ -70,7 +70,7 @@ subprocess.run(args=[_venv_python_executable, "-m", "pip", "install", "pyinstall
 print()
 print("Installing PyInstaller done")
 
-artefact_name = "pijersi_certu_ugi_server"
+artefact_name = "pijersi_cmalo_ugi_server"
 
 print()
 print(f"Building {artefact_name} ...")

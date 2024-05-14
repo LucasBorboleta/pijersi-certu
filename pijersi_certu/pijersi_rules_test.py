@@ -378,17 +378,17 @@ def test():
         log("=====================================")
 
 
-        if True:
-            server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
+        if False:
+            server_executable_path = os.path.join(_package_home, "pijersi_cmalo_ugi_server.exe")
         else:
-            server_executable_path = os.path.join(_package_home, "pijersi_certu_ugi_server.exe")
-
+            server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
+        
         white_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
         white_ugi_client.ugi()
         isready = white_ugi_client.isready()
         assert isready == ['readyok']
         white_ugi_client.uginewgame()
-        white_searcher_name = f"{white_ugi_client.get_server_name()}-{depth}"
+        white_searcher_name = f"{white_ugi_client.get_server_name()}-{depth}-inf"
 
 
         black_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
@@ -396,7 +396,7 @@ def test():
         isready = black_ugi_client.isready()
         assert isready == ['readyok']
         black_ugi_client.uginewgame()
-        black_searcher_name = f"{black_ugi_client.get_server_name()}-{time_limit}s"
+        black_searcher_name = f"{black_ugi_client.get_server_name()}-x-{time_limit}s"
 
         game = Game()
 
