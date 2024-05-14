@@ -377,42 +377,33 @@ def test():
         log(" test_game_between_ugi_players ...")
         log("=====================================")
 
-
         if False:
             server_executable_path = os.path.join(_package_home, "pijersi_cmalo_ugi_server.exe")
         else:
             server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
-        
-        white_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
-        white_ugi_client.ugi()
-        isready = white_ugi_client.isready()
-        assert isready == ['readyok']
-        white_ugi_client.uginewgame()
-        white_searcher_name = f"{white_ugi_client.get_server_name()}-{depth}-inf"
 
-
-        black_ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
-        black_ugi_client.ugi()
-        isready = black_ugi_client.isready()
+        ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
+        ugi_client.ugi()
+        isready = ugi_client.isready()
         assert isready == ['readyok']
-        black_ugi_client.uginewgame()
-        black_searcher_name = f"{black_ugi_client.get_server_name()}-x-{time_limit}s"
+        ugi_client_name = ugi_client.get_server_name()
+
+        depth_searcher_name = f"{ugi_client_name}-{depth}-inf"
+        time_searcher_name = f"{ugi_client_name}-x-{time_limit}s"
+
+        depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth)
+        time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit)
 
         game = Game()
-
-        white_searcher = UgiSearcher(name=white_searcher_name, ugi_client=white_ugi_client, max_depth=depth)
-        black_searcher = UgiSearcher(name=black_searcher_name, ugi_client=black_ugi_client, time_limit=time_limit)
-
-        game.set_white_searcher(white_searcher)
-        game.set_black_searcher(black_searcher)
+        game.set_white_searcher(depth_searcher)
+        game.set_black_searcher(time_searcher)
 
         game.start()
 
         while game.has_next_turn():
             game.next_turn()
 
-        white_ugi_client.quit()
-        black_ugi_client.quit()
+        ugi_client.quit()
 
         log("=====================================")
         log("test_game_between_ugi_players done")

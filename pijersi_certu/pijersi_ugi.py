@@ -715,6 +715,8 @@ class UgiSearcher(rules.Searcher):
 
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
+        self.__ugi_client.uginewgame()
+
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
 
