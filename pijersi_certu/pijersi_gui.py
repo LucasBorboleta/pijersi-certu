@@ -683,7 +683,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
-        self.__variable_black_player.set(searcher_catalog_names[0])
+        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -2752,13 +2752,18 @@ def make_ugi_clients():
     ugi_clients = {}
 
     if False:
-        server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
-    else:
-        server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
+        if False:
+            cmalo_server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
+        else:
+            cmalo_server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
-    ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path)
+        ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=cmalo_server_executable_path)
+        ugi_clients[ugi_client.get_name()] = ugi_client
+
+
+    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v0.1.0.exe")
+    ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path)
     ugi_clients[ugi_client.get_name()] = ugi_client
-
     return ugi_clients
 
 
@@ -2776,8 +2781,8 @@ def make_searcher_catalog(ugi_clients):
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-4", max_depth=4) )
 
     if True:
-        depth_list = [2, 3, 4]
-        time_list = [(20, '20s'), (2*60, '2mn'), (10*60, '10mn')]
+        depth_list = [2, 3, 4, 5]
+        time_list = [(20, '20s'), (60, '1mn'), (2*60, '2mn'), (10*60, '10mn')]
 
         for (ugi_client_name, ugi_client) in ugi_clients.items():
 

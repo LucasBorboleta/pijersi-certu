@@ -125,7 +125,7 @@ class UgiClient:
 
     def __log(self, message: str, category='') -> None:
         for line in message.split('\n'):
-            print(f"{category}:UgiClient:{line}", file=sys.stderr, flush=True)
+            print(f"{category}UgiClient:{line}", file=sys.stderr, flush=True)
 
 
     def __log_debug(self, message: str) -> None:
@@ -171,7 +171,7 @@ class UgiClient:
                 break
 
             elif reply_head == 'info':
-                self.__log_info(f"__handle_bestmove_reply: '{reply}'")
+                self.__log_debug(f"__handle_bestmove_reply: '{reply}'")
 
             else:
                 self.__log_info(f"__handle_bestmove_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
@@ -319,24 +319,27 @@ class UgiClient:
 
             elif reply_head == 'id':
 
-                if len(reply) != 3:
-                    self.__log_info(f"ugi: expected 3 tokens ; ignoring reply '{reply}'")
+                if len(reply) < 3:
+                    self.__log_info(f"ugi: expected at least 3 tokens ; ignoring reply '{reply}'")
                     continue
 
                 elif reply_tail[0] == 'name':
-                    self.__server_name = reply_tail[1]
+                    self.__server_name = ''.join(reply_tail[1:])
 
                 elif reply_tail[0] == 'author':
-                    self.__server_author = reply_tail[1]
+                    self.__server_author = ''.join(reply_tail[1:])
 
                 else:
                     self.__log_info(f"ugi: unexpected token '{reply_tail[0]}' ; ignoring reply '{reply}'")
                     continue
 
+            elif reply_head == 'info':
+                self.__log_debug(f"ugi: '{reply}'")
+
             elif reply_head == 'option':
 
                 if len(reply_tail) < 2 or reply_tail[0] != 'name':
-                    self.__log_info(f"ugi: cannot find/match token 'name' ; ignoring reply '{reply}'")
+                    self.__log_debug(f"ugi: cannot find/match token 'name' ; ignoring reply '{reply}'")
                     continue
 
                 option_name = reply_tail[1]
@@ -382,7 +385,7 @@ class UgiServer:
 
     def __log(self, message: str, category=''):
         for line in message.split('\n'):
-            print(f"{category}:UgiServer:{line}", file=sys.stderr, flush=True)
+            print(f"{category}UgiServer:{line}", file=sys.stderr, flush=True)
 
 
     def __log_debug(self, message: str):
@@ -466,7 +469,7 @@ class UgiServer:
             searcher = rules.MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
 
             action = searcher.search(self.__pijersi_state)
-            bestmove = action.to_ugi_name()
+            bestmove = self.__pijersi_state.to_ugi_name(action)
             self.__send(['bestmove', bestmove])
 
         elif args[0] == 'movetime':
@@ -486,7 +489,7 @@ class UgiServer:
             searcher = rules.MinimaxSearcher(f"minimax{depth}-{time_s:.0f}s", max_depth=depth, time_limit=time_s)
 
             action = searcher.search(self.__pijersi_state)
-            bestmove = action.to_ugi_name()
+            bestmove = self.__pijersi_state.to_ugi_name(action)
             self.__send(['bestmove', bestmove])
 
         else:
@@ -787,15 +790,17 @@ def make_ugi_server_process(server_executable_path: str) -> Tuple[Popen, UgiChan
 
 def run_ugi_server_implementation() -> None:
 
-    log()
-    log(f"Hello from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
+    if False:
+        log()
+        log(f"Hello from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
 
     server_channel = UgiChannel.make_std_channel()
     server = UgiServer(channel=server_channel)
     server.run()
 
-    log()
-    log(f"Bye from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
+    if False:
+        log()
+        log(f"Bye from PIJERSI-CMALO-UGI-SERVER-v{rules.__version__}")
 
 
 if __name__ == "__main__":
