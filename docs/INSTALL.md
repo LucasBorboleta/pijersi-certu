@@ -7,8 +7,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
 ## Installing as single executable for Windows platform
 
-- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want.
-- The latest stable version is `v1.2.0`. The latest version is `v1.3.0`.
+- From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. Also the UGI server `pijersi-cmalo` can be found there.
+- The latest stable version is `v1.3.0`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
@@ -16,6 +16,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version     | Hash   | Expected hash value                                              |
   | ----------- | ------ | ---------------------------------------------------------------- |
+  | v2.0.0.rc1  | SHA256 | 8FAC0C9A5BF4F2B870B1DDCA369B73AEC52714649AD07A5C4F24771A48E59C44 |
+  | v2.0.0.rc1  | MD5    | 7215AA83BB353792CC03002455D865BC                                 |
   | v1.3.0      | SHA256 | 66E306910D943F25F090A0CA36580736CEA1EA6349D6A4C04F2E9A5D23447180 |
   | v1.3.0      | MD5    | 562F7DBFE750377ACEA171DE02B65C65                                 |
   | v1.2.0      | SHA256 | C75109044E6A71C0133B680CB87639A1BF5022F700E8FBC4D98AB5FAC61129C8 |
@@ -46,6 +48,13 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
    | v1.1.0-rc1 | SHA256 | 0EA219C70E075C253A1B974797D9CCB92531778A7F9FFF4205BEB21F8FA45E28 |
    | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
 
+
+  - The check-sums of the `pijersi-cmalo` UGI servers are:
+
+   | Version    | Hash   | Expected hash value                                              |
+   | ---------- | ------ | ---------------------------------------------------------------- |
+   | v2.0.0.rc1 | SHA256 | CF922DD3C4263DFA8E3EC3EAB1322B7E19D49471671FF4E0B1FABD494E4A8350 |
+   | v2.0.0.rc1 | MD5    | 0E37EDAB469825F423689A7B8B56B587                                 |
 
 - To start `pijersi-certu` : double-click on the icon of the downloaded executable
 - To uninstall  `pijersi-certu` : just remove the downloaded executable.
