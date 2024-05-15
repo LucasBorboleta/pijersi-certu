@@ -41,7 +41,7 @@ sys.path.append(_package_home)
 
 import pijersi_rules as rules
 
-from pijersi_ugi import make_ugi_client
+from pijersi_ugi import UgiClient
 from pijersi_ugi import UgiSearcher
 
 
@@ -541,9 +541,8 @@ class GameGui(ttk.Frame):
         self.__cmc_reset()
 
         # Create GUI clients and the searher catalog
-        global UGI_CLIENTS
-        UGI_CLIENTS = make_ugi_clients()
-        self.__searcher_catalog = make_searcher_catalog()
+        self.__ugi_clients = make_ugi_clients()
+        self.__searcher_catalog = make_searcher_catalog(self.__ugi_clients)
 
         # Create widgets
 
@@ -839,9 +838,6 @@ class GameGui(ttk.Frame):
                 self.__cube_photos[key] = cube_tk_photo
 
     def __command_quit(self, *_):
-        global UGI_CLIENTS
-        for ugi_client in UGI_CLIENTS.values():
-            ugi_client.quit()
 
         if self.__concurrent_executor is not None:
             self.__backend_futures = [None for player in rules.Player.T]
@@ -1261,8 +1257,6 @@ class GameGui(ttk.Frame):
         self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
 
     def __command_new_stop(self):
-        global UGI_CLIENTS
-        the_ugi_clients = UGI_CLIENTS
 
         if self.__game_timer_id is not None:
             self.__canvas.after_cancel(self.__game_timer_id)
@@ -1273,7 +1267,7 @@ class GameGui(ttk.Frame):
             self.__game_played = True
             self.__game_terminated = False
 
-            self.__concurrent_executor = PoolExecutor(max_workers=1, initargs=(the_ugi_clients,), initializer=init_shared_ugi_clients)
+            self.__concurrent_executor = PoolExecutor(max_workers=1)
             self.__backend_futures = [None for player in rules.Player.T]
 
             self.__game_setup = rules.Setup.from_name(self.__variable_setup.get())
@@ -2758,50 +2752,43 @@ def make_ugi_clients():
     ugi_clients = {}
 
     if False:
-        server_executable_path = os.path.join(_package_home, "pijersi_cmalo_ugi_server.exe")
+        server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
     else:
         server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
-    ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
-    ugi_client.ugi()
-    isready = ugi_client.isready()
-    assert isready == ['readyok']
-    ugi_client_name = ugi_client.get_server_name()
-
-    ugi_clients[ugi_client_name] = ugi_client
+    ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path)
+    ugi_clients[ugi_client.get_name()] = ugi_client
 
     return ugi_clients
 
 
-def make_searcher_catalog():
+def make_searcher_catalog(ugi_clients):
     searcher_catalog = rules.SearcherCatalog()
+
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
-        searcher_catalog.add( rules.MinimaxSearcher("minimax2-20s", max_depth=2, time_limit=20) )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax2-inf", max_depth=2) )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax3-2mn", max_depth=3, time_limit=2*60) )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax3-inf", max_depth=3) )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax4-10mn", max_depth=4, time_limit=10*60) )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax4-inf", max_depth=4) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=2, time_limit=20) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-2mn", max_depth=3, time_limit=2*60) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-3", max_depth=3) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-10mn", max_depth=4, time_limit=10*60) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-4", max_depth=4) )
 
     if True:
         depth_list = [2, 3, 4]
         time_list = [(20, '20s'), (2*60, '2mn'), (10*60, '10mn')]
 
-        global UGI_CLIENTS
-        for ugi_client_name in UGI_CLIENTS.keys():
+        for (ugi_client_name, ugi_client) in ugi_clients.items():
 
             for depth in depth_list:
-                depth_searcher_name = f"{ugi_client_name}-{depth}-inf"
-                # depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client_name=ugi_client_name, max_depth=depth)
-                depth_searcher = rules.RandomSearcher(depth_searcher_name)
+                depth_searcher_name = f"{ugi_client_name}-depth-{depth}"
+                depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth)
                 searcher_catalog.add(depth_searcher)
 
             for (time_limit, time_label) in time_list:
-                time_searcher_name = f"{ugi_client_name}-{time_label}"
-                # time_searcher = UgiSearcher(name=time_searcher_name, ugi_client_name=ugi_client_name, time_limit=time_limit)
-                time_searcher = rules.RandomSearcher(time_searcher_name)
+                time_searcher_name = f"{ugi_client_name}-time-{time_label}"
+                time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit)
                 searcher_catalog.add(time_searcher)
 
     if False:
@@ -2813,11 +2800,6 @@ def make_searcher_catalog():
 
 CANVAS_CONFIG = CanvasConfig()
 GraphicalHexagon.init()
-
-
-def init_shared_ugi_clients(the_ugi_clients):
-    global UGI_CLIENTS
-    UGI_CLIENTS = the_ugi_clients
 
 
 def main():

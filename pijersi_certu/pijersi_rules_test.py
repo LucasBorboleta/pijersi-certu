@@ -47,9 +47,8 @@ from pijersi_rules import PijersiState
 from pijersi_rules import RandomSearcher
 from pijersi_rules import Reward
 
-from pijersi_ugi import make_ugi_client
+from pijersi_ugi import UgiClient
 from pijersi_ugi import UgiSearcher
-from pijersi_ugi import UGI_CLIENTS
 
 import cProfile
 from pstats import SortKey
@@ -378,22 +377,18 @@ def test():
         log("=====================================")
 
         if False:
-            server_executable_path = os.path.join(_package_home, "pijersi_cmalo_ugi_server.exe")
+            server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
         else:
             server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
-        ugi_client = make_ugi_client(server_executable_path, cerr=sys.stderr)
-        ugi_client.ugi()
-        isready = ugi_client.isready()
-        assert isready == ['readyok']
-        ugi_client_name = ugi_client.get_server_name()
-        UGI_CLIENTS[ugi_client_name] = ugi_client
+        ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path)
+        ugi_client_name = ugi_client.get_name()
 
-        depth_searcher_name = f"{ugi_client_name}-{depth}-inf"
-        time_searcher_name = f"{ugi_client_name}-{time_limit}s"
+        depth_searcher_name = f"{ugi_client_name}-depth-{depth}"
+        time_searcher_name = f"{ugi_client_name}-time-{time_limit}s"
 
-        depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client_name=ugi_client_name, max_depth=depth)
-        time_searcher = UgiSearcher(name=time_searcher_name, ugi_client_name=ugi_client_name, time_limit=time_limit)
+        depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth)
+        time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit)
 
         game = Game()
         game.set_white_searcher(depth_searcher)
@@ -411,36 +406,36 @@ def test():
         log("=====================================")
 
 
-    if False:
+    if True:
         test_encode_and_decode_hex_state()
         test_encode_and_decode_path_states()
         test_iterate_hex_states()
         PijersiState.print_tables()
         test_first_get_summary()
 
-    if False:
+    if True:
         test_game_between_random_players()
 
     if False:
         test_game_between_random_and_human_players()
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=2, game_count=1, use_random_searcher=True)
 
-    if False:
+    if True:
         test_game_between_minimax_players(max_depth=3, game_count=1, use_random_searcher=False)
 
-    if False:
+    if True:
         test_game_between_minimax_players(min_depth=2, max_depth=3, game_count=10, use_random_searcher=False)
 
-    if False:
+    if True:
         test_two_turns_between_minimax_players()
 
-    if False:
+    if True:
         test_action_ugi_name()
 
     if True:
-        test_game_between_ugi_players(depth=1, time_limit=30)
+        test_game_between_ugi_players(depth=1, time_limit=10)
 
 
 def profile():

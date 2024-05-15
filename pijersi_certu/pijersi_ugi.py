@@ -35,9 +35,6 @@ sys.path.append(_package_home)
 import pijersi_rules as rules
 
 
-UGI_CLIENTS = {}
-
-
 def log(msg: str=None):
     if msg is None:
         print("", file=sys.stderr, flush=True)
@@ -91,14 +88,23 @@ class UgiChannel:
 
 class UgiClient:
 
-    def __init__(self, server_process: Popen, channel: UgiChannel):
-        self.__server_process = server_process
-        self.__channel = channel
+
+    def __init__(self, name: str, server_executable_path: str):
+        self.__name = name
+        self.__server_executable_path = server_executable_path
+
+        self.__server_process = None
+        self.__channel = None
+
         self.__debugging = False
 
         self.__server_name = None
         self.__server_author = None
         self.__options = {}
+
+
+    def get_name(self) -> str:
+        return self.__name
 
 
     def get_server_name(self) -> str:
@@ -109,6 +115,12 @@ class UgiClient:
     def get_server_author(self) -> str:
         assert self.__server_author is not None
         return self.__server_author
+
+
+    def start(self) -> None:
+        (server_process, server_channel) = make_ugi_server_process(self.__server_executable_path)
+        self.__server_process = server_process
+        self.__channel = server_channel.make_dual_channel()
 
 
     def __log(self, message: str, category='') -> None:
@@ -250,13 +262,25 @@ class UgiClient:
 
 
     def quit(self):
-        self.__send(['quit'])
+        if self.__server_process is not None and self.__channel is not None:
 
-        # wait just for nicely logging when debugging
-        try:
-            _ = self.__server_process.wait(timeout=1)
-        except:
-            pass
+            self.__send(['quit'])
+
+            # wait just for nicely logging when debugging
+            if self.__debugging:
+                try:
+                    _ = self.__server_process.wait(timeout=0.01)
+                except:
+                    pass
+
+            else:
+                try:
+                    self.__server_process.terminate()
+                except:
+                    pass
+
+        self.__server_process = None
+        self.__channel = None
 
 
     def uginewgame(self):
@@ -704,12 +728,13 @@ class UgiServer:
 
 class UgiSearcher(rules.Searcher):
 
-    __slots__ = ('__ugi_client_name', '__max_depth', '__time_limit')
+    __slots__ = ('__ugi_client', '__max_depth', '__time_limit')
 
-    def __init__(self, name: str, ugi_client_name: str, max_depth: int=None, time_limit: Optional[int]=None):
+
+    def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[int]=None):
         super().__init__(name)
 
-        self.__ugi_client_name = ugi_client_name
+        self.__ugi_client = ugi_client
 
         assert max_depth is None or time_limit is None
         assert not (max_depth is None and time_limit is None)
@@ -719,34 +744,31 @@ class UgiSearcher(rules.Searcher):
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
 
-        ugi_client = UGI_CLIENTS[self.__ugi_client_name]
+        self.__ugi_client.start()
 
-        ugi_client.uginewgame()
+        self.__ugi_client.ugi()
+        isready = self.__ugi_client.isready()
+        assert isready == ['readyok']
+
+        self.__ugi_client.uginewgame()
 
         fen = state.get_ugi_fen()
-        ugi_client.position_fen(fen=fen)
+        self.__ugi_client.position_fen(fen=fen)
 
         if self.__max_depth is not None:
-            ugi_action = ugi_client.go_depth_and_wait(self.__max_depth)
+            ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
 
         elif self.__time_limit is not None:
-            ugi_action = ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
+            ugi_action = self.__ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
 
         action = state.get_action_by_ugi_name(ugi_action)
+
+        self.__ugi_client.quit()
 
         return action
 
 
-def make_ugi_client(server_executable_path: str, cerr: TextIO=sys.stderr) -> UgiClient:
-    (server_process, server_channel) = make_ugi_server_process(server_executable_path, cerr)
-
-    client_channel = server_channel.make_dual_channel()
-    client = UgiClient(server_process=server_process, channel=client_channel)
-
-    return client
-
-
-def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr) -> Tuple[Popen, UgiChannel]:
+def make_ugi_server_process(server_executable_path: str) -> Tuple[Popen, UgiChannel]:
 
     if server_executable_path.endswith(".py"):
         popen_args = [sys.executable, server_executable_path]
@@ -756,7 +778,7 @@ def make_ugi_server_process(server_executable_path: str, cerr: TextIO=sys.stderr
     server_process = Popen(args=popen_args,
                            shell=False,
                            text=True,
-                           stdin=PIPE, stdout=PIPE, stderr=cerr)
+                           stdin=PIPE, stdout=PIPE)
 
     server_channel = UgiChannel(cin=server_process.stdin, cout=server_process.stdout)
 
