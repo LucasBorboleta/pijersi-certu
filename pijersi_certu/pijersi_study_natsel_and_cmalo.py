@@ -142,11 +142,78 @@ def study(setup: Setup.T=Setup.T.CLASSIC, natsel_start=True, depth: int=1, game_
 def main():
 
     if False:
-        study(setup=Setup.T.CLASSIC, natsel_start=True, depth=1, game_count=10)
+        study(setup=Setup.T.CLASSIC, natsel_start=True, depth=1, game_count=100)
+        _ = """
+        setup: classic / white player: natsel-depth-1 / black player: cmalo-depth-1
+        
+        game_count: 100 / white_points: 0 / black_points: 200
+        
+        searcher cmalo-depth-1 has 200 points
+        searcher natsel-depth-1 has 0 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-1 has 2.000 average points per game
+        searcher natsel-depth-1 has 0.000 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.CLASSIC, natsel_start=False, depth=1, game_count=100)
+        _ = """
+        setup: classic / white player: cmalo-depth-1 / black player: natsel-depth-1
+        
+        game_count: 100 / white_points: 200 / black_points: 0
+        
+        searcher cmalo-depth-1 has 200 points
+        searcher natsel-depth-1 has 0 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-1 has 2.000 average points per game
+        searcher natsel-depth-1 has 0.000 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=1, game_count=100)
+        _ = """
+        setup: half-random / white player: natsel-depth-1 / black player: cmalo-depth-1
+        
+        game_count: 100 / white_points: 58 / black_points: 142
+        
+        searcher cmalo-depth-1 has 142 points
+        searcher natsel-depth-1 has 58 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-1 has 1.420 average points per game
+        searcher natsel-depth-1 has 0.580 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=1, game_count=100)
+        _ = """
+        setup: half-random / white player: cmalo-depth-1 / black player: natsel-depth-1
+        
+        game_count: 100 / white_points: 68 / black_points: 132
+        
+        searcher cmalo-depth-1 has 68 points
+        searcher natsel-depth-1 has 132 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-1 has 0.680 average points per game
+        searcher natsel-depth-1 has 1.320 average points per game
+        """
 
     if True:
-        study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=1, game_count=10)
+        study(setup=Setup.T.CLASSIC, natsel_start=True, depth=2, game_count=100)
+        _ = """
 
+        """
 
 if __name__ == "__main__":
 
