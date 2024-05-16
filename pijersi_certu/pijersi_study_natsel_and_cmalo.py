@@ -209,10 +209,72 @@ def main():
         searcher natsel-depth-1 has 1.320 average points per game
         """
 
-    if True:
+    if False:
         study(setup=Setup.T.CLASSIC, natsel_start=True, depth=2, game_count=100)
         _ = """
+        setup: classic / white player: natsel-depth-2 / black player: cmalo-depth-2
+        
+        game_count: 100 / white_points: 94 / black_points: 106
+        
+        searcher cmalo-depth-2 has 106 points
+        searcher natsel-depth-2 has 94 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-2 has 1.060 average points per game
+        searcher natsel-depth-2 has 0.940 average points per game
+        """
 
+    if False:
+        study(setup=Setup.T.CLASSIC, natsel_start=False, depth=2, game_count=100)
+        _ = """
+        setup: classic / white player: cmalo-depth-2 / black player: natsel-depth-2
+        
+        game_count: 100 / white_points: 0 / black_points: 200
+        
+        searcher cmalo-depth-2 has 0 points
+        searcher natsel-depth-2 has 200 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-2 has 0.000 average points per game
+        searcher natsel-depth-2 has 2.000 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=2, game_count=100)
+        _ = """
+        setup: half-random / white player: natsel-depth-2 / black player: cmalo-depth-2
+        
+        game_count: 100 / white_points: 104 / black_points: 96
+        
+        searcher cmalo-depth-2 has 96 points
+        searcher natsel-depth-2 has 104 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-2 has 0.960 average points per game
+        searcher natsel-depth-2 has 1.040 average points per game
+        """
+
+    if True:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=2, game_count=100)
+        _ = """
+        setup: half-random / white player: cmalo-depth-2 / black player: natsel-depth-2
+        
+        game_count: 100 / white_points: 96 / black_points: 104
+        
+        searcher cmalo-depth-2 has 96 points
+        searcher natsel-depth-2 has 104 points
+        
+        number of searchers: 2
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-2 has 0.960 average points per game
+        searcher natsel-depth-2 has 1.040 average points per game
         """
 
 if __name__ == "__main__":
