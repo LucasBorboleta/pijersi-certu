@@ -4,7 +4,8 @@
 """pijersi_gui.py implements a GUI for the PIJERSI boardgame."""
 
 _COPYRIGHT_AND_LICENSE = """
-PIJERSI-CERTU implements a GUI and a rule engine for the PIJERSI boardgame.
+PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
+CMALO is the name of the native internal Python AI-engine of PIJERSI-CERTU.
 
 Copyright (C) 2022 Lucas Borboleta (lucas.borboleta@free.fr).
 
@@ -14,6 +15,13 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
+
+_COPYRIGHT_AND_LICENSE_NATSEL = """
+NATURAL-SELECTION (alias "natsel") implements an AI UGI-server for the PIJERSI boardgame (see also https://github.com/eclypse-prime/pijersi-rs).
+
+Copyright (C) 2024 eclypse-prime (https://github.com/eclypse-prime).
+"""
+
 
 import copy
 import enum
@@ -2809,8 +2817,15 @@ GraphicalHexagon.init()
 
 def main():
     print(f"Hello from PIJERSI-CERTU-v{rules.__version__}")
+
+    print(64*"-")
     print(_COPYRIGHT_AND_LICENSE)
+    print(64*"-")
+    print(_COPYRIGHT_AND_LICENSE_NATSEL)
+    print(64*"-")
+
     _ = GameGui()
+
     print("Bye")
 
 

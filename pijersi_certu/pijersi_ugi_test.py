@@ -51,8 +51,8 @@ def test_ugi_protocol():
     log()
     log(f"server_executable_path = {server_executable_path}")
 
-    client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path)
-    client.start()
+    client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path, permanent=True)
+    client.run()
 
     log()
 

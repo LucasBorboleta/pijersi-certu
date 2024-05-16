@@ -381,8 +381,9 @@ def test():
         else:
             server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
-        ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path)
+        ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path, permanent=True)
         ugi_client_name = ugi_client.get_name()
+        ugi_client.run()
 
         depth_searcher_name = f"{ugi_client_name}-depth-{depth}"
         time_searcher_name = f"{ugi_client_name}-time-{time_limit}s"

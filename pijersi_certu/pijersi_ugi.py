@@ -5,9 +5,9 @@
 
 
 _COPYRIGHT_AND_LICENSE = """
-PIJERSI-CMALO-UGI-SERVER implements the Universal Game Protocol (UGI).
+PIJERSI-CMALO-UGI-SERVER implements an AI UGI-server for the PIJERSI boardgame.
 
-Copyright (C) 2019 Lucas Borboleta (lucas.borboleta@free.fr).
+Copyright (C) 2024 Lucas Borboleta (lucas.borboleta@free.fr).
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -47,6 +47,8 @@ class UgiChannel:
 
     SEPARATOR = ' '
     TERMINATOR = '\n'
+
+    __slots__ = ('__cin', '__cout')
 
     def __init__(self, cin: TextIO, cout: TextIO):
         self.__cin = cin
@@ -88,10 +90,27 @@ class UgiChannel:
 
 class UgiClient:
 
+        # >> Motivation for the 'permanent' mode:
+        # >>
+        # >> - The multiprocessing/asynchronous context of the Graphical User Interface
+        # >>   force (at least for keep it simple) the UGI session to be *not permanent*.
+        # >>   Otherwise, process object like *lock* can be *pickled*.
+        # >>
+        # >> - However, outside the above mentionned context,
+        # >>   it is optimal to keep *permanent* the UGI session.
 
-    def __init__(self, name: str, server_executable_path: str):
+    __slots__ = ('__name', '__server_executable_path', '__permanent',
+                 '__running', '__prepared',
+                 '__server_process', '__channel',
+                 '__debugging', '__server_name', '__server_author', '__options')
+
+    def __init__(self, name: str, server_executable_path: str, permanent: bool=False):
         self.__name = name
         self.__server_executable_path = server_executable_path
+        self.__permanent = permanent
+
+        self.__running = False
+        self.__prepared = False
 
         self.__server_process = None
         self.__channel = None
@@ -101,6 +120,18 @@ class UgiClient:
         self.__server_name = None
         self.__server_author = None
         self.__options = {}
+
+
+    def is_permanent(self) -> bool:
+        return self.__permanent
+
+
+    def is_running(self) -> bool:
+        return self.__running
+
+
+    def is_prepared(self) -> bool:
+        return self.__prepared
 
 
     def get_name(self) -> str:
@@ -117,10 +148,25 @@ class UgiClient:
         return self.__server_author
 
 
-    def start(self) -> None:
-        (server_process, server_channel) = make_ugi_server_process(self.__server_executable_path)
-        self.__server_process = server_process
-        self.__channel = server_channel.make_dual_channel()
+    def run(self) -> None:
+        if not self.__running:
+            (server_process, server_channel) = make_ugi_server_process(self.__server_executable_path)
+            self.__server_process = server_process
+            self.__channel = server_channel.make_dual_channel()
+            self.__running = True
+
+
+    def prepare(self) -> None:
+        if not self.__prepared:
+
+            self.ugi()
+
+            isready = self.isready()
+            assert isready == ['readyok']
+
+            self.uginewgame()
+
+            self.__prepared = True
 
 
     def __log(self, message: str, category='') -> None:
@@ -262,7 +308,7 @@ class UgiClient:
 
 
     def quit(self):
-        if self.__server_process is not None and self.__channel is not None:
+        if self.__running:
 
             self.__send(['quit'])
 
@@ -279,8 +325,10 @@ class UgiClient:
                 except:
                     pass
 
-        self.__server_process = None
-        self.__channel = None
+            self.__server_process = None
+            self.__channel = None
+            self.__running = False
+            self.__prepared = False
 
 
     def uginewgame(self):
@@ -365,9 +413,14 @@ class UgiClient:
 
 class UgiServer:
 
+    __slots__ = ('__channel', '__running', '__debugging',
+                 '__server_name', '__server_author', '__options', '__option_converters',
+                 '__pijersi_state')
+
     def __init__(self, channel: UgiChannel):
         self.__channel = channel
         self.__running = False
+
         self.__debugging = False
 
         self.__server_name = 'cmalo'
@@ -380,7 +433,7 @@ class UgiServer:
         self.__options['depth'] = 2
         self.__option_converters['depth'] = int
 
-        self.__pijser_state = None
+        self.__pijersi_state = None
 
 
     def __log(self, message: str, category=''):
@@ -731,13 +784,14 @@ class UgiServer:
 
 class UgiSearcher(rules.Searcher):
 
-    __slots__ = ('__ugi_client', '__max_depth', '__time_limit')
+    __slots__ = ('__ugi_client', '__ugi_permanent', '__max_depth', '__time_limit')
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[int]=None):
         super().__init__(name)
 
         self.__ugi_client = ugi_client
+        self.__ugi_permanent = self.__ugi_client.is_permanent()
 
         assert max_depth is None or time_limit is None
         assert not (max_depth is None and time_limit is None)
@@ -747,13 +801,20 @@ class UgiSearcher(rules.Searcher):
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
 
-        self.__ugi_client.start()
+        # >> Motivation for the 'permanent' mode:
+        # >>
+        # >> - The multiprocessing/asynchronous context of the Graphical User Interface
+        # >>   force (at least for keep it simple) the UGI session to be *not permanent*.
+        # >>   Otherwise, process object like *lock* can be *pickled*.
+        # >>
+        # >> - However, outside the above mentionned context,
+        # >>   it is optimal to keep *permanent* the UGI session.
 
-        self.__ugi_client.ugi()
-        isready = self.__ugi_client.isready()
-        assert isready == ['readyok']
+        if not self.__ugi_permanent or not self.__ugi_client.is_running():
+            self.__ugi_client.run()
 
-        self.__ugi_client.uginewgame()
+        if not self.__ugi_client.is_prepared():
+            self.__ugi_client.prepare()
 
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
@@ -766,7 +827,8 @@ class UgiSearcher(rules.Searcher):
 
         action = state.get_action_by_ugi_name(ugi_action)
 
-        self.__ugi_client.quit()
+        if not self.__ugi_permanent:
+            self.__ugi_client.quit()
 
         return action
 
