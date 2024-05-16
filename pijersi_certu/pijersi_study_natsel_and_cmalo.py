@@ -311,7 +311,7 @@ def main():
         searcher natsel-depth-3 has 0.000 average points per game
         """
 
-    if True:
+    if False:
         study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=3, game_count=10)
         _ = """
         setup: half-random / white player: natsel-depth-3 / black player: cmalo-depth-3
@@ -326,6 +326,23 @@ def main():
         
         searcher cmalo-depth-3 has 1.100 average points per game
         searcher natsel-depth-3 has 0.900 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=3, game_count=10)
+        _ = """
+        setup: half-random / white player: cmalo-depth-3 / black player: natsel-depth-3
+        
+        game_count: 10 / white_points: 9 / black_points: 11
+        
+        searcher cmalo-depth-3 has 9 points
+        searcher natsel-depth-3 has 11 points
+        
+        number of searchers: 2
+        number of games per searcher: 10
+        
+        searcher cmalo-depth-3 has 0.900 average points per game
+        searcher natsel-depth-3 has 1.100 average points per game
         """
 
 if __name__ == "__main__":
