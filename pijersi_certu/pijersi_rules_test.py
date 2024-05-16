@@ -13,14 +13,7 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should h
-from multiprocessing import freeze_support
-import multiprocessing
-
-import cProfile
-from pstats import SortKey
-
-ave received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
 from collections import Counter
@@ -30,9 +23,8 @@ import sys
 
 from typing import Optional
 
-
-from multiprocessing import freeze_support
 import multiprocessing
+
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
 
@@ -497,9 +489,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # >> "freeze_support()" is needed with using pijersi_gui as a single executable made by PyInstaller
-    # >> otherwise when starting another process by "PoolExecutor" a second GUI windows is created
-    freeze_support()
 
     log()
     log("Hello")
