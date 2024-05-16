@@ -10,7 +10,7 @@ For each game, the points are given as follow:
 
 # Study
 
-| AI-engine  |    setup    | depth | Player | Games | Points | Average  |
+| AI-engine  |    setup    | depth | player | games | points | average  |
 | :--------: | :---------: | :---: | :----: | :---: | :----: | :------: |
 | **cmalo**  |   classic   |   1   | black  |  100  |  200   | **2.00** |
 |   natsel   |   classic   |   1   | white  |  100  |   0    |   0.00   |
