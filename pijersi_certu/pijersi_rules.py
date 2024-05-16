@@ -1510,8 +1510,9 @@ class PijersiState:
         return action_ugi_name
 
 
-    def take_action(self, action: PijersiAction, use_cache: bool=True) -> Self:
+    def take_action(self, action: PijersiAction, use_cache: bool=False) -> Self:
         if not use_cache or action.next_state is None:
+            action.next_state = None
             action.next_state = PijersiState(board_codes=action.next_board_codes,
                                  player=self.get_other_player(),
                                  credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
@@ -2408,8 +2409,8 @@ class MinimaxState:
         return self.__pijersi_state.get_actions()
 
 
-    def take_action(self, action: Sequence[PijersiAction]) -> Self:
-        return MinimaxState(self.__pijersi_state.take_action(action), self.__maximizer_player)
+    def take_action(self, action: PijersiAction, use_cache=False) -> Self:
+        return MinimaxState(self.__pijersi_state.take_action(action, use_cache), self.__maximizer_player)
 
 
 class StateEvaluator():
@@ -2679,6 +2680,12 @@ class MinimaxSearcher(Searcher):
         self.__beta_cuts = []
         self.__evaluation_count = 0
         self.__fun_evaluation_count = 0
+        self.__null_windowing_count = 0
+
+        # >> The transpostion tables were valid just for the previous pijersi_state.
+        # >> So it is better to reset them.
+        self.__transposition_table_depth_0 = {}
+        self.__transposition_table_depth_n = {}
 
         if self.get_time_limit() is None:
             (best_value, best_branch, valued_actions) = self.alphabeta_plus(state=initial_state, player=1)
@@ -3059,7 +3066,7 @@ class MinimaxSearcher(Searcher):
 
                 action_count += 1
 
-                child_state = state.take_action(action)
+                child_state = state.take_action(action, use_cache=True)
 
                 if not do_null_window_search or first_action:
                     first_action = False
@@ -3124,7 +3131,7 @@ class MinimaxSearcher(Searcher):
                         log(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
-                        child_state = state.take_action(action)
+                        child_state = state.take_action(action, use_cache=True)
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
 
                     self.__evaluation_count += len(actions_without_value)
@@ -3135,7 +3142,7 @@ class MinimaxSearcher(Searcher):
                 for action in actions_without_value:
                     action_count += 1
 
-                    child_state = state.take_action(action)
+                    child_state = state.take_action(action, use_cache=True)
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
@@ -3193,7 +3200,7 @@ class MinimaxSearcher(Searcher):
 
                 action_count += 1
 
-                child_state = state.take_action(action)
+                child_state = state.take_action(action, use_cache=True)
 
                 if not do_null_window_search or first_action:
                     first_action = False
@@ -3257,7 +3264,7 @@ class MinimaxSearcher(Searcher):
                         log(f"HC: pre-evaluating and sorting {len(actions_without_value)} actions without value at depth {depth}/{self.__max_depth} for player {player}")
 
                     for action in actions_without_value:
-                        child_state = state.take_action(action)
+                        child_state = state.take_action(action, use_cache=True)
                         action.value = STATE_EVALUATOR_MM2.evaluate_state_value(child_state, depth - 1)
 
                     self.__evaluation_count += len(actions_without_value)
@@ -3268,7 +3275,7 @@ class MinimaxSearcher(Searcher):
                 for action in actions_without_value:
                     action_count += 1
 
-                    child_state = state.take_action(action)
+                    child_state = state.take_action(action, use_cache=True)
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
                                                                      alpha=alpha, beta=beta)
