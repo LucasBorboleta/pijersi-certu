@@ -1510,8 +1510,8 @@ class PijersiState:
         return action_ugi_name
 
 
-    def take_action(self, action: PijersiAction) -> Self:
-        if action.next_state is None:
+    def take_action(self, action: PijersiAction, use_cache: bool=True) -> Self:
+        if not use_cache or action.next_state is None:
             action.next_state = PijersiState(board_codes=action.next_board_codes,
                                  player=self.get_other_player(),
                                  credit=max(0, self.__credit - 1) if action.capture_code == 0 else self.__max_credit,
