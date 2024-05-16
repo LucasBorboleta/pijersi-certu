@@ -14,6 +14,8 @@ If you intent to derive or to sell either a text, a product or a software from t
 
 Many thanks to the [**CONTRIBUTORS**](./docs/CONTRIBUTORS.md) of the *pijersi-certu* project !
 
+A preliminary [comparative study](./docs/study-cmalo-natsel.md) of *cmalo* and *natsel* (*Natural Selection*) AI-engines at same minimax depth has been performed .
+
 Another Pijersi implementations :
 
 - Engines and Minimax-AI (called *Natural Selection* and shorten *natsel* in the *pijersi_certu* GUI)
