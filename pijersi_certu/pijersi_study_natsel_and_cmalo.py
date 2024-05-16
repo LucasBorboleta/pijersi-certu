@@ -179,15 +179,15 @@ def main():
         study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=1, game_count=100)
         _ = """
         setup: half-random / white player: natsel-depth-1 / black player: cmalo-depth-1
-        
+
         game_count: 100 / white_points: 82 / black_points: 118
-        
+
         searcher cmalo-depth-1 has 118 points
         searcher natsel-depth-1 has 82 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-1 has 1.180 average points per game
         searcher natsel-depth-1 has 0.820 average points per game
         """
@@ -196,15 +196,15 @@ def main():
         study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=1, game_count=100)
         _ = """
         setup: half-random / white player: cmalo-depth-1 / black player: natsel-depth-1
-        
+
         game_count: 100 / white_points: 54 / black_points: 146
-        
+
         searcher cmalo-depth-1 has 54 points
         searcher natsel-depth-1 has 146 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-1 has 0.540 average points per game
         searcher natsel-depth-1 has 1.460 average points per game
         """
@@ -213,15 +213,15 @@ def main():
         study(setup=Setup.T.CLASSIC, natsel_start=True, depth=2, game_count=100)
         _ = """
         setup: classic / white player: natsel-depth-2 / black player: cmalo-depth-2
-        
+
         game_count: 100 / white_points: 112 / black_points: 88
-        
+
         searcher cmalo-depth-2 has 88 points
         searcher natsel-depth-2 has 112 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-2 has 0.880 average points per game
         searcher natsel-depth-2 has 1.120 average points per game
         """
@@ -230,15 +230,15 @@ def main():
         study(setup=Setup.T.CLASSIC, natsel_start=False, depth=2, game_count=100)
         _ = """
         setup: classic / white player: cmalo-depth-2 / black player: natsel-depth-2
-        
+
         game_count: 100 / white_points: 0 / black_points: 200
-        
+
         searcher cmalo-depth-2 has 0 points
         searcher natsel-depth-2 has 200 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-2 has 0.000 average points per game
         searcher natsel-depth-2 has 2.000 average points per game
         """
@@ -247,15 +247,15 @@ def main():
         study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=2, game_count=100)
         _ = """
         setup: half-random / white player: natsel-depth-2 / black player: cmalo-depth-2
-        
+
         game_count: 100 / white_points: 104 / black_points: 96
-        
+
         searcher cmalo-depth-2 has 96 points
         searcher natsel-depth-2 has 104 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-2 has 0.960 average points per game
         searcher natsel-depth-2 has 1.040 average points per game
         """
@@ -264,15 +264,15 @@ def main():
         study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=2, game_count=100)
         _ = """
         setup: half-random / white player: cmalo-depth-2 / black player: natsel-depth-2
-        
+
         game_count: 100 / white_points: 121 / black_points: 79
-        
+
         searcher cmalo-depth-2 has 121 points
         searcher natsel-depth-2 has 79 points
-        
+
         number of searchers: 2
         number of games per searcher: 100
-        
+
         searcher cmalo-depth-2 has 1.210 average points per game
         searcher natsel-depth-2 has 0.790 average points per game
         """
@@ -280,21 +280,69 @@ def main():
     if False:
         study(setup=Setup.T.CLASSIC, natsel_start=True, depth=3, game_count=10)
         _ = """
+        setup: classic / white player: natsel-depth-3 / black player: cmalo-depth-3
+
+        game_count: 10 / white_points: 6 / black_points: 14
+
+        searcher cmalo-depth-3 has 14 points
+        searcher natsel-depth-3 has 6 points
+
+        number of searchers: 2
+        number of games per searcher: 10
+
+        searcher cmalo-depth-3 has 1.400 average points per game
+        searcher natsel-depth-3 has 0.600 average points per game
         """
 
     if False:
         study(setup=Setup.T.CLASSIC, natsel_start=False, depth=3, game_count=10)
         _ = """
+        setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-3
+
+        game_count: 10 / white_points: 20 / black_points: 0
+
+        searcher cmalo-depth-3 has 20 points
+        searcher natsel-depth-3 has 0 points
+
+        number of searchers: 2
+        number of games per searcher: 10
+
+        searcher cmalo-depth-3 has 2.000 average points per game
+        searcher natsel-depth-3 has 0.000 average points per game
         """
 
     if False:
         study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=3, game_count=10)
         _ = """
+        setup: half-random / white player: natsel-depth-3 / black player: cmalo-depth-3
+
+        game_count: 10 / white_points: 10 / black_points: 10
+
+        searcher cmalo-depth-3 has 10 points
+        searcher natsel-depth-3 has 10 points
+
+        number of searchers: 2
+        number of games per searcher: 10
+
+        searcher cmalo-depth-3 has 1.000 average points per game
+        searcher natsel-depth-3 has 1.000 average points per game
         """
 
     if False:
         study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=3, game_count=10)
         _ = """
+        setup: half-random / white player: cmalo-depth-3 / black player: natsel-depth-3
+
+        game_count: 10 / white_points: 12 / black_points: 8
+
+        searcher cmalo-depth-3 has 12 points
+        searcher natsel-depth-3 has 8 points
+
+        number of searchers: 2
+        number of games per searcher: 10
+
+        searcher cmalo-depth-3 has 1.200 average points per game
+        searcher natsel-depth-3 has 0.800 average points per game
         """
 
 if __name__ == "__main__":
