@@ -1,0 +1,13 @@
+Player white-natsel-depth-5 wins against black-natsel-depth-5 ; 49 versus 26 seconds
+----------------------------------------
+   g16:rsprpw f13:sws f4:rr f57:psp
+   b13:PSP b4:RR b57:SWS a16:WPRPSR
+
+   1 a4-b5=c4             2 g3-f3=e3        
+   3 b2-b1=d2             4 e3=f3-e3        
+   5 c4=d5                6 f5-e4           
+   7 d2=d4-e4!            8 g2-f2=d1        
+   9 a3-a2=c1            10 d1=d3-d4!       
+  11 e4-e3!              12 g1-g2           
+  13 c1=b2-c1            14 g2-g1           
+  15 d5=f4!-g3       
