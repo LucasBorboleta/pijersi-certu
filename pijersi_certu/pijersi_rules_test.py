@@ -353,7 +353,7 @@ def test():
         searcher = MinimaxSearcher(f"minimax{depth}-inf", max_depth=depth)
         pijersi_state = PijersiState()
         action = searcher.search(pijersi_state)
-        bestmove = action.to_ugi_name()
+        bestmove = pijersi_state.to_ugi_name(action)
         log(f"bestmove = {bestmove}")
         assert bestmove == 'a5b6d5'
 
