@@ -1,0 +1,26 @@
+Player white-natsel-depth-5 wins against black-human
+----------------------------------------------------
+   g16:sprspr f13:prs f4:ww f57:rsp
+   b13:PSR b4:WW b57:SRP a16:RPSRPS
+
+   1 a2-b3=c3             2 f4=d3-d4        
+   3 a4-a3=c2             4 g2-f3=e2        
+   5 c2=d2-c2             6 f2-f1=d2!       
+   7 a5-b6=d5             8 g4-f5=e4        
+   9 d5=e5-e6            10 f6-e6!          
+  11 a6-b7=d6            12 e4=f5-e4        
+  13 e5-e6!              14 g6-f7=f6        
+  15 e6-f7               16 g5-g6           
+  17 d6=e5-e6            18 f6-e6!          
+  19 e5-f5!              20 e4-f5!          
+  21 b1-b2=d1            22 e2=e1-e2        
+  23 d1=c1-d2!           24 e1-d2!          
+  25 c2-d2!              26 g3-f3           
+  27 c1-d2=f1            28 f3-f2           
+  29 f1=e1-e2!           30 d3-d4=f3        
+  31 e1-f1               32 f2-g1           
+  33 f1-f2               34 f3-g2           
+  35 f2-e2=e4            36 f6-f5=e4!       
+  37 f7-f6               38 g6-f6!          
+  39 c3=e2-f2            40 e4=e2!-e1       
+  41 f2-g1!          
