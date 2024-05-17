@@ -10,6 +10,8 @@ For each game, the points are given as follow:
 
 # Study
 
+The next table gathers the results obtained with *pijersi_certu_v2.0.0.rc2*.
+
 | AI-engine  |    setup    | depth | player | games | points | average  |
 | :--------: | :---------: | :---: | :----: | :---: | :----: | :------: |
 | **cmalo**  |   classic   |   1   | black  |  100  |  200   | **2.00** |

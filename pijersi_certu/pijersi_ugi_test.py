@@ -43,7 +43,7 @@ def test_ugi_protocol():
     log("test_ugi_protocol: ...")
 
     if False:
-        server_executable_path = os.path.join(_package_home, "pijersi_cmalo_ugi_server.exe")
+        server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
     else:
         server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
