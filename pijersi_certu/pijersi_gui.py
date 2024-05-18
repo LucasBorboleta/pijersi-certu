@@ -509,6 +509,8 @@ class GameGui(ttk.Frame):
         self.__game_timer_delay = 500
         self.__game_timer_id = None
 
+        self.__action_animation_duration = 500
+
         self.__picture_timer_id = None
         self.__picture_timer_delay = 100
         self.__picture_gif_duration = 4_000
@@ -1613,7 +1615,7 @@ class GameGui(ttk.Frame):
 
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(1.00)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                         dst_hex.highlighted_as_destination = True
                         if player == rules.Player.T.WHITE:
@@ -1623,7 +1625,7 @@ class GameGui(ttk.Frame):
 
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(0.50)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                     elif len(action_simple_name) == 8:
                         pijersi_saved_state = self.__pijersi_state
@@ -1648,7 +1650,7 @@ class GameGui(ttk.Frame):
                             src_hex.highlighted_as_played_by_black = True
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(0.50)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                         int_hex.highlighted_as_destination = True
                         if player == rules.Player.T.WHITE:
@@ -1657,7 +1659,7 @@ class GameGui(ttk.Frame):
                             int_hex.highlighted_as_played_by_black = True
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(0.50)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                         intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                         self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1675,7 +1677,7 @@ class GameGui(ttk.Frame):
 
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(0.50)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                         dst_hex.highlighted_as_destination = True
                         if player == rules.Player.T.WHITE:
@@ -1684,7 +1686,7 @@ class GameGui(ttk.Frame):
                             dst_hex.highlighted_as_played_by_black = True
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(0.50)
+                        self.__sleep_ms(self.__action_animation_duration)
 
                         self.__pijersi_state = pijersi_saved_state
                         pijersi_saved_state = None
@@ -2805,6 +2807,10 @@ class GameGui(ttk.Frame):
                                   fill=face_color,
                                   width=CANVAS_CONFIG.CUBE_LINE_WIDTH,
                                   capstyle=tk.ROUND)
+
+    def __sleep_ms(self, duration: float):
+        """Sleep duration in milli-seconds"""
+        time.sleep(duration/1_000)
 
     def __draw_wise_face(self, cube_center, cube_vertices, face_color):
 
