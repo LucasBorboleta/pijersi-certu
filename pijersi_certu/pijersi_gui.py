@@ -1675,7 +1675,7 @@ class GameGui(ttk.Frame):
 
                         self.__draw_state()
                         self.__canvas.update()
-                        time.sleep(1.00)
+                        time.sleep(0.50)
 
                         dst_hex.highlighted_as_destination = True
                         if player == rules.Player.T.WHITE:
