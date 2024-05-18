@@ -1590,6 +1590,105 @@ class GameGui(ttk.Frame):
 
                     self.__progressbar['value'] = 100.
 
+
+                    # Cinematic for AI action
+                    # !! idea and prototype by MarcLeclere
+
+                    if len(action_simple_name) == 5:
+                        src_hex_name = action_simple_name[0:2]
+                        dst_hex_name = action_simple_name[3:5]
+
+                        src_hex = GraphicalHexagon.get(src_hex_name)
+                        dst_hex = GraphicalHexagon.get(dst_hex_name)
+
+                        if action_simple_name[2] == '-':
+                            src_hex.highlighted_as_cube = True
+                        else:
+                            src_hex.highlighted_as_stack = True
+
+                        if player == rules.Player.T.WHITE:
+                            src_hex.highlighted_as_played_by_white = True
+                        else:
+                            src_hex.highlighted_as_played_by_black = True
+
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(1.00)
+
+                        dst_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            dst_hex.highlighted_as_played_by_white = True
+                        else:
+                            dst_hex.highlighted_as_played_by_black = True
+
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(0.50)
+
+                    elif len(action_simple_name) == 8:
+                        pijersi_saved_state = self.__pijersi_state
+                        intermediate_move = action_simple_name[0:5]
+
+                        src_hex_name = action_simple_name[0:2]
+                        int_hex_name = action_simple_name[3:5]
+                        dst_hex_name = action_simple_name[6:8]
+
+                        src_hex = GraphicalHexagon.get(src_hex_name)
+                        int_hex = GraphicalHexagon.get(int_hex_name)
+                        dst_hex = GraphicalHexagon.get(dst_hex_name)
+
+                        if action_simple_name[2] == '-':
+                            src_hex.highlighted_as_cube = True
+                        else:
+                            src_hex.highlighted_as_stack = True
+
+                        if player == rules.Player.T.WHITE:
+                            src_hex.highlighted_as_played_by_white = True
+                        else:
+                            src_hex.highlighted_as_played_by_black = True
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(0.50)
+
+                        int_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            int_hex.highlighted_as_played_by_white = True
+                        else:
+                            int_hex.highlighted_as_played_by_black = True
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(0.50)
+
+                        intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
+                        self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
+                        src_hex.highlighted_as_cube = False
+                        src_hex.highlighted_as_stack = False
+                        src_hex.highlighted_as_played_by_white = False
+                        src_hex.highlighted_as_played_by_black = False
+
+                        int_hex.highlighted_as_destination = False
+
+                        if action_simple_name[5] == '-':
+                            int_hex.highlighted_as_cube = True
+                        else:
+                            int_hex.highlighted_as_stack = True
+
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(1.00)
+
+                        dst_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            dst_hex.highlighted_as_played_by_white = True
+                        else:
+                            dst_hex.highlighted_as_played_by_black = True
+                        self.__draw_state()
+                        self.__canvas.update()
+                        time.sleep(0.50)
+
+                        self.__pijersi_state = pijersi_saved_state
+                        pijersi_saved_state = None
+
                 else:
                     ready_for_next_turn = False
 
@@ -1678,6 +1777,7 @@ class GameGui(ttk.Frame):
             self.__button_make_pictures.config(state="enabled")
 
     ### CMC (Mouse Canevas Control) methods
+    ### !! idea and prototype by MarcLeclere
 
     def __cmc_update_mouse_over(self, event):
         """
@@ -2550,14 +2650,9 @@ class GameGui(ttk.Frame):
 
         # Respect priority order in lighting
 
-        if easy_mode:
-            if hexagon.highlighted_as_played_by_white:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
-                line_width_scaling = 3
-
-            elif hexagon.highlighted_as_played_by_black:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
-                line_width_scaling = 4
+        if easy_mode and hexagon.highlighted_as_selectable:
+            fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         if easy_mode and hexagon.highlighted_as_destination:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
@@ -2571,9 +2666,14 @@ class GameGui(ttk.Frame):
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        if easy_mode and hexagon.highlighted_as_selectable:
-            fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
-            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+        if easy_mode:
+            if hexagon.highlighted_as_played_by_white:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
+                line_width_scaling = 3
+
+            elif hexagon.highlighted_as_played_by_black:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
+                line_width_scaling = 4
 
         self.__canvas.create_polygon(hexagon.vertex_data,
                                      fill=fill_color,
