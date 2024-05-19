@@ -1295,55 +1295,120 @@ class GameGui(ttk.Frame):
 
             self.__variable_turn.set(turn_index)
 
+            # cinemetic: begin
+
+            if False and turn_index != 0:
+                action_simple_name = self.__turn_actions[turn_index].replace("!", "")
+                player = rules.Player.T.WHITE if turn_index % 2 == 1 else rules.Player.T.BLACK
+
+                if len(action_simple_name) == 5:
+                    src_hex_name = action_simple_name[0:2]
+                    dst_hex_name = action_simple_name[3:5]
+
+                    src_hex = GraphicalHexagon.get(src_hex_name)
+                    dst_hex = GraphicalHexagon.get(dst_hex_name)
+
+                    if action_simple_name[2] == '-':
+                        src_hex.highlighted_as_cube = True
+                    else:
+                        src_hex.highlighted_as_stack = True
+
+                    if player == rules.Player.T.WHITE:
+                        src_hex.highlighted_as_played_by_white = True
+                    else:
+                        src_hex.highlighted_as_played_by_black = True
+
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                    dst_hex.highlighted_as_destination = True
+                    if player == rules.Player.T.WHITE:
+                        dst_hex.highlighted_as_played_by_white = True
+                    else:
+                        dst_hex.highlighted_as_played_by_black = True
+
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                elif len(action_simple_name) == 8:
+                    pijersi_saved_state = self.__pijersi_state
+                    intermediate_move = action_simple_name[0:5]
+
+                    src_hex_name = action_simple_name[0:2]
+                    int_hex_name = action_simple_name[3:5]
+                    dst_hex_name = action_simple_name[6:8]
+
+                    src_hex = GraphicalHexagon.get(src_hex_name)
+                    int_hex = GraphicalHexagon.get(int_hex_name)
+                    dst_hex = GraphicalHexagon.get(dst_hex_name)
+
+                    if action_simple_name[2] == '-':
+                        src_hex.highlighted_as_cube = True
+                    else:
+                        src_hex.highlighted_as_stack = True
+
+                    if player == rules.Player.T.WHITE:
+                        src_hex.highlighted_as_played_by_white = True
+                    else:
+                        src_hex.highlighted_as_played_by_black = True
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                    int_hex.highlighted_as_destination = True
+                    if player == rules.Player.T.WHITE:
+                        int_hex.highlighted_as_played_by_white = True
+                    else:
+                        int_hex.highlighted_as_played_by_black = True
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                    intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
+                    self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
+                    src_hex.highlighted_as_cube = False
+                    src_hex.highlighted_as_stack = False
+                    src_hex.highlighted_as_played_by_white = False
+                    src_hex.highlighted_as_played_by_black = False
+
+                    int_hex.highlighted_as_destination = False
+
+                    if action_simple_name[5] == '-':
+                        int_hex.highlighted_as_cube = True
+                    else:
+                        int_hex.highlighted_as_stack = True
+
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                    dst_hex.highlighted_as_destination = True
+                    if player == rules.Player.T.WHITE:
+                        dst_hex.highlighted_as_played_by_white = True
+                    else:
+                        dst_hex.highlighted_as_played_by_black = True
+                    self.__draw_state()
+                    self.__canvas.update()
+                    self.__sleep_ms(self.__action_animation_duration)
+
+                    self.__pijersi_state = pijersi_saved_state
+                    pijersi_saved_state = None
+
+            # cinematic: end
+
             self.__cmc_reset()
             self.__cmc_hightlight_played_hexagons()
             self.__draw_state()
 
             self.__canvas.update()
 
-            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index)
-            picture_png_file = picture_export_path + '.png'
+            picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
+            self.__take_picture(picture_png_file)
 
-            animation_export_path = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % turn_index)
-            animation_png_file = animation_export_path + '.png'
-
-            grab_canvas_only = True
-
-            if grab_canvas_only:
-
-                x = self.__canvas.winfo_rootx()
-                y = self.__canvas.winfo_rooty()
-                w = self.__canvas.winfo_width()
-                h = self.__canvas.winfo_height()
-
-                left = x
-                right = x + w
-                upper = y
-                lower = y + h
-
-                if self.__use_background_photo:
-                    upper += self.__background_tk_photo_delta_y
-                    lower -= self.__background_tk_photo_delta_y
-
-                    left += self.__background_tk_photo_delta_x
-                    right -= self.__background_tk_photo_delta_x
-
-                    upper += int(0.01*h)
-                    lower -= int(0.01*h)
-
-                    left += int(0.01*w)
-                    right -= int(0.01*w)
-
-                picture_bbox = (left, upper, right, lower)
-
-            else:
-                picture_bbox = None
-
-            image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
-            # >> all_screens – Capture all monitors. Windows OS only
-            image.save(picture_png_file)
-            image.save(animation_png_file)
-
+            animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % turn_index) + '.png'
+            self.__take_picture(animation_png_file)
 
         self.__variable_log.set("Making animated pictures ...")
         self.__label_log.update()
@@ -2490,6 +2555,43 @@ class GameGui(ttk.Frame):
             legend_score = ""
 
         return legend_score
+
+    def __take_picture(self, picture_file: str):
+        grab_canvas_only = True
+
+        if grab_canvas_only:
+
+            x = self.__canvas.winfo_rootx()
+            y = self.__canvas.winfo_rooty()
+            w = self.__canvas.winfo_width()
+            h = self.__canvas.winfo_height()
+
+            left = x
+            right = x + w
+            upper = y
+            lower = y + h
+
+            if self.__use_background_photo:
+                upper += self.__background_tk_photo_delta_y
+                lower -= self.__background_tk_photo_delta_y
+
+                left += self.__background_tk_photo_delta_x
+                right -= self.__background_tk_photo_delta_x
+
+                upper += int(0.01*h)
+                lower -= int(0.01*h)
+
+                left += int(0.01*w)
+                right -= int(0.01*w)
+
+            picture_bbox = (left, upper, right, lower)
+
+        else:
+            picture_bbox = None
+
+        image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
+        # >> all_screens – Capture all monitors. Windows OS only
+        image.save(picture_file)
 
     def __make_animated_pictures(self):
 
