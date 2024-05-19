@@ -511,10 +511,7 @@ class GameGui(ttk.Frame):
 
         self.__action_animation_duration = 500
 
-        self.__picture_timer_id = None
-        self.__picture_timer_delay = 100
-        self.__picture_gif_duration = 4_000
-        self.__picture_turn_index = None
+        self.__picture_gif_duration = 2_000
 
         self.__edit_actions = False
         self.__saved_actions_text = ""
@@ -1247,6 +1244,8 @@ class GameGui(ttk.Frame):
 
     def __command_make_pictures(self):
 
+        # Disable widgets
+
         self.__button_quit.config(state="disabled")
         self.__button_new_stop.config(state="disabled")
         self.__combobox_white_player.config(state="disabled")
@@ -1262,9 +1261,103 @@ class GameGui(ttk.Frame):
 
         self.__text_actions.config(state="disabled")
 
+        # Take pictures
+
         self.__variable_log.set("Making pictures ...")
-        self.__picture_turn_index = None
-        self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
+        self.__label_log.update()
+
+        if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
+            shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
+        os.mkdir(AppConfig.TMP_PICTURE_DIR)
+
+        for turn_index in range(len(self.__turn_states)):
+
+            self.__variable_log.set(f"Making picture {turn_index} ...")
+            self.__label_log.update()
+
+            self.__pijersi_state = self.__turn_states[turn_index]
+
+            if turn_index > 0:
+                self.__legend = str(turn_index) + " " + self.__turn_actions[turn_index]
+
+                if self.__game_terminated and turn_index == (len(self.__turn_states) - 1):
+                    self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
+            else:
+                self.__legend = ""
+
+            self.__variable_turn.set(turn_index)
+
+            self.__cmc_reset()
+            self.__cmc_hightlight_played_hexagons()
+            self.__draw_state()
+
+            self.__canvas.update()
+
+            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index)
+            picture_png_file = picture_export_path + '.png'
+
+            grab_canvas_only = True
+
+            if grab_canvas_only:
+
+                x = self.__canvas.winfo_rootx()
+                y = self.__canvas.winfo_rooty()
+                w = self.__canvas.winfo_width()
+                h = self.__canvas.winfo_height()
+
+                left = x
+                right = x + w
+                upper = y
+                lower = y + h
+
+                if self.__use_background_photo:
+                    upper += self.__background_tk_photo_delta_y
+                    lower -= self.__background_tk_photo_delta_y
+
+                    left += self.__background_tk_photo_delta_x
+                    right -= self.__background_tk_photo_delta_x
+
+                    upper += int(0.01*h)
+                    lower -= int(0.01*h)
+
+                    left += int(0.01*w)
+                    right -= int(0.01*w)
+
+                picture_bbox = (left, upper, right, lower)
+
+            else:
+                picture_bbox = None
+
+            image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
+            # >> all_screens – Capture all monitors. Windows OS only
+            image.save(picture_png_file)
+
+
+        self.__variable_log.set("Making animated pictures ...")
+        self.__label_log.update()
+        self.__make_animated_pictures()
+
+        self.__variable_log.set("Pictures are ready ; see the terminal window")
+        print()
+        print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
+
+        # Enable widgets
+
+        self.__button_quit.config(state="enabled")
+        self.__button_new_stop.config(state="enabled")
+        self.__combobox_white_player.config(state="readonly")
+        self.__combobox_black_player.config(state="readonly")
+        self.__combobox_setup.config(state="readonly")
+
+        self.__button_easy_mode.config(state="enabled")
+        self.__button_resume.config(state="enabled")
+
+        self.__button_edit_actions.config(state="enabled")
+        self.__spinbox_turn.config(state="enabled")
+        self.__button_make_pictures.config(state="enabled")
+
+        self.__text_actions.config(state="disabled")
 
     def __command_new_stop(self):
 
@@ -2387,124 +2480,6 @@ class GameGui(ttk.Frame):
 
         return legend_score
 
-    def __take_picture(self):
-
-        if self.__picture_timer_id is not None:
-            self.__canvas.after_cancel(self.__picture_timer_id)
-            self.__picture_timer_id = None
-
-        if self.__picture_turn_index is None:
-
-            if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
-                shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
-            os.mkdir(AppConfig.TMP_PICTURE_DIR)
-
-            self.__picture_turn_index = 0
-
-            self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
-
-            self.__legend = ""
-
-            self.__variable_turn.set(self.__picture_turn_index)
-
-            self.__cmc_reset()
-            self.__cmc_hightlight_played_hexagons()
-            self.__draw_state()
-
-            self.__variable_log.set(f"Making picture {self.__picture_turn_index} ...")
-            self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
-            return
-
-        elif 0 <= self.__picture_turn_index < len(self.__turn_states):
-
-            picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % self.__picture_turn_index)
-            picture_png_file = picture_export_path + '.png'
-
-            grab_canvas_only = True
-
-            if grab_canvas_only:
-
-                x = self.__canvas.winfo_rootx()
-                y = self.__canvas.winfo_rooty()
-                w = self.__canvas.winfo_width()
-                h = self.__canvas.winfo_height()
-
-                left = x
-                right = x + w
-                upper = y
-                lower = y + h
-
-                if self.__use_background_photo:
-                    upper += self.__background_tk_photo_delta_y
-                    lower -= self.__background_tk_photo_delta_y
-
-                    left += self.__background_tk_photo_delta_x
-                    right -= self.__background_tk_photo_delta_x
-
-                    upper += int(0.01*h)
-                    lower -= int(0.01*h)
-
-                    left += int(0.01*w)
-                    right -= int(0.01*w)
-
-                picture_bbox = (left, upper, right, lower)
-
-            else:
-                picture_bbox = None
-
-            image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
-            # >> all_screens – Capture all monitors. Windows OS only
-            image.save(picture_png_file)
-
-            self.__picture_turn_index += 1
-
-            if 0 <= self.__picture_turn_index < len(self.__turn_states):
-
-                self.__pijersi_state = self.__turn_states[self.__picture_turn_index]
-
-                if self.__picture_turn_index > 0:
-                    self.__legend = str(self.__picture_turn_index) + " " + self.__turn_actions[self.__picture_turn_index]
-
-                    if self.__game_terminated and self.__picture_turn_index == (len(self.__turn_states) - 1):
-                        self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
-
-                else:
-                    self.__legend = ""
-
-                self.__variable_turn.set(self.__picture_turn_index)
-
-                self.__cmc_reset()
-                self.__cmc_hightlight_played_hexagons()
-                self.__draw_state()
-
-                if self.__picture_turn_index != len(self.__turn_states) - 1:
-                    self.__variable_log.set(f"Making picture {self.__picture_turn_index} ...")
-                else:
-                    self.__variable_log.set(f"Making picture {self.__picture_turn_index} and animated pictures ...")
-
-                self.__picture_timer_id = self.__canvas.after(self.__picture_timer_delay, self.__take_picture)
-                return
-
-            else:
-                self.__picture_turn_index = None
-                self.__make_animated_pictures()
-                self.__variable_log.set("Pictures are ready ; see the terminal window")
-
-                self.__button_quit.config(state="enabled")
-                self.__button_new_stop.config(state="enabled")
-                self.__combobox_white_player.config(state="readonly")
-                self.__combobox_black_player.config(state="readonly")
-                self.__combobox_setup.config(state="readonly")
-
-                self.__button_easy_mode.config(state="enabled")
-                self.__button_resume.config(state="enabled")
-
-                self.__button_edit_actions.config(state="enabled")
-                self.__spinbox_turn.config(state="enabled")
-                self.__button_make_pictures.config(state="enabled")
-
-                self.__text_actions.config(state="disabled")
-
     def __make_animated_pictures(self):
 
         if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
@@ -2523,9 +2498,6 @@ class GameGui(ttk.Frame):
                                append_images=frames[1:],
                                save_all=True,
                                duration=self.__picture_gif_duration, loop=0)
-
-                print()
-                print("pictures are available in directory '%s'" % AppConfig.TMP_PICTURE_DIR)
 
     ### Drawer iterators
 
