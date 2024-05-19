@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 _COPYRIGHT_AND_LICENSE_NATSEL = """
-Pijersi-rs (Natural Selection, aliased "natsel" within PIJERSI-CERTU) implements a GUI and a rules engine for the Pijersi boardgame.
+Pijersi-rs (Natural Selection, aliased "natsel" within PIJERSI-CERTU) implements an engine for the Pijersi boardgame.
 
-Copyright (C) 2024 Eclypse-Prime (eclypse.prime@gmail.com)
+Copyright (C) 2024 Eclypse-Prime (eclypse.prime@gmail.com).
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
