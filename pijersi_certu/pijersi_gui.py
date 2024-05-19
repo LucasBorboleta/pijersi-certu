@@ -514,7 +514,7 @@ class GameGui(ttk.Frame):
 
         self.__action_animation_duration = 500
 
-        self.__picture_gif_duration = 2_000
+        self.__picture_gif_duration = 750
 
         self.__edit_actions = False
         self.__saved_actions_text = ""
@@ -1277,6 +1277,8 @@ class GameGui(ttk.Frame):
             shutil.rmtree(AppConfig.TMP_ANIMATION_DIR)
         os.mkdir(AppConfig.TMP_ANIMATION_DIR)
 
+        animation_index = 0
+
         for turn_index in range(len(self.__turn_states)):
 
             self.__variable_log.set(f"Making picture {turn_index} ...")
@@ -1297,7 +1299,10 @@ class GameGui(ttk.Frame):
 
             # cinemetic: begin
 
-            if False and turn_index != 0:
+            if turn_index != 0:
+                pijersi_saved_state = self.__pijersi_state
+                self.__pijersi_state = self.__turn_states[turn_index - 1]
+
                 action_simple_name = self.__turn_actions[turn_index].replace("!", "")
                 player = rules.Player.T.WHITE if turn_index % 2 == 1 else rules.Player.T.BLACK
 
@@ -1320,7 +1325,9 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
                     dst_hex.highlighted_as_destination = True
                     if player == rules.Player.T.WHITE:
@@ -1330,10 +1337,11 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
                 elif len(action_simple_name) == 8:
-                    pijersi_saved_state = self.__pijersi_state
                     intermediate_move = action_simple_name[0:5]
 
                     src_hex_name = action_simple_name[0:2]
@@ -1355,7 +1363,9 @@ class GameGui(ttk.Frame):
                         src_hex.highlighted_as_played_by_black = True
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
                     int_hex.highlighted_as_destination = True
                     if player == rules.Player.T.WHITE:
@@ -1364,7 +1374,9 @@ class GameGui(ttk.Frame):
                         int_hex.highlighted_as_played_by_black = True
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
                     intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                     self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1382,7 +1394,9 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
                     dst_hex.highlighted_as_destination = True
                     if player == rules.Player.T.WHITE:
@@ -1391,10 +1405,12 @@ class GameGui(ttk.Frame):
                         dst_hex.highlighted_as_played_by_black = True
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__action_animation_duration)
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
 
-                    self.__pijersi_state = pijersi_saved_state
-                    pijersi_saved_state = None
+                self.__pijersi_state = pijersi_saved_state
+                pijersi_saved_state = None
 
             # cinematic: end
 
@@ -1407,9 +1423,27 @@ class GameGui(ttk.Frame):
             picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
             self.__take_picture(picture_png_file)
 
-            animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % turn_index) + '.png'
+            if turn_index != 0:
+                animation_index += 1
+            animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
             self.__take_picture(animation_png_file)
 
+            # simulate thinking and let the reader thinking too
+            if animation_index != 0:
+                saved_legend = self.__legend
+                for pause_index in range(4):
+                    self.__legend =  (pause_index + 1 ) *'.' + " " + saved_legend + " " + (pause_index + 1 ) *'.'
+                    self.__draw_state()
+                    self.__canvas.update()
+
+                    animation_index += 1
+                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                    self.__take_picture(animation_png_file)
+                
+                self.__legend = saved_legend
+                self.__draw_state()
+                self.__canvas.update()
+                
         self.__variable_log.set("Making animated pictures ...")
         self.__label_log.update()
         self.__make_animated_pictures()
