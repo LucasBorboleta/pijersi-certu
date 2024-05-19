@@ -10,7 +10,7 @@ The rules of Pijersi are explained here [https://github.com/LucasBorboleta/pijer
 
 The **[UGI protocol](https://github.com/eclypse-prime/pijersi-engine/blob/main/ugi.md)** allows *pijersi_certu* to embed other AI implemented in various languages like the **Natural Selection** AI coded in Rust. Therefore the own Python AI of *pijersi_certu* has been blessed **cmalo** (pronounced *sh-malo* = *small* in lojban).
 
-If you intent to derive or to sell either a text, a product or a software from this work, then read the [**LICENSE**](./docs/LICENSE.txt) and the  [**COPYRIGHT**](./docs/COPYRIGHT.md)  documents. The **Natural Selection** AI-engine is copyright [eclypse-prime](https://github.com/eclypse-prime). 
+If you intent to derive or to sell either a text, a product or a software from this work, then read the [**LICENSE**](./docs/LICENSE.txt) and the  [**COPYRIGHT**](./docs/COPYRIGHT.md)  documents. The **Natural Selection** AI-engine is copyright [Eclypse-Prime](mailto:eclypse.prime@gmail.com). 
 
 Many thanks to the [**CONTRIBUTORS**](./docs/CONTRIBUTORS.md) of the *pijersi-certu* project !
 
