@@ -1439,11 +1439,11 @@ class GameGui(ttk.Frame):
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
-                
+
                 self.__legend = saved_legend
                 self.__draw_state()
                 self.__canvas.update()
-                
+
         self.__variable_log.set("Making animated pictures ...")
         self.__label_log.update()
         self.__make_animated_pictures()
