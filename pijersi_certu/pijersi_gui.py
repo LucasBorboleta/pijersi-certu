@@ -68,6 +68,9 @@ class AppConfig:
     # Directory path of a working directory for pictures
     TMP_PICTURE_DIR = os.path.join(_package_home, 'tmp-pictures')
 
+    # Directory path of a working directory for animated pictures
+    TMP_ANIMATION_DIR = os.path.join(TMP_PICTURE_DIR, 'animation')
+
 
 class TinyVector:
     """Lightweight algebra on 2D vectors, inspired by numpy ndarray."""
@@ -1270,6 +1273,10 @@ class GameGui(ttk.Frame):
             shutil.rmtree(AppConfig.TMP_PICTURE_DIR)
         os.mkdir(AppConfig.TMP_PICTURE_DIR)
 
+        if os.path.isdir(AppConfig.TMP_ANIMATION_DIR):
+            shutil.rmtree(AppConfig.TMP_ANIMATION_DIR)
+        os.mkdir(AppConfig.TMP_ANIMATION_DIR)
+
         for turn_index in range(len(self.__turn_states)):
 
             self.__variable_log.set(f"Making picture {turn_index} ...")
@@ -1296,6 +1303,9 @@ class GameGui(ttk.Frame):
 
             picture_export_path = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index)
             picture_png_file = picture_export_path + '.png'
+
+            animation_export_path = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % turn_index)
+            animation_png_file = animation_export_path + '.png'
 
             grab_canvas_only = True
 
@@ -1332,6 +1342,7 @@ class GameGui(ttk.Frame):
             image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
             # >> all_screens – Capture all monitors. Windows OS only
             image.save(picture_png_file)
+            image.save(animation_png_file)
 
 
         self.__variable_log.set("Making animated pictures ...")
@@ -2482,22 +2493,26 @@ class GameGui(ttk.Frame):
 
     def __make_animated_pictures(self):
 
-        if os.path.isdir(AppConfig.TMP_PICTURE_DIR):
+        if not os.path.isdir(AppConfig.TMP_ANIMATION_DIR):
+            return
 
-            frames = []
-            picture_list = glob.glob(os.path.join(AppConfig.TMP_PICTURE_DIR, "state-*"))
+        if not os.path.isdir(AppConfig.TMP_PICTURE_DIR):
+            os.mkdir(AppConfig.TMP_PICTURE_DIR)
 
-            if len(picture_list) != 0:
-                for picture in picture_list:
-                    new_frame = Image.open(picture)
-                    frames.append(new_frame)
+        frames = []
+        picture_list = glob.glob(os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-*"))
 
-                # Save into a GIF file that loops forever
-                frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
-                               format='GIF',
-                               append_images=frames[1:],
-                               save_all=True,
-                               duration=self.__picture_gif_duration, loop=0)
+        if len(picture_list) != 0:
+            for picture in picture_list:
+                new_frame = Image.open(picture)
+                frames.append(new_frame)
+
+            # Save into a GIF file that loops forever
+            frames[0].save(os.path.join(AppConfig.TMP_PICTURE_DIR, "all-states.gif"),
+                           format='GIF',
+                           append_images=frames[1:],
+                           save_all=True,
+                           duration=self.__picture_gif_duration, loop=0)
 
     ### Drawer iterators
 
