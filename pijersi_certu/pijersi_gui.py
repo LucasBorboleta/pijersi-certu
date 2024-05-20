@@ -1253,6 +1253,9 @@ class GameGui(ttk.Frame):
 
 
     def __command_make_pictures(self):
+        if platform.system() != 'Windows':
+            self.__variable_log.set(f"Making pictures not implemented for plaform '{platform.system()}'")
+            return
 
         # Disable widgets
 
