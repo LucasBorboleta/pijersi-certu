@@ -1806,8 +1806,12 @@ class GameGui(ttk.Frame):
                     self.__progressbar['value'] = 100.
 
 
-                    # Cinematic for AI action
+                    # Cinematic for AI action: begin
                     # !! idea and prototype by MarcLeclere
+
+                    # >> Handling 'stop' while displaying the cinematic causes error
+                    # >> So let disable such event
+                    self.__button_new_stop.config(state="disabled")
 
                     if len(action_simple_name) == 5:
                         src_hex_name = action_simple_name[0:2]
@@ -1904,6 +1908,10 @@ class GameGui(ttk.Frame):
                         self.__pijersi_state = pijersi_saved_state
                         pijersi_saved_state = None
 
+                    self.__button_new_stop.config(state="enabled")
+
+                    # Cinematic for AI action: end
+
                 else:
                     ready_for_next_turn = False
 
@@ -1975,7 +1983,8 @@ class GameGui(ttk.Frame):
             self.__game_terminated = True
 
             self.__backend_futures = [None for player in rules.Player.T]
-            self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
+            if self.__concurrent_executor is not None:
+                self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
             self.__concurrent_executor = None
 
             self.__button_new_stop.configure(text="New")

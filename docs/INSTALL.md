@@ -16,6 +16,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version     | Hash   | Expected hash value                                              |
   | ----------- | ------ | ---------------------------------------------------------------- |
+  | v2.0.0.rc3  | SHA256 | 49D7E1A24EB9488B6E44E3B5834EB26E758786DE5C5DD6F7FA1AA8E9D0F56315 |
+  | v2.0.0.rc3  | MD5    | 6C871EF9522D714511CA77174A0BBB08                                 |
   | v2.0.0.rc2  | SHA256 | B20B07ABBEAA87D16708C6B4E07353B51ACDE4758871024A45F6979734422100 |
   | v2.0.0.rc2  | MD5    | 7541ACA5DAD55059716953A4C57FE929                                 |
   | v2.0.0.rc1  | SHA256 | 8FAC0C9A5BF4F2B870B1DDCA369B73AEC52714649AD07A5C4F24771A48E59C44 |
@@ -55,6 +57,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
+   | v2.0.0.rc3 | SHA256 | 5A67D18A8D2607BAEECDB65B89EA97265A6B05CF8DBDEA6D0268E47E1B7D6470 |
+   | v2.0.0.rc3 | MD5    | 0B4C8EEAA237F8DC0C1342440AD5BFEE                                 |
    | v2.0.0.rc2 | SHA256 | 057506A95A5FE649052D52CD6DCE10CDCB2F923DAC2CF3981A4EEE1A3A648114 |
    | v2.0.0.rc2 | MD5    | D7E3432A269BB79263340FEFF53C2ACA                                 |
    | v2.0.0.rc1 | SHA256 | CF922DD3C4263DFA8E3EC3EAB1322B7E19D49471671FF4E0B1FABD494E4A8350 |
@@ -65,7 +69,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
 ## Installing from Python sources for Linux and Windows platforms
 
-Latest version of *pijersi_certu* has been developed using Python 3.10. So it is better to have installed such version or some higher version.
+Latest version of *pijersi_certu* has been developed using Python 3.11. So it is better to have installed such version or some higher version.
 
 The following instructions might also work on other platforms, but only Windows and Linux have been tested.
 
