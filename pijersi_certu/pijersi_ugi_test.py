@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 import os
+import platform
+import re
 import sys
 
 from multiprocessing import freeze_support
@@ -27,6 +29,7 @@ sys.path.append(_package_home)
 
 
 from pijersi_ugi import UgiClient
+from pijersi_rules import __version__ as cmalo_version
 
 
 def log(msg: str=None):
@@ -43,15 +46,16 @@ def test_ugi_protocol():
     log("test_ugi_protocol: ...")
 
     if False:
-        server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
+        cmalo_server_executable_path = os.path.join(_package_home, "ugi-servers",
+                                                    "cmalo",
+                                                    f"pijersi_cmalo_ugi_server_v{cmalo_version}" + "_" + make_artefact_platform_id())
     else:
-        server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
-
+        cmalo_server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
     log()
-    log(f"server_executable_path = {server_executable_path}")
+    log(f"cmalo_server_executable_path = {cmalo_server_executable_path}")
 
-    client = UgiClient(name="ugi-cmalo", server_executable_path=server_executable_path, permanent=True)
+    client = UgiClient(name="ugi-cmalo", server_executable_path=cmalo_server_executable_path, permanent=True)
     client.run()
 
     log()
@@ -252,6 +256,20 @@ def test_ugi_protocol():
 
     log()
     log("test_ugi_protocol: done")
+
+
+
+def make_artefact_platform_id() -> str:
+    artefact_system = platform.system().lower()
+    artefact_extension = ".exe" if artefact_system == "windows" else ""
+
+    artefact_machine = platform.machine()
+    if re.match(r"^.*64.*$", platform.machine()):
+        artefact_machine = "x86_64"
+
+    artefact_platform_id = f"{artefact_system}_{artefact_machine}{artefact_extension}"
+
+    return artefact_platform_id
 
 
 if __name__ == "__main__":
