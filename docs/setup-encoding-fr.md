@@ -37,4 +37,18 @@ AYABEY encode la mise en place “aléatoire-miroir” {'a1': 'R', 'a2': 'P', 'a
 AWALIC encode la mise en place “aléatoire-miroir” {'a1': 'S', 'a2': 'W', 'a3': 'W', 'a4': 'R', 'a5': 'P', 'a6': 'P', 'b1': 'R', 'b2': 'S', 'b3': 'P', 'b4': 'S', 'b4t': 'P', 'b5': 'S', 'b6': 'R', 'b7': 'R'}.
 
 
+# Nom pour le système d’encodage
 
+Voici quelques propositions : 
+
+- PAC : Pijersi Alpha Configuration
+- PAS : Pijersi Alpha Setup
+- PEC : Pijersi Encoded Configuration
+- PES : Pijersi Encoded Setup
+- **PIC** : Pijersi Initial Configuration → celui-là est très bien !
+
+- SAC : Setup Alpha Code
+- SAS : Setup Alpha String
+- SAT : Setup Alpha Text
+- SES : Setup Encoding String
+- SIC : Setup Identification Code →Cool, car signifie “ainsi” en Latin !
