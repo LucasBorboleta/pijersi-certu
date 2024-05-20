@@ -35,6 +35,7 @@ import sys
 import glob
 import math
 import os
+import platform
 import re
 import shutil
 import time
@@ -2992,21 +2993,30 @@ class GameGui(ttk.Frame):
                                      smooth=True)
 
 def make_ugi_clients():
+
     ugi_clients = {}
 
     if False:
         if False:
-            cmalo_server_executable_path = os.path.join(_package_home, "ugi-servers", "cmalo", "pijersi_cmalo_ugi_server.exe")
+            cmalo_server_executable_path = os.path.join(_package_home, "ugi-servers",
+                                                        "cmalo",
+                                                        f"pijersi_cmalo_ugi_server_v{rules.__version__}" + "_" + make_artefact_platform_id())
         else:
             cmalo_server_executable_path = os.path.join(_package_home, "pijersi_ugi.py")
 
-        ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=cmalo_server_executable_path)
+        if os.path.isfile(cmalo_server_executable_path):
+            ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=cmalo_server_executable_path)
+            ugi_clients[ugi_client.get_name()] = ugi_client
+
+
+    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers",
+                                                 "natsel",
+                                                 "pijersi_natural_selection_ugi_server_v0.1.0" + "_" + make_artefact_platform_id())
+
+    if os.path.isfile(natsel_server_executable_path):
+        ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path)
         ugi_clients[ugi_client.get_name()] = ugi_client
 
-
-    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v0.1.0.exe")
-    ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path)
-    ugi_clients[ugi_client.get_name()] = ugi_client
     return ugi_clients
 
 
@@ -3044,6 +3054,19 @@ def make_searcher_catalog(ugi_clients):
         searcher_catalog.add( rules.MinimaxSearcher("minimax1", max_depth=1) )
 
     return searcher_catalog
+
+
+def make_artefact_platform_id():
+    artefact_system = platform.system().lower()
+    artefact_extension = ".exe" if artefact_system == "windows" else ""
+
+    artefact_machine = platform.machine()
+    if re.match(r"^.*64.*$", platform.machine()):
+        artefact_machine = "x86_64"
+
+    artefact_platform_id = f"{artefact_system}_{artefact_machine}{artefact_extension}"
+
+    return artefact_platform_id
 
 
 CANVAS_CONFIG = CanvasConfig()

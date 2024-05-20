@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 import glob
 import os
+import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -26,6 +28,11 @@ import sys
 
 _product_home = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 _venv_home = os.path.join(_product_home, ".env")
+
+_package_home = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(_package_home)
+
+from pijersi_rules import __version__ as artefact_version
 
 print("Checking virtual environment ...")
 assert os.path.isdir(_venv_home)
@@ -70,7 +77,14 @@ subprocess.run(args=[_venv_python_executable, "-m", "pip", "install", "pyinstall
 print()
 print("Installing PyInstaller done")
 
-artefact_name = "pijersi_certu"
+
+artefact_system = platform.system().lower()
+
+artefact_machine = platform.machine()
+if re.match(r"^.*64.*$", platform.machine()):
+    artefact_machine = "x86_64"
+
+artefact_name = f"pijersi_certu_v{artefact_version}_{artefact_system}_{artefact_machine}"
 
 print()
 print(f"Building {artefact_name} application ...")
