@@ -16,8 +16,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
-_COPYRIGHT_AND_LICENSE_NATSEL = """
-Pijersi-rs (Natural Selection, aliased "natsel" within PIJERSI-CERTU) implements an engine for the Pijersi boardgame.
+_NATSEL_COPYRIGHT_AND_LICENSE = """
+Pijersi-rs (Natural Selection) implements an engine for the Pijersi boardgame.
 
 Copyright (C) 2024 Eclypse-Prime (eclypse.prime@gmail.com).
 
@@ -27,6 +27,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 """
+
+_NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
+_NATSEL_NAME = "Natural Selection"
+_NATSEL_KEY = "natsel"
+_NATSEL_VERSION = "0.1.0"
+
 
 
 import copy
@@ -565,9 +571,14 @@ class GameGui(ttk.Frame):
 
         self.__root = tk.Tk()
 
+        title = ( f"pijersi-certu-v{rules.__version__} for playing the pijersi boardgame and testing AI agents" +
+                 " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
+
+        if _NATSEL_KEY in self.__ugi_clients:
+            title += f" ; it runs {_NATSEL_NAME} v{_NATSEL_VERSION}"
+
         try:
-            self.__root.title(f"pijersi-certu-v{rules.__version__} for playing the pijersi boardgame and testing AI agents" +
-                              " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi")
+            self.__root.title(title)
             self.__root.iconbitmap(AppConfig.ICON_FILE)
         except:
             pass
@@ -3022,11 +3033,11 @@ def make_ugi_clients():
 
 
     natsel_server_executable_path = os.path.join(_package_home, "ugi-servers",
-                                                 "natsel",
-                                                 "pijersi_natural_selection_ugi_server_v0.1.0" + "_" + make_artefact_platform_id())
+                                                 _NATSEL_KEY,
+                                                 f"{_NATSEL_UGI_SERVER_NAME}_v{_NATSEL_VERSION}" + "_" + make_artefact_platform_id())
 
     if os.path.isfile(natsel_server_executable_path):
-        ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path)
+        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=natsel_server_executable_path)
         ugi_clients[ugi_client.get_name()] = ugi_client
 
     return ugi_clients
@@ -3091,7 +3102,7 @@ def main():
     print(64*"-")
     print(_COPYRIGHT_AND_LICENSE)
     print(64*"-")
-    print(_COPYRIGHT_AND_LICENSE_NATSEL)
+    print(_NATSEL_COPYRIGHT_AND_LICENSE)
     print(64*"-")
 
     _ = GameGui()
