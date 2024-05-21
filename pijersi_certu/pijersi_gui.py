@@ -28,6 +28,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 """
 
+_NATSEL_COPYRIGHT = "(c) 2024 Eclypse-Prime"
 _NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
 _NATSEL_NAME = "Natural Selection"
 _NATSEL_KEY = "natsel"
@@ -571,11 +572,8 @@ class GameGui(ttk.Frame):
 
         self.__root = tk.Tk()
 
-        title = ( f"pijersi-certu-v{rules.__version__} for playing the pijersi boardgame and testing AI agents" +
-                 " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
-
-        if _NATSEL_KEY in self.__ugi_clients:
-            title += f" ; it runs {_NATSEL_NAME} v{_NATSEL_VERSION}"
+        title = ( "pijersi-certu for playing the pijersi boardgame and testing AI agents" +
+                  " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
 
         try:
             self.__root.title(title)
@@ -593,7 +591,11 @@ class GameGui(ttk.Frame):
         self.__command_update_players()
 
         self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
-        self.__variable_summary.set("(c) 2022 Lucas Borboleta ; pijersi software license : GNU GPL ; pijersi rules license : CC-BY-NC-SA")
+
+        summary = "pijersi-certu (c) 2022 Lucas Borboleta"
+        if _NATSEL_KEY in self.__ugi_clients:
+            summary += f" ; {_NATSEL_NAME} version {_NATSEL_VERSION} {_NATSEL_COPYRIGHT}"
+        self.__variable_summary.set(summary)
 
         if False:
             # Prepare the resizable feature
