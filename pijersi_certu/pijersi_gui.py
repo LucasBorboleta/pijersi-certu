@@ -527,6 +527,7 @@ class GameGui(ttk.Frame):
         self.__game_timer_id = None
 
         self.__action_animation_duration = 500
+        self.__action_animation_detailed = False
 
         self.__picture_gif_duration = 750
 
@@ -1352,17 +1353,18 @@ class GameGui(ttk.Frame):
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    dst_hex.highlighted_as_destination = True
-                    if player == rules.Player.T.WHITE:
-                        dst_hex.highlighted_as_played_by_white = True
-                    else:
-                        dst_hex.highlighted_as_played_by_black = True
+                    if self.__action_animation_detailed:
+                        dst_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            dst_hex.highlighted_as_played_by_white = True
+                        else:
+                            dst_hex.highlighted_as_played_by_black = True
 
-                    self.__draw_state()
-                    self.__canvas.update()
-                    animation_index += 1
-                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                        self.__draw_state()
+                        self.__canvas.update()
+                        animation_index += 1
+                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                        self.__take_picture(animation_png_file)
 
                 elif len(action_simple_name) == 8:
                     intermediate_move = action_simple_name[0:5]
@@ -1390,16 +1392,17 @@ class GameGui(ttk.Frame):
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    int_hex.highlighted_as_destination = True
-                    if player == rules.Player.T.WHITE:
-                        int_hex.highlighted_as_played_by_white = True
-                    else:
-                        int_hex.highlighted_as_played_by_black = True
-                    self.__draw_state()
-                    self.__canvas.update()
-                    animation_index += 1
-                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    if self.__action_animation_detailed:
+                        int_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            int_hex.highlighted_as_played_by_white = True
+                        else:
+                            int_hex.highlighted_as_played_by_black = True
+                        self.__draw_state()
+                        self.__canvas.update()
+                        animation_index += 1
+                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                        self.__take_picture(animation_png_file)
 
                     intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                     self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1421,16 +1424,17 @@ class GameGui(ttk.Frame):
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    dst_hex.highlighted_as_destination = True
-                    if player == rules.Player.T.WHITE:
-                        dst_hex.highlighted_as_played_by_white = True
-                    else:
-                        dst_hex.highlighted_as_played_by_black = True
-                    self.__draw_state()
-                    self.__canvas.update()
-                    animation_index += 1
-                    animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    if self.__action_animation_detailed:
+                        dst_hex.highlighted_as_destination = True
+                        if player == rules.Player.T.WHITE:
+                            dst_hex.highlighted_as_played_by_white = True
+                        else:
+                            dst_hex.highlighted_as_played_by_black = True
+                        self.__draw_state()
+                        self.__canvas.update()
+                        animation_index += 1
+                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
+                        self.__take_picture(animation_png_file)
 
                 self.__pijersi_state = pijersi_saved_state
                 pijersi_saved_state = None
@@ -1847,15 +1851,16 @@ class GameGui(ttk.Frame):
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
-                        dst_hex.highlighted_as_destination = True
-                        if player == rules.Player.T.WHITE:
-                            dst_hex.highlighted_as_played_by_white = True
-                        else:
-                            dst_hex.highlighted_as_played_by_black = True
+                        if self.__action_animation_detailed:
+                            dst_hex.highlighted_as_destination = True
+                            if player == rules.Player.T.WHITE:
+                                dst_hex.highlighted_as_played_by_white = True
+                            else:
+                                dst_hex.highlighted_as_played_by_black = True
 
-                        self.__draw_state()
-                        self.__canvas.update()
-                        self.__sleep_ms(self.__action_animation_duration)
+                            self.__draw_state()
+                            self.__canvas.update()
+                            self.__sleep_ms(self.__action_animation_duration)
 
                     elif len(action_simple_name) == 8:
                         pijersi_saved_state = self.__pijersi_state
@@ -1882,14 +1887,15 @@ class GameGui(ttk.Frame):
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
-                        int_hex.highlighted_as_destination = True
-                        if player == rules.Player.T.WHITE:
-                            int_hex.highlighted_as_played_by_white = True
-                        else:
-                            int_hex.highlighted_as_played_by_black = True
-                        self.__draw_state()
-                        self.__canvas.update()
-                        self.__sleep_ms(self.__action_animation_duration)
+                        if self.__action_animation_detailed:
+                            int_hex.highlighted_as_destination = True
+                            if player == rules.Player.T.WHITE:
+                                int_hex.highlighted_as_played_by_white = True
+                            else:
+                                int_hex.highlighted_as_played_by_black = True
+                                self.__draw_state()
+                                self.__canvas.update()
+                                self.__sleep_ms(self.__action_animation_duration)
 
                         intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                         self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1909,14 +1915,15 @@ class GameGui(ttk.Frame):
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
-                        dst_hex.highlighted_as_destination = True
-                        if player == rules.Player.T.WHITE:
-                            dst_hex.highlighted_as_played_by_white = True
-                        else:
-                            dst_hex.highlighted_as_played_by_black = True
-                        self.__draw_state()
-                        self.__canvas.update()
-                        self.__sleep_ms(self.__action_animation_duration)
+                        if self.__action_animation_detailed:
+                            dst_hex.highlighted_as_destination = True
+                            if player == rules.Player.T.WHITE:
+                                dst_hex.highlighted_as_played_by_white = True
+                            else:
+                                dst_hex.highlighted_as_played_by_black = True
+                            self.__draw_state()
+                            self.__canvas.update()
+                            self.__sleep_ms(self.__action_animation_duration)
 
                         self.__pijersi_state = pijersi_saved_state
                         pijersi_saved_state = None
