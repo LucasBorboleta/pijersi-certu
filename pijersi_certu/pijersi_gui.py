@@ -311,8 +311,12 @@ class HexagonColor(enum.Enum):
 class HexagonLineColor(enum.Enum):
     NORMAL = 'black'
     HIGHLIGHT = 'white'
+
     HIGHLIGHT_PLAYED_BY_WHITE = 'white'
     HIGHLIGHT_PLAYED_BY_BLACK = 'black'
+
+    HIGHLIGHT_PUSHED_BY_WHITE = 'white'
+    HIGHLIGHT_PUSHED_BY_BLACK = 'black'
 
 
 class GraphicalHexagon:
@@ -333,12 +337,18 @@ class GraphicalHexagon:
         self.index = hexagon.index
         self.color = color
 
-        self.highlighted_as_played_by_white = False
-        self.highlighted_as_played_by_black = False
         self.highlighted_as_selectable = False
         self.highlighted_as_cube = False
         self.highlighted_as_stack = False
         self.highlighted_as_destination = False
+        
+        # >> played == at final/last hexagon
+        self.highlighted_as_played_by_white = False
+        self.highlighted_as_played_by_black = False
+        
+        # >> pushed == translated == at source hexagon or at intermediate hexagon
+        self.highlighted_as_pushed_by_white = False
+        self.highlighted_as_pushed_by_black = False
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
@@ -426,6 +436,8 @@ class GraphicalHexagon:
             hexagon.highlighted_as_destination = False
             hexagon.highlighted_as_played_by_white = False
             hexagon.highlighted_as_played_by_black = False
+            hexagon.highlighted_as_pushed_by_white = False
+            hexagon.highlighted_as_pushed_by_black = False
 
     @staticmethod
     def reset_highlights_as_selectable():
@@ -448,6 +460,12 @@ class GraphicalHexagon:
         for hexagon in GraphicalHexagon.all:
             hexagon.highlighted_as_played_by_white = False
             hexagon.highlighted_as_played_by_black = False
+
+    @staticmethod
+    def reset_highlights_as_pushed():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.highlighted_as_pushed_by_white = False
+            hexagon.highlighted_as_pushed_by_black = False
 
     @staticmethod
     def show_all():
@@ -527,7 +545,6 @@ class GameGui(ttk.Frame):
         self.__game_timer_id = None
 
         self.__action_animation_duration = 500
-        self.__action_animation_detailed = False
 
         self.__picture_gif_duration = 750
 
@@ -1321,7 +1338,7 @@ class GameGui(ttk.Frame):
 
             self.__variable_turn.set(turn_index)
 
-            # cinemetic: begin
+            GraphicalHexagon.reset_highlights()
 
             if turn_index != 0:
                 pijersi_saved_state = self.__pijersi_state
@@ -1332,10 +1349,7 @@ class GameGui(ttk.Frame):
 
                 if len(action_simple_name) == 5:
                     src_hex_name = action_simple_name[0:2]
-                    dst_hex_name = action_simple_name[3:5]
-
                     src_hex = GraphicalHexagon.get(src_hex_name)
-                    dst_hex = GraphicalHexagon.get(dst_hex_name)
 
                     if action_simple_name[2] == '-':
                         src_hex.highlighted_as_cube = True
@@ -1343,38 +1357,26 @@ class GameGui(ttk.Frame):
                         src_hex.highlighted_as_stack = True
 
                     if player == rules.Player.T.WHITE:
-                        src_hex.highlighted_as_played_by_white = True
+                        src_hex.highlighted_as_pushed_by_white = True
                     else:
-                        src_hex.highlighted_as_played_by_black = True
+                        src_hex.highlighted_as_pushed_by_black = True
 
                     self.__draw_state()
                     self.__canvas.update()
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
-
-                    if self.__action_animation_detailed:
-                        dst_hex.highlighted_as_destination = True
-                        if player == rules.Player.T.WHITE:
-                            dst_hex.highlighted_as_played_by_white = True
-                        else:
-                            dst_hex.highlighted_as_played_by_black = True
-
-                        self.__draw_state()
-                        self.__canvas.update()
-                        animation_index += 1
-                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                        self.__take_picture(animation_png_file)
 
                 elif len(action_simple_name) == 8:
                     intermediate_move = action_simple_name[0:5]
 
                     src_hex_name = action_simple_name[0:2]
-                    int_hex_name = action_simple_name[3:5]
-                    dst_hex_name = action_simple_name[6:8]
-
                     src_hex = GraphicalHexagon.get(src_hex_name)
+
+                    int_hex_name = action_simple_name[3:5]
                     int_hex = GraphicalHexagon.get(int_hex_name)
+
+                    dst_hex_name = action_simple_name[6:8]
                     dst_hex = GraphicalHexagon.get(dst_hex_name)
 
                     if action_simple_name[2] == '-':
@@ -1383,68 +1385,49 @@ class GameGui(ttk.Frame):
                         src_hex.highlighted_as_stack = True
 
                     if player == rules.Player.T.WHITE:
-                        src_hex.highlighted_as_played_by_white = True
+                        src_hex.highlighted_as_pushed_by_white = True
                     else:
-                        src_hex.highlighted_as_played_by_black = True
+                        src_hex.highlighted_as_pushed_by_black = True
+
                     self.__draw_state()
                     self.__canvas.update()
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    if self.__action_animation_detailed:
-                        int_hex.highlighted_as_destination = True
-                        if player == rules.Player.T.WHITE:
-                            int_hex.highlighted_as_played_by_white = True
-                        else:
-                            int_hex.highlighted_as_played_by_black = True
-                        self.__draw_state()
-                        self.__canvas.update()
-                        animation_index += 1
-                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                        self.__take_picture(animation_png_file)
-
                     intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                     self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
                     src_hex.highlighted_as_cube = False
                     src_hex.highlighted_as_stack = False
-                    src_hex.highlighted_as_played_by_white = False
-                    src_hex.highlighted_as_played_by_black = False
-
-                    int_hex.highlighted_as_destination = False
 
                     if action_simple_name[5] == '-':
                         int_hex.highlighted_as_cube = True
                     else:
                         int_hex.highlighted_as_stack = True
 
+                    if player == rules.Player.T.WHITE:
+                        int_hex.highlighted_as_pushed_by_white = True
+                    else:
+                        int_hex.highlighted_as_pushed_by_black = True
+
                     self.__draw_state()
                     self.__canvas.update()
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    if self.__action_animation_detailed:
-                        dst_hex.highlighted_as_destination = True
+                    if src_hex == dst_hex:
                         if player == rules.Player.T.WHITE:
-                            dst_hex.highlighted_as_played_by_white = True
+                            src_hex.highlighted_as_pushed_by_white = False
                         else:
-                            dst_hex.highlighted_as_played_by_black = True
-                        self.__draw_state()
-                        self.__canvas.update()
-                        animation_index += 1
-                        animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                        self.__take_picture(animation_png_file)
+                            src_hex.highlighted_as_pushed_by_black = False
 
                 self.__pijersi_state = pijersi_saved_state
                 pijersi_saved_state = None
 
-            # cinematic: end
-
-            self.__cmc_reset()
+            GraphicalHexagon.reset_highlights_as_cube_or_stack()
             self.__cmc_hightlight_played_hexagons()
             self.__draw_state()
-
             self.__canvas.update()
 
             picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
@@ -1832,10 +1815,7 @@ class GameGui(ttk.Frame):
 
                     if len(action_simple_name) == 5:
                         src_hex_name = action_simple_name[0:2]
-                        dst_hex_name = action_simple_name[3:5]
-
                         src_hex = GraphicalHexagon.get(src_hex_name)
-                        dst_hex = GraphicalHexagon.get(dst_hex_name)
 
                         if action_simple_name[2] == '-':
                             src_hex.highlighted_as_cube = True
@@ -1843,35 +1823,25 @@ class GameGui(ttk.Frame):
                             src_hex.highlighted_as_stack = True
 
                         if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_played_by_white = True
+                            src_hex.highlighted_as_pushed_by_white = True
                         else:
-                            src_hex.highlighted_as_played_by_black = True
+                            src_hex.highlighted_as_pushed_by_black = True
 
                         self.__draw_state()
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
-
-                        if self.__action_animation_detailed:
-                            dst_hex.highlighted_as_destination = True
-                            if player == rules.Player.T.WHITE:
-                                dst_hex.highlighted_as_played_by_white = True
-                            else:
-                                dst_hex.highlighted_as_played_by_black = True
-
-                            self.__draw_state()
-                            self.__canvas.update()
-                            self.__sleep_ms(self.__action_animation_duration)
 
                     elif len(action_simple_name) == 8:
                         pijersi_saved_state = self.__pijersi_state
                         intermediate_move = action_simple_name[0:5]
 
                         src_hex_name = action_simple_name[0:2]
-                        int_hex_name = action_simple_name[3:5]
-                        dst_hex_name = action_simple_name[6:8]
-
                         src_hex = GraphicalHexagon.get(src_hex_name)
+
+                        int_hex_name = action_simple_name[3:5]
                         int_hex = GraphicalHexagon.get(int_hex_name)
+
+                        dst_hex_name = action_simple_name[6:8]
                         dst_hex = GraphicalHexagon.get(dst_hex_name)
 
                         if action_simple_name[2] == '-':
@@ -1880,31 +1850,23 @@ class GameGui(ttk.Frame):
                             src_hex.highlighted_as_stack = True
 
                         if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_played_by_white = True
+                            src_hex.highlighted_as_pushed_by_white = True
                         else:
-                            src_hex.highlighted_as_played_by_black = True
+                            src_hex.highlighted_as_pushed_by_black = True
+
                         self.__draw_state()
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
-                        if self.__action_animation_detailed:
-                            int_hex.highlighted_as_destination = True
-                            if player == rules.Player.T.WHITE:
-                                int_hex.highlighted_as_played_by_white = True
-                            else:
-                                int_hex.highlighted_as_played_by_black = True
-                                self.__draw_state()
-                                self.__canvas.update()
-                                self.__sleep_ms(self.__action_animation_duration)
+                        if player == rules.Player.T.WHITE:
+                            int_hex.highlighted_as_pushed_by_white = True
+                        else:
+                            int_hex.highlighted_as_pushed_by_black = True
 
                         intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                         self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
                         src_hex.highlighted_as_cube = False
                         src_hex.highlighted_as_stack = False
-                        src_hex.highlighted_as_played_by_white = False
-                        src_hex.highlighted_as_played_by_black = False
-
-                        int_hex.highlighted_as_destination = False
 
                         if action_simple_name[5] == '-':
                             int_hex.highlighted_as_cube = True
@@ -1915,15 +1877,11 @@ class GameGui(ttk.Frame):
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
-                        if self.__action_animation_detailed:
-                            dst_hex.highlighted_as_destination = True
+                        if src_hex == dst_hex:
                             if player == rules.Player.T.WHITE:
-                                dst_hex.highlighted_as_played_by_white = True
+                                src_hex.highlighted_as_pushed_by_white = False
                             else:
-                                dst_hex.highlighted_as_played_by_black = True
-                            self.__draw_state()
-                            self.__canvas.update()
-                            self.__sleep_ms(self.__action_animation_duration)
+                                src_hex.highlighted_as_pushed_by_black = False
 
                         self.__pijersi_state = pijersi_saved_state
                         pijersi_saved_state = None
@@ -2809,6 +2767,7 @@ class GameGui(ttk.Frame):
             fill_color = hexagon.color.value
 
         line_width_scaling = 1
+        line_dash = None
 
         easy_mode = self.__variable_easy_mode.get()
 
@@ -2831,6 +2790,16 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         if easy_mode:
+            if hexagon.highlighted_as_pushed_by_white:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PUSHED_BY_WHITE.value
+                line_width_scaling = 3
+                line_dash = (5,5)
+
+            elif hexagon.highlighted_as_pushed_by_black:
+                polygon_line_color = HexagonLineColor.HIGHLIGHT_PUSHED_BY_BLACK.value
+                line_width_scaling = 4
+                line_dash = (5,5)
+
             if hexagon.highlighted_as_played_by_white:
                 polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
                 line_width_scaling = 3
@@ -2843,7 +2812,8 @@ class GameGui(ttk.Frame):
                                      fill=fill_color,
                                      outline=polygon_line_color,
                                      width=CANVAS_CONFIG.HEXA_LINE_WIDTH*line_width_scaling,
-                                     joinstyle=tk.MITER)
+                                     joinstyle=tk.MITER,
+                                     dash=line_dash)
 
         if hexagon.name:
             label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
