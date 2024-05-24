@@ -315,8 +315,8 @@ class HexagonLineColor(enum.Enum):
     HIGHLIGHT_PLAYED_BY_WHITE = 'white'
     HIGHLIGHT_PLAYED_BY_BLACK = 'black'
 
-    HIGHLIGHT_PUSHED_BY_WHITE = 'white'
-    HIGHLIGHT_PUSHED_BY_BLACK = 'black'
+    HIGHLIGHT_MOVED_BY_WHITE = 'white'
+    HIGHLIGHT_MOVED_BY_BLACK = 'black'
 
 
 class GraphicalHexagon:
@@ -341,14 +341,14 @@ class GraphicalHexagon:
         self.highlighted_as_cube = False
         self.highlighted_as_stack = False
         self.highlighted_as_destination = False
-        
-        # >> played == at final/last hexagon
+
+        # >> played == final hexagon of a player action
         self.highlighted_as_played_by_white = False
         self.highlighted_as_played_by_black = False
-        
-        # >> pushed == translated == at source hexagon or at intermediate hexagon
-        self.highlighted_as_pushed_by_white = False
-        self.highlighted_as_pushed_by_black = False
+
+        # >> moved == used but not final hexagon of a player action
+        self.highlighted_as_moved_by_white = False
+        self.highlighted_as_moved_by_black = False
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
@@ -436,8 +436,8 @@ class GraphicalHexagon:
             hexagon.highlighted_as_destination = False
             hexagon.highlighted_as_played_by_white = False
             hexagon.highlighted_as_played_by_black = False
-            hexagon.highlighted_as_pushed_by_white = False
-            hexagon.highlighted_as_pushed_by_black = False
+            hexagon.highlighted_as_moved_by_white = False
+            hexagon.highlighted_as_moved_by_black = False
 
     @staticmethod
     def reset_highlights_as_selectable():
@@ -462,10 +462,10 @@ class GraphicalHexagon:
             hexagon.highlighted_as_played_by_black = False
 
     @staticmethod
-    def reset_highlights_as_pushed():
+    def reset_highlights_as_moved():
         for hexagon in GraphicalHexagon.all:
-            hexagon.highlighted_as_pushed_by_white = False
-            hexagon.highlighted_as_pushed_by_black = False
+            hexagon.highlighted_as_moved_by_white = False
+            hexagon.highlighted_as_moved_by_black = False
 
     @staticmethod
     def show_all():
@@ -692,18 +692,10 @@ class GameGui(ttk.Frame):
                                               text='Resume',
                                               command=self.__command_resume)
 
-        self.__variable_easy_mode = tk.BooleanVar()
-        self.__variable_easy_mode.set(True)
-        self.__button_easy_mode = ttk.Checkbutton(self.__frame_commands,
-                                                  text='Easy mode',
-                                                  variable=self.__variable_easy_mode,
-                                                  command=self.__command_update_easy_mode)
 
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
-        #self.__button_easy_mode.grid(row=1, column=0)
-        self.__button_easy_mode.pack_forget()
         self.__button_resume.grid(row=1, column=1)
 
         self.__frame_commands.rowconfigure(0, pad=5)
@@ -990,13 +982,6 @@ class GameGui(ttk.Frame):
 
         self.__cmc_reset()
         self.__cmc_hightlight_played_hexagons()
-        self.__draw_state()
-
-    def __command_update_easy_mode(self):
-        """
-        If user changes easy mode checkbox during a game, redo the right drawing
-        """
-
         self.__draw_state()
 
     def __command_confirm_action(self):
@@ -1296,7 +1281,6 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.config(state="disabled")
         self.__combobox_setup.config(state="disabled")
 
-        self.__button_easy_mode.config(state="disabled")
         self.__button_resume.config(state="disabled")
 
         self.__button_edit_actions.config(state="disabled")
@@ -1357,9 +1341,9 @@ class GameGui(ttk.Frame):
                         src_hex.highlighted_as_stack = True
 
                     if player == rules.Player.T.WHITE:
-                        src_hex.highlighted_as_pushed_by_white = True
+                        src_hex.highlighted_as_moved_by_white = True
                     else:
-                        src_hex.highlighted_as_pushed_by_black = True
+                        src_hex.highlighted_as_moved_by_black = True
 
                     self.__draw_state()
                     self.__canvas.update()
@@ -1385,9 +1369,9 @@ class GameGui(ttk.Frame):
                         src_hex.highlighted_as_stack = True
 
                     if player == rules.Player.T.WHITE:
-                        src_hex.highlighted_as_pushed_by_white = True
+                        src_hex.highlighted_as_moved_by_white = True
                     else:
-                        src_hex.highlighted_as_pushed_by_black = True
+                        src_hex.highlighted_as_moved_by_black = True
 
                     self.__draw_state()
                     self.__canvas.update()
@@ -1406,9 +1390,9 @@ class GameGui(ttk.Frame):
                         int_hex.highlighted_as_stack = True
 
                     if player == rules.Player.T.WHITE:
-                        int_hex.highlighted_as_pushed_by_white = True
+                        int_hex.highlighted_as_moved_by_white = True
                     else:
-                        int_hex.highlighted_as_pushed_by_black = True
+                        int_hex.highlighted_as_moved_by_black = True
 
                     self.__draw_state()
                     self.__canvas.update()
@@ -1418,9 +1402,9 @@ class GameGui(ttk.Frame):
 
                     if src_hex == dst_hex:
                         if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_pushed_by_white = False
+                            src_hex.highlighted_as_moved_by_white = False
                         else:
-                            src_hex.highlighted_as_pushed_by_black = False
+                            src_hex.highlighted_as_moved_by_black = False
 
                 self.__pijersi_state = pijersi_saved_state
                 pijersi_saved_state = None
@@ -1470,7 +1454,6 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.config(state="readonly")
         self.__combobox_setup.config(state="readonly")
 
-        self.__button_easy_mode.config(state="enabled")
         self.__button_resume.config(state="enabled")
 
         self.__button_edit_actions.config(state="enabled")
@@ -1823,9 +1806,9 @@ class GameGui(ttk.Frame):
                             src_hex.highlighted_as_stack = True
 
                         if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_pushed_by_white = True
+                            src_hex.highlighted_as_moved_by_white = True
                         else:
-                            src_hex.highlighted_as_pushed_by_black = True
+                            src_hex.highlighted_as_moved_by_black = True
 
                         self.__draw_state()
                         self.__canvas.update()
@@ -1850,18 +1833,18 @@ class GameGui(ttk.Frame):
                             src_hex.highlighted_as_stack = True
 
                         if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_pushed_by_white = True
+                            src_hex.highlighted_as_moved_by_white = True
                         else:
-                            src_hex.highlighted_as_pushed_by_black = True
+                            src_hex.highlighted_as_moved_by_black = True
 
                         self.__draw_state()
                         self.__canvas.update()
                         self.__sleep_ms(self.__action_animation_duration)
 
                         if player == rules.Player.T.WHITE:
-                            int_hex.highlighted_as_pushed_by_white = True
+                            int_hex.highlighted_as_moved_by_white = True
                         else:
-                            int_hex.highlighted_as_pushed_by_black = True
+                            int_hex.highlighted_as_moved_by_black = True
 
                         intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                         self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1879,9 +1862,9 @@ class GameGui(ttk.Frame):
 
                         if src_hex == dst_hex:
                             if player == rules.Player.T.WHITE:
-                                src_hex.highlighted_as_pushed_by_white = False
+                                src_hex.highlighted_as_moved_by_white = False
                             else:
-                                src_hex.highlighted_as_pushed_by_black = False
+                                src_hex.highlighted_as_moved_by_black = False
 
                         self.__pijersi_state = pijersi_saved_state
                         pijersi_saved_state = None
@@ -2769,15 +2752,13 @@ class GameGui(ttk.Frame):
         line_width_scaling = 1
         line_dash = None
 
-        easy_mode = self.__variable_easy_mode.get()
-
         # Respect priority order in lighting
 
-        if easy_mode and hexagon.highlighted_as_selectable:
+        if hexagon.highlighted_as_selectable:
             fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        if easy_mode and hexagon.highlighted_as_destination:
+        if hexagon.highlighted_as_destination:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
@@ -2789,24 +2770,23 @@ class GameGui(ttk.Frame):
             fill_color = HexagonColor.HIGHLIGHT_STACK_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
-        if easy_mode:
-            if hexagon.highlighted_as_pushed_by_white:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PUSHED_BY_WHITE.value
-                line_width_scaling = 3
-                line_dash = (5,5)
+        if hexagon.highlighted_as_moved_by_white:
+            polygon_line_color = HexagonLineColor.HIGHLIGHT_MOVED_BY_WHITE.value
+            line_width_scaling = 3
+            line_dash = (5,5)
 
-            elif hexagon.highlighted_as_pushed_by_black:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PUSHED_BY_BLACK.value
-                line_width_scaling = 4
-                line_dash = (5,5)
+        elif hexagon.highlighted_as_moved_by_black:
+            polygon_line_color = HexagonLineColor.HIGHLIGHT_MOVED_BY_BLACK.value
+            line_width_scaling = 4
+            line_dash = (5,5)
 
-            if hexagon.highlighted_as_played_by_white:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
-                line_width_scaling = 3
+        if hexagon.highlighted_as_played_by_white:
+            polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
+            line_width_scaling = 3
 
-            elif hexagon.highlighted_as_played_by_black:
-                polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
-                line_width_scaling = 4
+        elif hexagon.highlighted_as_played_by_black:
+            polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
+            line_width_scaling = 4
 
         self.__canvas.create_polygon(hexagon.vertex_data,
                                      fill=fill_color,
