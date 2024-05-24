@@ -981,7 +981,7 @@ class GameGui(ttk.Frame):
             self.__button_resume.config(state="disabled")
 
         self.__cmc_reset()
-        self.__cmc_hightlight_played_hexagons()
+        self.__cmc_hightlight_moved_and_played_hexagons()
         self.__draw_state()
 
     def __command_confirm_action(self):
@@ -1220,7 +1220,7 @@ class GameGui(ttk.Frame):
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
                 self.__cmc_reset()
-                self.__cmc_hightlight_played_hexagons()
+                self.__cmc_hightlight_moved_and_played_hexagons()
                 self.__draw_state()
 
             if not validated_edited_actions:
@@ -1360,9 +1360,6 @@ class GameGui(ttk.Frame):
                     int_hex_name = action_simple_name[3:5]
                     int_hex = GraphicalHexagon.get(int_hex_name)
 
-                    dst_hex_name = action_simple_name[6:8]
-                    dst_hex = GraphicalHexagon.get(dst_hex_name)
-
                     if action_simple_name[2] == '-':
                         src_hex.highlighted_as_cube = True
                     else:
@@ -1400,17 +1397,11 @@ class GameGui(ttk.Frame):
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
 
-                    if src_hex == dst_hex:
-                        if player == rules.Player.T.WHITE:
-                            src_hex.highlighted_as_moved_by_white = False
-                        else:
-                            src_hex.highlighted_as_moved_by_black = False
-
                 self.__pijersi_state = pijersi_saved_state
                 pijersi_saved_state = None
 
             GraphicalHexagon.reset_highlights_as_cube_or_stack()
-            self.__cmc_hightlight_played_hexagons()
+            self.__cmc_hightlight_moved_and_played_hexagons()
             self.__draw_state()
             self.__canvas.update()
 
@@ -1570,7 +1561,7 @@ class GameGui(ttk.Frame):
                 self.__button_resume.config(state="disabled")
 
             self.__cmc_reset()
-            self.__cmc_hightlight_played_hexagons()
+            self.__cmc_hightlight_moved_and_played_hexagons()
             self.__draw_state()
 
 
@@ -1660,7 +1651,7 @@ class GameGui(ttk.Frame):
         self.__variable_log.set(f"Game resumed at turn {resume_turn_index}")
 
         self.__cmc_reset()
-        self.__cmc_hightlight_played_hexagons()
+        self.__cmc_hightlight_moved_and_played_hexagons()
         self.__draw_state()
 
         # prepare next turn
@@ -1795,6 +1786,8 @@ class GameGui(ttk.Frame):
                     # >> Handling 'stop' while displaying the cinematic causes error
                     # >> So let disable such event
                     self.__button_new_stop.config(state="disabled")
+
+                    GraphicalHexagon.reset_highlights()
 
                     if len(action_simple_name) == 5:
                         src_hex_name = action_simple_name[0:2]
@@ -1933,7 +1926,7 @@ class GameGui(ttk.Frame):
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
                 self.__cmc_reset()
-                self.__cmc_hightlight_played_hexagons()
+                self.__cmc_hightlight_moved_and_played_hexagons()
                 self.__draw_state()
 
             self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
@@ -2059,7 +2052,7 @@ class GameGui(ttk.Frame):
         else:
             self.__cmc_reset()
             self.__cmc_state = CMCState.SELECTING_1
-            self.__cmc_hightlight_played_hexagons()
+            self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
 
@@ -2125,7 +2118,7 @@ class GameGui(ttk.Frame):
             # The CMC process is reset
             self.__cmc_reset()
             self.__cmc_state = CMCState.SELECTING_1
-            self.__cmc_hightlight_played_hexagons()
+            self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
 
@@ -2159,7 +2152,7 @@ class GameGui(ttk.Frame):
         else:
             self.__cmc_reset()
             self.__cmc_state = CMCState.SELECTING_1
-            self.__cmc_hightlight_played_hexagons()
+            self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
 
@@ -2193,7 +2186,7 @@ class GameGui(ttk.Frame):
         self.__variable_action.set("")
 
         GraphicalHexagon.reset_highlights()
-        self.__cmc_hightlight_played_hexagons()
+        self.__cmc_hightlight_moved_and_played_hexagons()
 
 
     def __cmc_set_legal_actions(self):
@@ -2302,11 +2295,12 @@ class GameGui(ttk.Frame):
         for hexagon in self.__cmc_legal_hexagons:
             hexagon.highlighted_as_destination = True
 
-    def __cmc_hightlight_played_hexagons(self):
+    def __cmc_hightlight_moved_and_played_hexagons(self):
         """
-        Mark played hexagons (targets of the action)
+        Mark moved and played hexagons
         """
 
+        GraphicalHexagon.reset_highlights_as_moved()
         GraphicalHexagon.reset_highlights_as_played()
 
         played_action_name = None
@@ -2330,36 +2324,41 @@ class GameGui(ttk.Frame):
             player_index = (turn_index + 1) % 2
 
         if played_action_name is not None:
-            played_hexagons = self.__get_destination_hexagons(played_action_name)
+            (moved_hexagons, played_hexagon) = self.__get_moved_and_played_hexagons(played_action_name)
 
             if player_index == 0:
-                for hexagon in played_hexagons:
-                    hexagon.highlighted_as_played_by_white = True
+                if played_hexagon is not None:
+                    played_hexagon.highlighted_as_played_by_white = True
+
+                for hexagon in moved_hexagons:
+                    hexagon.highlighted_as_moved_by_white = True
 
             elif player_index == 1:
-                for hexagon in played_hexagons:
-                    hexagon.highlighted_as_played_by_black = True
+                if played_hexagon is not None:
+                    played_hexagon.highlighted_as_played_by_black = True
 
-    def __get_destination_hexagons(self, action_name):
+                for hexagon in moved_hexagons:
+                    hexagon.highlighted_as_moved_by_black = True
 
-        simple_action_name = action_name.replace("!", "")
+    def __get_moved_and_played_hexagons(self, action_name):
+        moved_hexagons = []
+        played_hexagon = None
 
-        if len(simple_action_name) == 5:
-            hexagon_names = [simple_action_name[3:5]]
+        action_positions = action_name.replace("!", "").replace("-", "").replace("=", "")
+        hexagon_names = [x + y for (x, y) in zip(action_positions[:-1:2], action_positions[1::2])]
 
-        elif len(simple_action_name) == 8:
-            if simple_action_name[5] == "=":
-                hexagon_names = [simple_action_name[6:8]]
+        if len(hexagon_names) == 2:
+            moved_hexagons = [GraphicalHexagon.get(hexagon_names[0])]
+            played_hexagon = GraphicalHexagon.get(hexagon_names[1])
 
-            elif simple_action_name[5] == "-":
-                hexagon_names = [simple_action_name[3:5], simple_action_name[6:8]]
+        elif len(hexagon_names) == 3:
+            moved_hexagons = [GraphicalHexagon.get(hexagon_names[0]), GraphicalHexagon.get(hexagon_names[1])]
+            played_hexagon = GraphicalHexagon.get(hexagon_names[2])
 
-        else:
-            hexagon_names = []
+            if moved_hexagons[0] == played_hexagon:
+                moved_hexagons = moved_hexagons[1:]
 
-        destination_hexagons = [GraphicalHexagon.get(hexagon_name) for hexagon_name in hexagon_names]
-        return destination_hexagons
-
+        return (moved_hexagons, played_hexagon)
 
     def __read_setup(self, setup_items):
 
@@ -2783,10 +2782,12 @@ class GameGui(ttk.Frame):
         if hexagon.highlighted_as_played_by_white:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
             line_width_scaling = 3
+            line_dash = None
 
         elif hexagon.highlighted_as_played_by_black:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
             line_width_scaling = 4
+            line_dash = None
 
         self.__canvas.create_polygon(hexagon.vertex_data,
                                      fill=fill_color,
