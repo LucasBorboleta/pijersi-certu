@@ -1,0 +1,15 @@
+ 
+Player black-cmalo-depth-3 wins against white-natsel-depth-5 ; 157 versus 200 seconds
+----------------------------------------
+   g16:sprspr f13:prs f4:ww f57:rsp
+   b13:PSR b4:WW b57:SRP a16:RPSRPS
+
+   1 a2-b3=c3             2 g4-f5=e5        
+   3 a4-b5=d6             4 g2-f3=d4        
+   5 b4=c4-d5             6 f2-f1=d2        
+   7 c3=c2-b3             8 d4=c3-c2!       
+   9 a6-a5=a4            10 g5-f6=d7        
+  11 d6=c6-b6            12 g6-f7=d6        
+  13 b6=c5-c4            14 d6=c6!-d6       
+  15 c4=a5-b5            16 c6-d6=c5!       
+  17 d5-e4               18 c5=a6 
