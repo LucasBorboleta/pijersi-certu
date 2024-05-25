@@ -321,21 +321,21 @@ def main():
         study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=3, game_count=100)
         _ = """
         setup: half-random / white player: natsel-depth-3 / black player: cmalo-depth-3
-
-        game_count: 10 / white_points: 10 / black_points: 10
-
-        searcher cmalo-depth-3 has 10 points
-        searcher natsel-depth-3 has 10 points
-
+        
+        game_count: 100 / white_points: 104 / black_points: 96
+        
+        searcher cmalo-depth-3 has 96 points
+        searcher natsel-depth-3 has 104 points
+        
         number of searchers: 2
-        number of games per searcher: 10
-
-        searcher cmalo-depth-3 has 1.000 average points per game
-        searcher natsel-depth-3 has 1.000 average points per game
+        number of games per searcher: 100
+        
+        searcher cmalo-depth-3 has 0.960 average points per game
+        searcher natsel-depth-3 has 1.040 average points per game        
         """
 
-    if False:
-        study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=3, game_count=10)
+    if True:
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=False, depth=3, game_count=100)
         _ = """
         setup: half-random / white player: cmalo-depth-3 / black player: natsel-depth-3
 

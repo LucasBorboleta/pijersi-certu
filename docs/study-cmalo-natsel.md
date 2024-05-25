@@ -44,8 +44,8 @@ The next table gathers the results obtained with *pijersi_certu_v2.0.0.rc2*.
 | **cmalo**  |   classic   |   3   | white  |  100  |  190   | **1.90** |
 |   natsel   |   classic   |   3   | black  |  100  |   10   |   0.10   |
 |            |             |       |        |       |        |          |
-|   cmalo    | half-random |   3   | black  |  10   |   10   |   1.00   |
-|   natsel   | half-random |   3   | white  |  10   |   10   |   1.00   |
+|   cmalo    | half-random |   3   | black  |  100  |   96   |   0.96   |
+|   natsel   | half-random |   3   | white  |  100  |  104   |   1.04   |
 |            |             |       |        |       |        |          |
 |   cmalo    | half-random |   3   | white  |  10   |   12   |   1.20   |
 |   natsel   | half-random |   3   | black  |  10   |   8    |   0.80   |
