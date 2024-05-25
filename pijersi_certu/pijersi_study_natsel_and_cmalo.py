@@ -44,23 +44,29 @@ def log(msg: str=None):
             print(f"{line}", file=sys.stderr, flush=True)
 
 
-def study(setup: Setup.T=Setup.T.CLASSIC, natsel_start=True, depth: int=1, game_count: int=2):
+def study(setup: Setup.T=Setup.T.CLASSIC, natsel_start=True, natsel_depth: int=None, cmalo_depth: int=None, depth: int=1, game_count: int=1):
 
     log("=====================================")
     log(" study ...")
     log("=====================================")
 
-    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v0.1.0.exe")
+    if natsel_depth is None:
+        natsel_depth = depth
+
+    if cmalo_depth is None:
+        cmalo_depth = depth
+
+    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v0.1.0_windows_x86_64.exe")
 
     ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path, permanent=True)
     ugi_client_name = ugi_client.get_name()
     ugi_client.run()
 
-    natsel_searcher_name = f"{ugi_client_name}-depth-{depth}"
-    natsel_searcher = UgiSearcher(name=natsel_searcher_name, ugi_client=ugi_client, max_depth=depth)
+    natsel_searcher_name = f"{ugi_client_name}-depth-{natsel_depth}"
+    natsel_searcher = UgiSearcher(name=natsel_searcher_name, ugi_client=ugi_client, max_depth=natsel_depth)
 
-    cmalo_searcher_name = f"cmalo-depth-{depth}"
-    cmalo_searcher = MinimaxSearcher(cmalo_searcher_name, max_depth=depth)
+    cmalo_searcher_name = f"cmalo-depth-{cmalo_depth}"
+    cmalo_searcher = MinimaxSearcher(cmalo_searcher_name, max_depth=cmalo_depth)
 
     searcher_dict = {}
     searcher_dict[cmalo_searcher_name] = cmalo_searcher
@@ -278,41 +284,41 @@ def main():
         """
 
     if False:
-        study(setup=Setup.T.CLASSIC, natsel_start=True, depth=3, game_count=10)
+        study(setup=Setup.T.CLASSIC, natsel_start=True, depth=3, game_count=100)
         _ = """
         setup: classic / white player: natsel-depth-3 / black player: cmalo-depth-3
 
-        game_count: 10 / white_points: 6 / black_points: 14
+        game_count: 100 / white_points: 60 / black_points: 140
 
-        searcher cmalo-depth-3 has 14 points
-        searcher natsel-depth-3 has 6 points
+        searcher cmalo-depth-3 has 140 points
+        searcher natsel-depth-3 has 60 points
 
         number of searchers: 2
-        number of games per searcher: 10
+        number of games per searcher: 100
 
         searcher cmalo-depth-3 has 1.400 average points per game
         searcher natsel-depth-3 has 0.600 average points per game
         """
 
     if False:
-        study(setup=Setup.T.CLASSIC, natsel_start=False, depth=3, game_count=10)
+        study(setup=Setup.T.CLASSIC, natsel_start=False, depth=3, game_count=100)
         _ = """
         setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-3
 
-        game_count: 10 / white_points: 20 / black_points: 0
+        game_count: 100 / white_points: 190 / black_points: 10
 
-        searcher cmalo-depth-3 has 20 points
-        searcher natsel-depth-3 has 0 points
+        searcher cmalo-depth-3 has 190 points
+        searcher natsel-depth-3 has 10 points
 
         number of searchers: 2
-        number of games per searcher: 10
+        number of games per searcher: 100
 
-        searcher cmalo-depth-3 has 2.000 average points per game
-        searcher natsel-depth-3 has 0.000 average points per game
+        searcher cmalo-depth-3 has 1.900 average points per game
+        searcher natsel-depth-3 has 0.100 average points per game
         """
 
     if False:
-        study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=3, game_count=10)
+        study(setup=Setup.T.HALF_RANDOM, natsel_start=True, depth=3, game_count=100)
         _ = """
         setup: half-random / white player: natsel-depth-3 / black player: cmalo-depth-3
 
@@ -343,6 +349,23 @@ def main():
 
         searcher cmalo-depth-3 has 1.200 average points per game
         searcher natsel-depth-3 has 0.800 average points per game
+        """
+
+    if False:
+        study(setup=Setup.T.CLASSIC, natsel_start=True, natsel_depth=5, cmalo_depth=3, game_count=10)
+        _ = """
+        setup: classic / white player: natsel-depth-5 / black player: cmalo-depth-3
+
+        game_count: 10 / white_points: 8 / black_points: 12
+
+        searcher cmalo-depth-3 has 12 points
+        searcher natsel-depth-5 has 8 points
+
+        number of searchers: 2
+        number of games per searcher: 10
+
+        searcher cmalo-depth-3 has 1.200 average points per game
+        searcher natsel-depth-5 has 0.800 average points per game
         """
 
 if __name__ == "__main__":
