@@ -16,6 +16,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version     | Hash   | Expected hash value                                              |
   | ----------- | ------ | ---------------------------------------------------------------- |
+  | v2.0.0.rc4  | SHA256 | FEC7BA9743B6E5A744FA774E2EED9FABBE4C5A8273A4888BDC4DAEC98468FE04 |
+  | v2.0.0.rc4  | MD5    | AF9EC3B059F01E934E0E0B97111A6905                                 |
   | v2.0.0.rc3  | SHA256 | 49D7E1A24EB9488B6E44E3B5834EB26E758786DE5C5DD6F7FA1AA8E9D0F56315 |
   | v2.0.0.rc3  | MD5    | 6C871EF9522D714511CA77174A0BBB08                                 |
   | v2.0.0.rc2  | SHA256 | B20B07ABBEAA87D16708C6B4E07353B51ACDE4758871024A45F6979734422100 |
@@ -53,16 +55,25 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
    | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
 
 
-  - The check-sums of the `pijersi-cmalo` UGI servers are:
+  - The check-sums of the `pijersi-cmalo` UGI servers on `windows` are:
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
+   | v2.0.0.rc4 | SHA256 | FB32A4227396FAB783BD0F0488C31A70B6823A82CADF35334287E43A585CBA34 |
+   | v2.0.0.rc4 | MD5    | DA8EDD7C8876419CB34063E6DA35A257                                 |
    | v2.0.0.rc3 | SHA256 | 5A67D18A8D2607BAEECDB65B89EA97265A6B05CF8DBDEA6D0268E47E1B7D6470 |
    | v2.0.0.rc3 | MD5    | 0B4C8EEAA237F8DC0C1342440AD5BFEE                                 |
    | v2.0.0.rc2 | SHA256 | 057506A95A5FE649052D52CD6DCE10CDCB2F923DAC2CF3981A4EEE1A3A648114 |
    | v2.0.0.rc2 | MD5    | D7E3432A269BB79263340FEFF53C2ACA                                 |
    | v2.0.0.rc1 | SHA256 | CF922DD3C4263DFA8E3EC3EAB1322B7E19D49471671FF4E0B1FABD494E4A8350 |
    | v2.0.0.rc1 | MD5    | 0E37EDAB469825F423689A7B8B56B587                                 |
+
+  - The check-sums of the `pijersi-cmalo` UGI servers on `linux` are:
+
+   | Version    | Hash   | Expected hash value                                              |
+   | ---------- | ------ | ---------------------------------------------------------------- |
+   | v2.0.0.rc4 | SHA256 | 5ADC9A2ED3C4CEBF15A03FC5C830502BC044F6B629637769A9D6024B951C2B29 |
+   | v2.0.0.rc4 | MD5    | 2853CBB2B7FBCA6747EB5A45A2D2339F                                 |
 
 - To start `pijersi-certu` : double-click on the icon of the downloaded executable
 - To uninstall  `pijersi-certu` : just remove the downloaded executable.
