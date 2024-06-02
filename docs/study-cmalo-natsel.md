@@ -10,7 +10,7 @@ For each game, the points are given as follow:
 
 # Study
 
-The next table gathers the results obtained with *pijersi_certu_v2.0.0.rc2*.
+The next table gathers the results obtained with *pijersi_certu_v2.0.0.rc2, which includes Natural Selection v0.1.0.
 
 | AI-engine  |    setup    | depth | player | games | points | average  |
 | :--------: | :---------: | :---: | :----: | :---: | :----: | :------: |
