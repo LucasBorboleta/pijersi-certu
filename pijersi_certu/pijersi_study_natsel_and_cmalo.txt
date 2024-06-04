@@ -1,0 +1,236 @@
+Hello
+
+Python sys.version = 3.11.7 | packaged by Anaconda, Inc. | (main, Dec 15 2023, 18:05:47) [MSC v.1916 64 bit (AMD64)]
+
+===================================================================
+ study ... / start = 2024-06-03T23:14:43.606202
+===================================================================
+setup: classic / white player: natsel-depth-1 / black player: cmalo-depth-1 / game_count: 1000
+
+white_points: 0 / black_points: 2000
+
+searcher cmalo-depth-1 has 2000 points
+searcher natsel-depth-1 has 0 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-1 has 2.000 average points per game
+searcher natsel-depth-1 has 0.000 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:14:56.324315 / duration = 13 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:14:56.325314
+===================================================================
+setup: classic / white player: cmalo-depth-1 / black player: natsel-depth-1 / game_count: 1000
+
+white_points: 2000 / black_points: 0
+
+searcher cmalo-depth-1 has 2000 points
+searcher natsel-depth-1 has 0 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-1 has 2.000 average points per game
+searcher natsel-depth-1 has 0.000 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:15:13.410657 / duration = 17 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:15:13.410657
+===================================================================
+setup: half-random / white player: natsel-depth-1 / black player: cmalo-depth-1 / game_count: 1000
+
+white_points: 740 / black_points: 1260
+
+searcher cmalo-depth-1 has 1260 points
+searcher natsel-depth-1 has 740 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-1 has 1.260 average points per game
+searcher natsel-depth-1 has 0.740 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:15:29.739994 / duration = 16 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:15:29.741003
+===================================================================
+setup: half-random / white player: cmalo-depth-1 / black player: natsel-depth-1 / game_count: 1000
+
+white_points: 620 / black_points: 1380
+
+searcher cmalo-depth-1 has 620 points
+searcher natsel-depth-1 has 1380 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-1 has 0.620 average points per game
+searcher natsel-depth-1 has 1.380 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:15:46.329843 / duration = 17 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:15:46.329843
+===================================================================
+setup: classic / white player: natsel-depth-2 / black player: cmalo-depth-2 / game_count: 1000
+
+white_points: 1106 / black_points: 894
+
+searcher cmalo-depth-2 has 894 points
+searcher natsel-depth-2 has 1106 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-2 has 0.894 average points per game
+searcher natsel-depth-2 has 1.106 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:29:25.573473 / duration = 819 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:29:25.573473
+===================================================================
+setup: classic / white player: cmalo-depth-2 / black player: natsel-depth-2 / game_count: 1000
+
+white_points: 0 / black_points: 2000
+
+searcher cmalo-depth-2 has 0 points
+searcher natsel-depth-2 has 2000 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-2 has 0.000 average points per game
+searcher natsel-depth-2 has 2.000 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:42:53.097948 / duration = 808 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:42:53.099064
+===================================================================
+setup: half-random / white player: natsel-depth-2 / black player: cmalo-depth-2 / game_count: 1000
+
+white_points: 1061 / black_points: 939
+
+searcher cmalo-depth-2 has 939 points
+searcher natsel-depth-2 has 1061 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-2 has 0.939 average points per game
+searcher natsel-depth-2 has 1.061 average points per game
+===================================================================
+ study done / end = 2024-06-03T23:54:04.166623 / duration = 671 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-03T23:54:04.167750
+===================================================================
+setup: half-random / white player: cmalo-depth-2 / black player: natsel-depth-2 / game_count: 1000
+
+white_points: 995 / black_points: 1005
+
+searcher cmalo-depth-2 has 995 points
+searcher natsel-depth-2 has 1005 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-2 has 0.995 average points per game
+searcher natsel-depth-2 has 1.005 average points per game
+===================================================================
+ study done / end = 2024-06-04T00:05:09.413106 / duration = 665 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T00:05:09.414402
+===================================================================
+setup: classic / white player: natsel-depth-3 / black player: cmalo-depth-3 / game_count: 1000
+
+white_points: 554 / black_points: 1446
+
+searcher cmalo-depth-3 has 1446 points
+searcher natsel-depth-3 has 554 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 1.446 average points per game
+searcher natsel-depth-3 has 0.554 average points per game
+===================================================================
+ study done / end = 2024-06-04T01:23:03.283040 / duration = 4674 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T01:23:03.283040
+===================================================================
+setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-3 / game_count: 1000
+
+white_points: 1653 / black_points: 347
+
+searcher cmalo-depth-3 has 1653 points
+searcher natsel-depth-3 has 347 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 1.653 average points per game
+searcher natsel-depth-3 has 0.347 average points per game
+===================================================================
+ study done / end = 2024-06-04T02:47:39.042580 / duration = 5076 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T02:47:39.042580
+===================================================================
+setup: half-random / white player: natsel-depth-3 / black player: cmalo-depth-3 / game_count: 1000
+
+white_points: 954 / black_points: 1046
+
+searcher cmalo-depth-3 has 1046 points
+searcher natsel-depth-3 has 954 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 1.046 average points per game
+searcher natsel-depth-3 has 0.954 average points per game
+===================================================================
+ study done / end = 2024-06-04T03:54:54.509070 / duration = 4035 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T03:54:54.510077
+===================================================================
+setup: half-random / white player: cmalo-depth-3 / black player: natsel-depth-3 / game_count: 1000
+
+white_points: 1273 / black_points: 727
+
+searcher cmalo-depth-3 has 1273 points
+searcher natsel-depth-3 has 727 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 1.273 average points per game
+searcher natsel-depth-3 has 0.727 average points per game
+===================================================================
+ study done / end = 2024-06-04T05:55:43.315776 / duration = 7249 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T05:55:43.316902
+===================================================================
+setup: classic / white player: natsel-depth-5 / black player: cmalo-depth-3 / game_count: 1000
