@@ -355,35 +355,35 @@ def main():
     if True:
         study(setup=Setup.T.CLASSIC, natsel_start=True, natsel_depth=5, cmalo_depth=3, game_count=1_000)
         _ = """
-        setup: classic / white player: natsel-depth-5 / black player: cmalo-depth-3
+        setup: classic / white player: natsel-depth-5 / black player: cmalo-depth-3 / game_count: 1000
 
-        game_count: 100 / white_points: 130 / black_points: 70
+        white_points: 1227 / black_points: 773
 
-        searcher cmalo-depth-3 has 70 points
-        searcher natsel-depth-5 has 130 points
+        searcher cmalo-depth-3 has 773 points
+        searcher natsel-depth-5 has 1227 points
 
         number of searchers: 2
-        number of games per searcher: 100
+        number of games per searcher: 1000
 
-        searcher cmalo-depth-3 has 0.700 average points per game
-        searcher natsel-depth-5 has 1.300 average points per game
+        searcher cmalo-depth-3 has 0.773 average points per game
+        searcher natsel-depth-5 has 1.227 average points per game
         """
 
     if True:
         study(setup=Setup.T.CLASSIC, natsel_start=False, natsel_depth=5, cmalo_depth=3, game_count=1_000)
         _ = """
-        setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-5
+        setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-5 / game_count: 1000
 
-        game_count: 100 / white_points: 35 / black_points: 165
+        white_points: 266 / black_points: 1734
 
-        searcher cmalo-depth-3 has 35 points
-        searcher natsel-depth-5 has 165 points
+        searcher cmalo-depth-3 has 266 points
+        searcher natsel-depth-5 has 1734 points
 
         number of searchers: 2
-        number of games per searcher: 100
+        number of games per searcher: 1000
 
-        searcher cmalo-depth-3 has 0.350 average points per game
-        searcher natsel-depth-5 has 1.650 average points per game
+        searcher cmalo-depth-3 has 0.266 average points per game
+        searcher natsel-depth-5 has 1.734 average points per game
         """
 
 if __name__ == "__main__":

@@ -234,3 +234,40 @@ searcher natsel-depth-3 has 0.727 average points per game
  study ... / start = 2024-06-04T05:55:43.316902
 ===================================================================
 setup: classic / white player: natsel-depth-5 / black player: cmalo-depth-3 / game_count: 1000
+
+white_points: 1227 / black_points: 773
+
+searcher cmalo-depth-3 has 773 points
+searcher natsel-depth-5 has 1227 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 0.773 average points per game
+searcher natsel-depth-5 has 1.227 average points per game
+===================================================================
+ study done / end = 2024-06-04T09:56:33.034789 / duration = 14450 s
+===================================================================
+
+===================================================================
+ study ... / start = 2024-06-04T09:56:33.035967
+===================================================================
+setup: classic / white player: cmalo-depth-3 / black player: natsel-depth-5 / game_count: 1000
+
+white_points: 266 / black_points: 1734
+
+searcher cmalo-depth-3 has 266 points
+searcher natsel-depth-5 has 1734 points
+
+number of searchers: 2
+number of games per searcher: 1000
+
+searcher cmalo-depth-3 has 0.266 average points per game
+searcher natsel-depth-5 has 1.734 average points per game
+===================================================================
+ study done / end = 2024-06-04T13:22:42.552373 / duration = 12370 s
+===================================================================
+
+
+
+

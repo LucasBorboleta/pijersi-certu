@@ -50,9 +50,9 @@ The next table gathers the results obtained with *pijersi_certu_v2.0.0.rc4, whic
 | **cmalo**  | half-random |   3   | white  | 1000  |  1273  | **1.27** |
 |   natsel   | half-random |   3   | black  | 1000  |  727   |   0.73   |
 |            |             |       |        |       |        |          |
-|   cmalo    |   classic   |   3   | black  |  100  |   70   |   0.70   |
-| **natsel** |   classic   | **5** | white  |  100  |  130   | **1.30** |
+|   cmalo    |   classic   |   3   | black  | 1000  |  773   |   0.77   |
+| **natsel** |   classic   | **5** | white  | 1000  |  1227  | **1.23** |
 |            |             |       |        |       |        |          |
-|   cmalo    |   classic   |   3   | white  |  100  |   35   |   0.35   |
-| **natsel** |   classic   | **5** | black  |  100  |  165   | **1.65** |
+|   cmalo    |   classic   |   3   | white  | 1000  |  266   |   0.27   |
+| **natsel** |   classic   | **5** | black  | 1000  |  1734  | **1.73** |
 
