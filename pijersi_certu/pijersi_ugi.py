@@ -818,12 +818,20 @@ class UgiSearcher(rules.Searcher):
 
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
+        
+        if False:
+            print("debug: fen position sent to UGI agent:")
+            print(fen)
 
         if self.__max_depth is not None:
             ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
 
         elif self.__time_limit is not None:
             ugi_action = self.__ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
+        
+        if False:
+            print("debug: answer of UGI agent:")
+            print(ugi_action)
 
         action = state.get_action_by_ugi_name(ugi_action)
 

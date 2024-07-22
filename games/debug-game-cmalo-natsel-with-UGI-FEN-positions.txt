@@ -1,0 +1,322 @@
+
+    g1..    g2..    g3..    g4..    g5.w    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 38 / player black / credit 17 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['4w-1/2r-3s-/w-p-4/3rs3/3p-1W-/7/3R-2', 'b', '3', '19']
+debug: answer of UGI agent:
+g5g4
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 38 : after 1.5 seconds black-natsel-depth-4 selects g5-g4 amongst 132 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.w    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 39 / player white / credit 16 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 6.5 seconds
+Turn 39 : after 6.5 seconds white-cmalo-depth-4 selects a4-a5 amongst 9 actions
+----------------------------------------
+
+    g1..    g2..    g3..    g4.w    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5.R    a6..
+
+
+Turn 40 / player black / credit 15 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['3w-2/2r-3s-/w-p-4/3rs3/3p-1W-/7/4R-1', 'b', '5', '20']
+debug: answer of UGI agent:
+g4g3
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 40 : after 1.5 seconds black-natsel-depth-4 selects g4-g3 amongst 131 actions
+----------------------------------------
+
+    g1..    g2..    g3.w    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5.R    a6..
+
+
+Turn 41 / player white / credit 14 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 6.1 seconds
+Turn 41 : after 6.1 seconds white-cmalo-depth-4 selects a5-a4 amongst 9 actions
+----------------------------------------
+
+    g1..    g2..    g3.w    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 42 / player black / credit 13 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['2w-3/2r-3s-/w-p-4/3rs3/3p-1W-/7/3R-2', 'b', '7', '21']
+debug: answer of UGI agent:
+g3g2
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 42 : after 1.5 seconds black-natsel-depth-4 selects g3-g2 amongst 136 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6.W
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 43 / player white / credit 12 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 7.1 seconds
+Turn 43 : after 7.1 seconds white-cmalo-depth-4 selects c6-d7 amongst 9 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7.W
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 44 / player black / credit 11 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['1w-4/2r-3s-/w-p-4/3rs2W-/3p-2/7/3R-2', 'b', '9', '22']
+debug: answer of UGI agent:
+g2g1
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 44 : after 1.5 seconds black-natsel-depth-4 selects g2-g1 amongst 136 actions
+----------------------------------------
+
+    g1.w    g2..    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6..    d7.W
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 45 / player white / credit 10 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 5.6 seconds
+Turn 45 : after 5.6 seconds white-cmalo-depth-4 selects d7-d6 amongst 7 actions
+----------------------------------------
+
+    g1.w    g2..    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6.W    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 46 / player black / credit 9 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['w-5/2r-3s-/w-p-4/3rs1W-1/3p-2/7/3R-2', 'b', '11', '23']
+debug: answer of UGI agent:
+g1g2
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 46 : after 1.5 seconds black-natsel-depth-4 selects g1-g2 amongst 124 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5..    d6.W    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 47 / player white / credit 8 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 7.1 seconds
+Turn 47 : after 7.1 seconds white-cmalo-depth-4 selects d6-d5 amongst 10 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5.W    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 48 / player black / credit 7 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['1w-4/2r-3s-/w-p-4/3rsW-2/3p-2/7/3R-2', 'b', '13', '24']
+debug: answer of UGI agent:
+g2g1
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 48 : after 1.5 seconds black-natsel-depth-4 selects g2-g1 amongst 118 actions
+----------------------------------------
+
+    g1.w    g2..    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5.W    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4.R    a5..    a6..
+
+
+Turn 49 / player white / credit 6 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 5.6 seconds
+Turn 49 : after 5.6 seconds white-cmalo-depth-4 selects a4-b5 amongst 8 actions
+----------------------------------------
+
+    g1.w    g2..    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5.W    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5.R    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 50 / player black / credit 5 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['w-5/2r-3s-/w-p-4/3rsW-2/3p-2/4R-2/6', 'b', '15', '25']
+debug: answer of UGI agent:
+g1g2
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 50 : after 1.5 seconds black-natsel-depth-4 selects g1-g2 amongst 111 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5.W    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5..    c6..
+b1..    b2..    b3..    b4..    b5.R    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 51 / player white / credit 4 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 3.0 seconds
+Turn 51 : after 3.0 seconds white-cmalo-depth-4 selects b5-c5 amongst 9 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2..    d3..    d4sr    d5.W    d6..    d7..
+    c1..    c2..    c3..    c4.p    c5.R    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 52 / player black / credit 3 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['1w-4/2r-3s-/w-p-4/3rsW-2/3p-R-1/7/6', 'b', '17', '26']
+debug: answer of UGI agent:
+d4d2c1
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 2.0 seconds
+Turn 52 : after 2.0 seconds black-natsel-depth-4 selects d4=d2-c1 amongst 116 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2.r    d3..    d4..    d5.W    d6..    d7..
+    c1.s    c2..    c3..    c4.p    c5.R    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 53 / player white / credit 2 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+Player white-cmalo-depth-4 is thinking ...
+Player white-cmalo-depth-4 is done after 1.5 seconds
+Turn 53 : after 1.5 seconds white-cmalo-depth-4 selects d5-d6 amongst 19 actions
+----------------------------------------
+
+    g1..    g2.w    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2.r    d3..    d4..    d5..    d6.W    d7..
+    c1.s    c2..    c3..    c4.p    c5.R    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 54 / player black / credit 1 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+debug: fen position sent to UGI agent:
+['1w-4/2r-3s-/w-p-4/1r-3W-1/s-2p-R-1/7/6', 'b', '19', '27']
+debug: answer of UGI agent:
+g2g1
+
+Player black-natsel-depth-4 is thinking ...
+Player black-natsel-depth-4 is done after 1.5 seconds
+Turn 54 : after 1.5 seconds black-natsel-depth-4 selects g2-g1 amongst 97 actions
+----------------------------------------
+
+    g1.w    g2..    g3..    g4..    g5..    g6..
+f1..    f2..    f3.r    f4..    f5..    f6..    f7.s
+    e1.w    e2.p    e3..    e4..    e5..    e6..
+d1..    d2.r    d3..    d4..    d5..    d6.W    d7..
+    c1.s    c2..    c3..    c4.p    c5.R    c6..
+b1..    b2..    b3..    b4..    b5..    b6..    b7..
+    a1..    a2..    a3..    a4..    a5..    a6..
+
+
+Turn 55 / player white / credit 0 / alive P:0 R:1 S:0 W:1 p:2 r:2 s:2 w:2
+
+----------------------------------------
+Nobody wins ; the game is a draw between white-cmalo-depth-4 and black-natsel-depth-4 ; 42 versus 14 seconds
