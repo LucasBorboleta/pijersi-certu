@@ -4,7 +4,7 @@
 """pijersi_rules.py implements the rules engine for the PIJERSI boardgame."""
 
 
-__version__ = "2.0.0.rc5"
+__version__ = "2.0.0.rc6"
 
 _COPYRIGHT_AND_LICENSE = """
 PIJERSI-CERTU implements a GUI and a rules engine for the PIJERSI boardgame.
@@ -2293,6 +2293,11 @@ class Searcher():
         return action
 
 
+    def evaluate_actions(self, state: PijersiState) -> Mapping[PijersiAction, float]:
+        evaluated_actions = { str(action):1.0 for action in state.get_actions()}
+        return evaluated_actions
+
+
 class RandomSearcher(Searcher):
 
 
@@ -2670,6 +2675,26 @@ class MinimaxSearcher(Searcher):
         self.__fun_evaluation_count = 0
 
 
+    def evaluate_actions(self, state: PijersiState) -> Mapping[PijersiAction, float]:
+
+        initial_state = MinimaxState(state, state.get_current_player())
+
+        self.__alpha_cuts = []
+        self.__beta_cuts = []
+        self.__evaluation_count = 0
+        self.__fun_evaluation_count = 0
+        self.__null_windowing_count = 0
+
+        # >> The transpostion tables were valid just for the previous pijersi_state.
+        # >> So it is better to reset them.
+        self.__transposition_table_depth_0 = {}
+        self.__transposition_table_depth_n = {}
+
+        (_, _, valued_actions) = self.alphabeta_plus(state=initial_state, player=1, use_opening_file=False)
+        evaluated_actions = { str(action):action.value for action in valued_actions }
+        return evaluated_actions
+
+
     def search(self, state: PijersiState) -> PijersiAction:
 
         do_check = False
@@ -2905,7 +2930,7 @@ class MinimaxSearcher(Searcher):
         return (best_child_value, valued_actions)
 
 
-    def alphabeta_plus(self, state, player, depth=None, alpha=None, beta=None) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
+    def alphabeta_plus(self, state, player, depth=None, alpha=None, beta=None, use_opening_file=True) -> Tuple[float, Sequence[PijersiAction], Sequence[PijersiAction]]:
         """alphabeta with extra features:
             - compute the best branch ;
             - iterated minimax for optimization ;
@@ -2959,7 +2984,7 @@ class MinimaxSearcher(Searcher):
 
         if ( depth == self.__max_depth and depth >= 2 and
             state.get_pijersi_state().get_turn() == 1 and
-            state.get_pijersi_state().get_setup() == Setup.T.CLASSIC ):
+            state.get_pijersi_state().get_setup() == Setup.T.CLASSIC and use_opening_file):
             opening_file_path = os.path.join(_package_home, f"openings-minimax-{depth}.txt")
 
             if not os.path.isfile(opening_file_path):
@@ -3371,13 +3396,14 @@ class SearcherCatalog:
 
 class Game:
 
-    __slots__ = ('__searcher', '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
+    __slots__ = ('__searcher', '__review_sup_searcher', '__review_inf_searcher', '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
                  '__enabled_log', '__log', '__turn', '__last_action',
                  '__turn_duration', '__turn_start', '__turn_end')
 
 
     def __init__(self, setup: Setup.T=Setup.T.CLASSIC, board_codes: Optional[BoardCodes]=None):
         self.__searcher = [None, None]
+        self.__review_sup_searcher = None
         self.__pijersi_state = None
         self.__pijersi_setup = setup
         self.__pijersi_setup_board_codes = board_codes
@@ -3403,6 +3429,14 @@ class Game:
 
     def set_black_searcher(self, searcher: Searcher):
         self.__searcher[Player.T.BLACK] = searcher
+
+
+    def set_review_sup_searcher(self, searcher: Searcher):
+        self.__review_sup_searcher = searcher
+
+
+    def set_review_inf_searcher(self, searcher: Searcher):
+        self.__review_inf_searcher = searcher
 
 
     def start(self):
@@ -3506,6 +3540,47 @@ class Game:
 
                 action_count = len(self.__pijersi_state.get_actions())
                 self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
+
+
+                if self.__review_sup_searcher is not None and self.__review_inf_searcher is not None:
+                    # >> The review of action is experimental.
+                    # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
+                    # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
+                    # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
+
+                    log("Move review ...")
+
+                    ACTION_REVIEW_SCORE_MAX = 10
+
+                    sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(self.__pijersi_state)
+
+                    # >> make a mapping action -> rank that ensures that equal values have equal ranks
+                    sup_ranks_by_actions = {}
+                    sup_values = list(set(sup_evaluated_actions.values()))
+                    sup_values.sort()
+                    for (action_name, action_value) in sup_evaluated_actions.items():
+                        sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
+
+                    action_rank = sup_ranks_by_actions[self.__last_action]
+
+                    inf_action = str(self.__review_inf_searcher.search(self.__pijersi_state))
+                    inf_rank = sup_ranks_by_actions[inf_action]
+
+                    if action_rank < inf_rank :
+                        action_review_score = 0
+
+                    elif inf_rank == len(sup_values):
+
+                        if action_rank == inf_rank:
+                            action_review_score = ACTION_REVIEW_SCORE_MAX
+                        else:
+                            action_review_score = 0
+
+                    else:
+                        action_review_score = int(ACTION_REVIEW_SCORE_MAX*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
+
+                    self.__log += f" ; review: {action_review_score}/{ACTION_REVIEW_SCORE_MAX}"
+
                 log(self.__log)
                 log("-"*40)
 

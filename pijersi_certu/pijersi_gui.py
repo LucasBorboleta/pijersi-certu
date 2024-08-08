@@ -67,6 +67,10 @@ from pijersi_ugi import UgiClient
 from pijersi_ugi import UgiSearcher
 
 
+REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
+REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+
+
 def rgb_color_as_hexadecimal(rgb_triplet):
     (red, green, blue) = rgb_triplet
     assert 0 <= red <= 255
@@ -1141,6 +1145,8 @@ class GameGui(ttk.Frame):
 
                 self.__game.set_white_searcher(white_replayer)
                 self.__game.set_black_searcher(black_replayer)
+                self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
+                self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
 
                 self.__game.start()
                 self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
@@ -1483,6 +1489,8 @@ class GameGui(ttk.Frame):
 
             self.__game.set_white_searcher(self.__frontend_searchers[rules.Player.T.WHITE])
             self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
+            self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
+            self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
 
             self.__game.start()
             self.__game.set_turn_start(time.time())
@@ -1588,6 +1596,8 @@ class GameGui(ttk.Frame):
 
         self.__game.set_white_searcher(white_replayer)
         self.__game.set_black_searcher(black_replayer)
+        self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
+        self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
 
         self.__game.start()
 
