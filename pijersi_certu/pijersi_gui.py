@@ -1929,6 +1929,9 @@ class GameGui(ttk.Frame):
 
                 turn = self.__game.get_turn()
                 notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+                last_action_review = self.__game.get_last_action_review()
+                if last_action_review is not None:
+                    notation += ' ' + last_action_review
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
 
