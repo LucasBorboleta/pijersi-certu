@@ -67,6 +67,7 @@ from pijersi_ugi import UgiClient
 from pijersi_ugi import UgiSearcher
 
 
+# >> AI searchers for performing the action review
 REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
 
@@ -1147,6 +1148,7 @@ class GameGui(ttk.Frame):
                 self.__game.set_black_searcher(black_replayer)
                 self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
                 self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
+                self.__game.enable_review(False)
 
                 self.__game.start()
                 self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
@@ -1202,6 +1204,7 @@ class GameGui(ttk.Frame):
                     self.__text_actions.config(state="disabled")
 
                 self.__game_terminated = not self.__game.has_next_turn()
+                self.__game.enable_review(True)
 
                 self.__pijersi_state = self.__game.get_state()
 
@@ -1491,6 +1494,7 @@ class GameGui(ttk.Frame):
             self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
             self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
             self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
+            self.__game.enable_review(True)
 
             self.__game.start()
             self.__game.set_turn_start(time.time())
@@ -1598,6 +1602,7 @@ class GameGui(ttk.Frame):
         self.__game.set_black_searcher(black_replayer)
         self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
         self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
+        self.__game.enable_review(False)
 
         self.__game.start()
 
@@ -1643,6 +1648,7 @@ class GameGui(ttk.Frame):
         assert self.__game.has_next_turn()
         self.__game_played = True
         self.__game_terminated = False
+        self.__game.enable_review(True)
 
         self.__pijersi_state = self.__game.get_state()
 

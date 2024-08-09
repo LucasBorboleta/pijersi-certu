@@ -3396,17 +3396,24 @@ class SearcherCatalog:
 
 class Game:
 
-    __slots__ = ('__searcher', '__review_sup_searcher', '__review_inf_searcher', '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
+    __slots__ = ('__searcher',
+                 '__review_sup_searcher', '__review_inf_searcher', '__enabled_review', '__last_action_review',
+                 '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
                  '__enabled_log', '__log', '__turn', '__last_action',
                  '__turn_duration', '__turn_start', '__turn_end')
 
 
     def __init__(self, setup: Setup.T=Setup.T.CLASSIC, board_codes: Optional[BoardCodes]=None):
         self.__searcher = [None, None]
-        self.__review_sup_searcher = None
+
         self.__pijersi_state = None
         self.__pijersi_setup = setup
         self.__pijersi_setup_board_codes = board_codes
+
+        self.__enabled_review = False
+        self.__last_action_review = None
+        self.__review_sup_searcher = None
+        self.__review_inf_searcher = None
 
         self.__enabled_log = True
         self.__log = ""
@@ -3421,6 +3428,10 @@ class Game:
         self.__enabled_log = condition
         if not self.__enabled_log:
             self.__log = ""
+
+
+    def enable_review(self, condition: bool):
+        self.__enabled_review = condition
 
 
     def set_white_searcher(self, searcher: Searcher):
@@ -3486,6 +3497,10 @@ class Game:
         return self.__last_action
 
 
+    def get_last_action_review(self) -> Optional[str]:
+        return self.__last_action_review
+
+
     def get_summary(self) -> str:
         return self.__pijersi_state.get_summary()
 
@@ -3542,47 +3557,60 @@ class Game:
                 self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
 
 
-                if self.__review_sup_searcher is not None and self.__review_inf_searcher is not None:
-                    # >> The review of action is experimental.
-                    # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
-                    # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
-                    # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
+            if self.__enabled_review:
 
+                # >> The review of action is experimental.
+                # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
+                # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
+                # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
+
+                if self.__enabled_log:
                     log("Move review ...")
 
-                    ACTION_REVIEW_SCORE_MAX = 10
+                assert self.__review_sup_searcher is not None
+                assert self.__review_inf_searcher is not None
 
-                    sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(self.__pijersi_state)
+                ACTION_REVIEW_SCORE_MAX = 10
 
-                    # >> make a mapping action -> rank that ensures that equal values have equal ranks
-                    sup_ranks_by_actions = {}
-                    sup_values = list(set(sup_evaluated_actions.values()))
-                    sup_values.sort()
-                    for (action_name, action_value) in sup_evaluated_actions.items():
-                        sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
+                sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(self.__pijersi_state)
 
-                    action_rank = sup_ranks_by_actions[self.__last_action]
+                # >> make a mapping action -> rank that ensures that equal values have equal ranks
+                sup_ranks_by_actions = {}
+                sup_values = list(set(sup_evaluated_actions.values()))
+                sup_values.sort()
+                for (action_name, action_value) in sup_evaluated_actions.items():
+                    sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
 
-                    inf_action = str(self.__review_inf_searcher.search(self.__pijersi_state))
-                    inf_rank = sup_ranks_by_actions[inf_action]
+                action_rank = sup_ranks_by_actions[self.__last_action]
 
-                    if action_rank < inf_rank :
+                inf_action = str(self.__review_inf_searcher.search(self.__pijersi_state))
+                inf_rank = sup_ranks_by_actions[inf_action]
+
+                if action_rank < inf_rank :
+                    action_review_score = 0
+
+                elif inf_rank == len(sup_values):
+
+                    if action_rank == inf_rank:
+                        action_review_score = ACTION_REVIEW_SCORE_MAX
+                    else:
                         action_review_score = 0
 
-                    elif inf_rank == len(sup_values):
+                else:
+                    action_review_score = int(ACTION_REVIEW_SCORE_MAX*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
 
-                        if action_rank == inf_rank:
-                            action_review_score = ACTION_REVIEW_SCORE_MAX
-                        else:
-                            action_review_score = 0
 
-                    else:
-                        action_review_score = int(ACTION_REVIEW_SCORE_MAX*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
+                self.__last_action_review = f"{action_review_score:02d}/{ACTION_REVIEW_SCORE_MAX:02d}"
 
-                    self.__log += f" ; review: {action_review_score}/{ACTION_REVIEW_SCORE_MAX}"
+                self.__log += f" ; review: {self.__last_action_review}"
 
+            else:
+                self.__enabled_review = None
+
+            if self.__enabled_log:
                 log(self.__log)
                 log("-"*40)
+
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
 
