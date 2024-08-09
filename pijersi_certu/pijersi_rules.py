@@ -2264,9 +2264,9 @@ class Searcher():
     __slots__ = ('__name', '__time_limit')
 
 
-    def __init__(self, name):
+    def __init__(self, name: str, time_limit: Optional[int]=None):
         self.__name = name
-        self.__time_limit = None
+        self.__time_limit = time_limit
 
 
     def get_name(self) -> str:

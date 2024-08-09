@@ -785,11 +785,11 @@ class UgiServer:
 
 class UgiSearcher(rules.Searcher):
 
-    __slots__ = ('__ugi_client', '__ugi_permanent', '__max_depth', '__time_limit')
+    __slots__ = ('__ugi_client', '__ugi_permanent', '__max_depth')
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[int]=None):
-        super().__init__(name)
+        super().__init__(name, time_limit)
 
         self.__ugi_client = ugi_client
         self.__ugi_permanent = self.__ugi_client.is_permanent()
@@ -797,7 +797,6 @@ class UgiSearcher(rules.Searcher):
         assert max_depth is None or time_limit is None
         assert not (max_depth is None and time_limit is None)
         self.__max_depth = max_depth
-        self.__time_limit = time_limit
 
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
@@ -819,17 +818,19 @@ class UgiSearcher(rules.Searcher):
 
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
-        
+
         if False:
             print("debug: fen position sent to UGI agent:")
             print(fen)
 
+        time_limit =self.get_time_limit()
+
         if self.__max_depth is not None:
             ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
 
-        elif self.__time_limit is not None:
-            ugi_action = self.__ugi_client.go_movetime_and_wait(self.__time_limit*1_000)
-        
+        elif time_limit is not None:
+            ugi_action = self.__ugi_client.go_movetime_and_wait(time_limit*1_000)
+
         if False:
             print("debug: answer of UGI agent:")
             print(ugi_action)
