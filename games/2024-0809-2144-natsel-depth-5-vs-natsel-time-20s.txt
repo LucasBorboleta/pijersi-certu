@@ -1,0 +1,15 @@
+   g16:sprspr f13:prs f4:ww f57:rsp
+   b13:PSR b4:WW b57:SRP a16:RPSRPS
+
+   1 b4=d5-e4             2 f4=e3-d4        
+   3 a5-a4=c3             4 g5-g4=f4        
+   5 a3-b3=c2             6 d4-d3           
+   7 c3=c5-d5             8 g3-f3=d2        
+   9 c2=b3-c3            10 d2=c2-c3!       
+  11 b3-c2!              12 g1-g2=f3        
+  13 a1-a2=b3            14 c3-d3=d1        
+  15 b1-b2=d1!           16 f3-f2=d1!       
+  17 b3=b2-c1            18 f4-e3=c2!       
+  19 d5=b4-b3            20 c2=c1!          
+  21 a6-b6=d7            22 c1=b1-a1  
+  

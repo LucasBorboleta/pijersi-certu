@@ -3557,7 +3557,8 @@ class Game:
                 self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
 
 
-            if self.__enabled_review:
+            if False: # >> Game/action review feature is planned after pijersi-certu v2.0.0 !
+            #if self.__enabled_review:
 
                 # >> The review of action is experimental.
                 # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
