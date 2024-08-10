@@ -551,6 +551,7 @@ class GameGui(ttk.Frame):
 
         self.__action_animation_duration = 500
 
+        self.__picture_canevas_delay = 125 # >> without such delay taking picture could be randomly wrong
         self.__picture_gif_duration = 750
 
         self.__edit_actions = False
@@ -1356,6 +1357,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
+                    self.__sleep_ms(self.__picture_canevas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1381,6 +1383,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
+                    self.__sleep_ms(self.__picture_canevas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1402,6 +1405,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
+                    self.__sleep_ms(self.__picture_canevas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1413,6 +1417,7 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_moved_and_played_hexagons()
             self.__draw_state()
             self.__canvas.update()
+            self.__sleep_ms(self.__picture_canevas_delay)
 
             picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
             self.__take_picture(picture_png_file)
@@ -1429,6 +1434,7 @@ class GameGui(ttk.Frame):
                     self.__legend =  (pause_index + 1 ) *'.' + " " + saved_legend + " " + (pause_index + 1 ) *'.'
                     self.__draw_state()
                     self.__canvas.update()
+                    self.__sleep_ms(self.__picture_canevas_delay)
 
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
