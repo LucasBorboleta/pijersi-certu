@@ -676,7 +676,7 @@ class GameGui(ttk.Frame):
         self.__frame_commands.grid(row=0, column=0)
 
         self.__frame_players = ttk.Frame(self.__frame_commands_and_players)
-        self.__frame_players.grid(row=0, column=1, sticky='e')
+        self.__frame_players.grid(row=0, column=1)
 
         self.__frame_commands_and_players.columnconfigure(1, pad=60)
         self.__frame_commands_and_players.columnconfigure(0, pad=20)
@@ -721,6 +721,8 @@ class GameGui(ttk.Frame):
         self.__combobox_white_player.config(state="readonly")
         self.__variable_white_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
 
+        self.__button_switch = ttk.Button(self.__frame_players, text='<->', width=0, command=self.__command_switch_players)
+
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
         self.__variable_black_player = tk.StringVar()
@@ -733,7 +735,7 @@ class GameGui(ttk.Frame):
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
-                                             length=300,
+                                             length=390,
                                              maximum=100,
                                              mode='determinate')
         self.__progressbar.configure(style="White.Horizontal.TProgressbar")
@@ -741,17 +743,20 @@ class GameGui(ttk.Frame):
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
 
-        self.__label_black_player.grid(row=0, column=2)
-        self.__combobox_black_player.grid(row=0, column=3)
+        self.__button_switch.grid(row=0, column=2, sticky='e')
 
-        self.__progressbar.grid(row=1, columnspan=4)
+        self.__label_black_player.grid(row=0, column=3)
+        self.__combobox_black_player.grid(row=0, column=4)
+
+        self.__progressbar.grid(row=1, columnspan=5)
 
         self.__frame_players.rowconfigure(0, pad=5)
         self.__frame_players.rowconfigure(1, pad=5)
         self.__frame_players.columnconfigure(0, pad=5)
         self.__frame_players.columnconfigure(1, pad=5)
-        self.__frame_players.columnconfigure(2, pad=5)
+        self.__frame_players.columnconfigure(2, pad=2)
         self.__frame_players.columnconfigure(3, pad=5)
+        self.__frame_players.columnconfigure(4, pad=5)
 
         self.__variable_white_player.trace_add('write', self.__command_update_players)
         self.__variable_black_player.trace_add('write', self.__command_update_players)
@@ -956,6 +961,18 @@ class GameGui(ttk.Frame):
         self.__searcher[rules.Player.T.WHITE] = self.__searcher_catalog.get(self.__variable_white_player.get())
         self.__searcher[rules.Player.T.BLACK] = self.__searcher_catalog.get(self.__variable_black_player.get())
 
+
+    def __command_switch_players(self):
+        new_white_player = self.__variable_black_player.get()
+        new_black_player = self.__variable_white_player.get()
+
+        self.__variable_white_player.set(new_white_player)
+        self.__variable_black_player.set(new_black_player)
+
+        self.__searcher[rules.Player.T.WHITE] = self.__searcher_catalog.get(new_white_player)
+        self.__searcher[rules.Player.T.BLACK] = self.__searcher_catalog.get(new_black_player)
+
+
     def __command_protect_action(self, *_):
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
@@ -1062,6 +1079,7 @@ class GameGui(ttk.Frame):
             self.__button_new_stop.config(state="disabled")
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
+            self.__button_switch.config(state="disabled")
             self.__combobox_setup.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
@@ -1260,6 +1278,7 @@ class GameGui(ttk.Frame):
                 self.__button_new_stop.config(state="enabled")
                 self.__combobox_white_player.config(state="readonly")
                 self.__combobox_black_player.config(state="readonly")
+                self.__button_switch.config(state="enabled")
                 self.__combobox_setup.config(state="readonly")
 
                 self.__spinbox_turn.config(state="enabled")
@@ -1290,6 +1309,7 @@ class GameGui(ttk.Frame):
         self.__button_new_stop.config(state="disabled")
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
+        self.__button_switch.config(state="disabled")
         self.__combobox_setup.config(state="disabled")
 
         self.__button_resume.config(state="disabled")
@@ -1459,6 +1479,7 @@ class GameGui(ttk.Frame):
         self.__button_new_stop.config(state="enabled")
         self.__combobox_white_player.config(state="readonly")
         self.__combobox_black_player.config(state="readonly")
+        self.__button_switch.config(state="enabled")
         self.__combobox_setup.config(state="readonly")
 
         self.__button_resume.config(state="enabled")
@@ -1529,6 +1550,7 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
+            self.__button_switch.config(state="disabled")
             self.__combobox_setup.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
@@ -1565,6 +1587,7 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
+            self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
@@ -1717,6 +1740,7 @@ class GameGui(ttk.Frame):
 
         self.__combobox_white_player.config(state="disabled")
         self.__combobox_black_player.config(state="disabled")
+        self.__button_switch.config(state="disabled")
         self.__combobox_setup.config(state="disabled")
 
         self.__spinbox_turn.config(state="disabled")
@@ -1971,6 +1995,7 @@ class GameGui(ttk.Frame):
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
+            self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
@@ -2015,12 +2040,10 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
     def __cmc_update_mouse_right_click(self, event):
-        """ The CMC process is reset, as if user does not click on a legal hexagon"""
+        """ The CMC process is reset and the canvas is restored, as if user does not click on a legal hexagon"""
 
         self.__cmc_reset()
-        self.__cmc_state = CMCState.SELECTING_1
         self.__cmc_hightlight_moved_and_played_hexagons()
-
         self.__draw_state()
 
     def __cmc_update_mouse_left_click(self, event):
@@ -2086,7 +2109,6 @@ class GameGui(ttk.Frame):
 
         else:
             self.__cmc_reset()
-            self.__cmc_state = CMCState.SELECTING_1
             self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
@@ -2152,7 +2174,6 @@ class GameGui(ttk.Frame):
             # User does not click on a legal hexagon
             # The CMC process is reset
             self.__cmc_reset()
-            self.__cmc_state = CMCState.SELECTING_1
             self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
@@ -2186,7 +2207,6 @@ class GameGui(ttk.Frame):
 
         else:
             self.__cmc_reset()
-            self.__cmc_state = CMCState.SELECTING_1
             self.__cmc_hightlight_moved_and_played_hexagons()
 
         self.__draw_state()
