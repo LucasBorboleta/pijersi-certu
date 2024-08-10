@@ -2045,6 +2045,8 @@ class GameGui(ttk.Frame):
         self.__cmc_reset()
         self.__cmc_hightlight_moved_and_played_hexagons()
         self.__draw_state()
+        self.__cmc_hexagon_at_over = None
+        self.__cmc_update_mouse_over(event)
 
     def __cmc_update_mouse_left_click(self, event):
         """
@@ -2175,6 +2177,10 @@ class GameGui(ttk.Frame):
             # The CMC process is reset
             self.__cmc_reset()
             self.__cmc_hightlight_moved_and_played_hexagons()
+            self.__draw_state()
+            self.__cmc_hexagon_at_over = None
+            self.__cmc_update_mouse_over(event)
+            return
 
         self.__draw_state()
 
@@ -2208,6 +2214,10 @@ class GameGui(ttk.Frame):
         else:
             self.__cmc_reset()
             self.__cmc_hightlight_moved_and_played_hexagons()
+            self.__draw_state()
+            self.__cmc_hexagon_at_over = None
+            self.__cmc_update_mouse_over(event)
+            return
 
         self.__draw_state()
 
