@@ -719,7 +719,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_white_player,
                                                     values=searcher_catalog_names)
         self.__combobox_white_player.config(state="readonly")
-        self.__variable_white_player.set(searcher_catalog_names[0])
+        self.__variable_white_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
 
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
@@ -729,7 +729,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
-        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
+        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -764,7 +764,8 @@ class GameGui(ttk.Frame):
         self.__canvas.pack(side=tk.TOP)
 
         self.__canvas.bind('<Motion>', self.__cmc_update_mouse_over)
-        self.__canvas.bind('<Button-1>', self.__cmc_update_mouse_click)
+        self.__canvas.bind('<Button-1>', self.__cmc_update_mouse_left_click)
+        self.__canvas.bind('<Button-3>', self.__cmc_update_mouse_right_click)
 
        # In __frame_actions
 
@@ -2013,7 +2014,16 @@ class GameGui(ttk.Frame):
         self.__cmc_hightlight_selectable_hexagons()
         self.__draw_state()
 
-    def __cmc_update_mouse_click(self, event):
+    def __cmc_update_mouse_right_click(self, event):
+        """ The CMC process is reset, as if user does not click on a legal hexagon"""
+
+        self.__cmc_reset()
+        self.__cmc_state = CMCState.SELECTING_1
+        self.__cmc_hightlight_moved_and_played_hexagons()
+
+        self.__draw_state()
+
+    def __cmc_update_mouse_left_click(self, event):
         """
         Manage click event:  if mouse is inside the canvas, manage the event regarding the CMC state
         """
@@ -2032,15 +2042,15 @@ class GameGui(ttk.Frame):
 
         # Dispatch the management regarding the CMC state
         if self.__cmc_state is CMCState.SELECTING_1:
-            self.__cmc_update_mouse_click_1(event)
+            self.__cmc_update_mouse_left_click_1(event)
 
         elif self.__cmc_state is CMCState.SELECTING_2:
-            self.__cmc_update_mouse_click_2(event)
+            self.__cmc_update_mouse_left_click_2(event)
 
         elif self.__cmc_state is CMCState.SELECTING_3:
-            self.__cmc_update_mouse_click_3(event)
+            self.__cmc_update_mouse_left_click_3(event)
 
-    def __cmc_update_mouse_click_1(self, event):
+    def __cmc_update_mouse_left_click_1(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_1,
         meaning wait that user selects a first hexagon.
@@ -2081,7 +2091,7 @@ class GameGui(ttk.Frame):
 
         self.__draw_state()
 
-    def __cmc_update_mouse_click_2(self, event):
+    def __cmc_update_mouse_left_click_2(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_2,
         meaning wait that user selects a second hexagon.
@@ -2147,7 +2157,7 @@ class GameGui(ttk.Frame):
 
         self.__draw_state()
 
-    def __cmc_update_mouse_click_3(self, event):
+    def __cmc_update_mouse_left_click_3(self, event):
         """
         Manage click event when the CMC process is in state SELECTING_3,
         meaning wait that user selects a third hexagon and finishes the CMC process.
