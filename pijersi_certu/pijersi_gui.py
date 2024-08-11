@@ -596,7 +596,7 @@ class GameGui(ttk.Frame):
 
         self.__root = tk.Tk()
 
-        title = ( "pijersi-certu for playing the pijersi boardgame and testing AI agents" +
+        title = ( "pijersi-certu for playing the pijersi boardgame and testing AI agents thanks to the UGI protocol" +
                   " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
 
         try:
