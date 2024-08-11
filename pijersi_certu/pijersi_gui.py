@@ -32,7 +32,7 @@ _NATSEL_COPYRIGHT = "(c) 2024 Eclypse-Prime"
 _NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
 _NATSEL_NAME = "Natural Selection"
 _NATSEL_KEY = "natsel"
-_NATSEL_VERSION = "1.0.0"
+_NATSEL_VERSION = "1.0.1"
 
 
 

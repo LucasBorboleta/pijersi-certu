@@ -220,8 +220,7 @@ class UgiClient:
                 self.__log_debug(f"__handle_bestmove_reply: '{reply}'")
 
             else:
-                if False: #TODO: remove this when natsel bug will be fix.
-                    self.__log_info(f"__handle_bestmove_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
+                self.__log_info(f"__handle_bestmove_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
                 continue
 
         return bestmove
