@@ -2818,12 +2818,12 @@ class GameGui(ttk.Frame):
 
         # Respect priority order in lighting
 
-        if hexagon.highlighted_as_selectable:
-            fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
-            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
-
         if hexagon.highlighted_as_destination:
             fill_color = HexagonColor.HIGHLIGHT_DESTINATION_SELECTION.value
+            polygon_line_color = HexagonLineColor.HIGHLIGHT.value
+
+        if hexagon.highlighted_as_selectable:
+            fill_color = HexagonColor.HIGHLIGHT_SOURCE_SELECTION.value
             polygon_line_color = HexagonLineColor.HIGHLIGHT.value
 
         if hexagon.highlighted_as_cube:
