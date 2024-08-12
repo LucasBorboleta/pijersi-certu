@@ -8,37 +8,39 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 ## Installing as single executable for Windows platform
 
 - From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. Also the UGI server `pijersi-cmalo` can be found there.
-- The latest stable version is `v1.3.0`.
+- The latest stable version is `v2.0.0`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
   - The returned hash value must comply with the following table, otherwise, remove immediately the downloaded executable from your computer.
 
-  | Version     | Hash   | Expected hash value                                              |
-  | ----------- | ------ | ---------------------------------------------------------------- |
-  | v2.0.0.rc5  | SHA256 | 5289992718677000B337405B0D897C3A7A3145883FFAB8E56FC322FAF213D54B |
-  | v2.0.0.rc5  | MD5    | 996FDADAC746E408080B44249165F455                                 |
-  | v2.0.0.rc4  | SHA256 | FEC7BA9743B6E5A744FA774E2EED9FABBE4C5A8273A4888BDC4DAEC98468FE04 |
-  | v2.0.0.rc4  | MD5    | AF9EC3B059F01E934E0E0B97111A6905                                 |
-  | v2.0.0.rc3  | SHA256 | 49D7E1A24EB9488B6E44E3B5834EB26E758786DE5C5DD6F7FA1AA8E9D0F56315 |
-  | v2.0.0.rc3  | MD5    | 6C871EF9522D714511CA77174A0BBB08                                 |
-  | v2.0.0.rc2  | SHA256 | B20B07ABBEAA87D16708C6B4E07353B51ACDE4758871024A45F6979734422100 |
-  | v2.0.0.rc2  | MD5    | 7541ACA5DAD55059716953A4C57FE929                                 |
-  | v2.0.0.rc1  | SHA256 | 8FAC0C9A5BF4F2B870B1DDCA369B73AEC52714649AD07A5C4F24771A48E59C44 |
-  | v2.0.0.rc1  | MD5    | 7215AA83BB353792CC03002455D865BC                                 |
-  | v1.3.0      | SHA256 | 66E306910D943F25F090A0CA36580736CEA1EA6349D6A4C04F2E9A5D23447180 |
-  | v1.3.0      | MD5    | 562F7DBFE750377ACEA171DE02B65C65                                 |
-  | v1.2.0      | SHA256 | C75109044E6A71C0133B680CB87639A1BF5022F700E8FBC4D98AB5FAC61129C8 |
-  | v1.2.0      | MD5    | 464E1A7F59EF6F4B3702067D0D6A14F3                                 |
-  | v1.1.0      | SHA256 | 62245ffd476791e12bdfbbf03006edecbd9742a6faa2c14917eee37126e9dbd4 |
-  | v1.1.0      | MD5    | 5dbf2450e54a7520d8ed8c72f863c80a                                 |
-  | v1.0.0      | SHA256 | 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36 |
-  | v1.0.0      | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                                 |
+  | Version | Hash   | Expected hash value                                          |
+  | ------- | ------ | ------------------------------------------------------------ |
+  | v2.0.0  | SHA256 | ED5416E03A519D54465896FF6249F203D35E8302252CEB0E71A87D82AE244186 |
+  | v2.0.0  | MD5    | 30D26CF1C8798662EC1B6DDEADC54D18                             |
+  | v1.3.0  | SHA256 | 66E306910D943F25F090A0CA36580736CEA1EA6349D6A4C04F2E9A5D23447180 |
+  | v1.3.0  | MD5    | 562F7DBFE750377ACEA171DE02B65C65                             |
+  | v1.2.0  | SHA256 | C75109044E6A71C0133B680CB87639A1BF5022F700E8FBC4D98AB5FAC61129C8 |
+  | v1.2.0  | MD5    | 464E1A7F59EF6F4B3702067D0D6A14F3                             |
+  | v1.1.0  | SHA256 | 62245ffd476791e12bdfbbf03006edecbd9742a6faa2c14917eee37126e9dbd4 |
+  | v1.1.0  | MD5    | 5dbf2450e54a7520d8ed8c72f863c80a                             |
+  | v1.0.0  | SHA256 | 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36 |
+  | v1.0.0  | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                             |
 
   - The old release candidates have been removed :
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
+   | v2.0.0.rc5 | SHA256 | 5289992718677000B337405B0D897C3A7A3145883FFAB8E56FC322FAF213D54B |
+   | v2.0.0.rc5 | MD5    | 996FDADAC746E408080B44249165F455                                 |
+   | v2.0.0.rc4 | SHA256 | FEC7BA9743B6E5A744FA774E2EED9FABBE4C5A8273A4888BDC4DAEC98468FE04 |
+   | v2.0.0.rc4 | MD5    | AF9EC3B059F01E934E0E0B97111A6905                                 |
+   | v2.0.0.rc3 | SHA256 | 49D7E1A24EB9488B6E44E3B5834EB26E758786DE5C5DD6F7FA1AA8E9D0F56315 |
+   | v2.0.0.rc3 | MD5    | 6C871EF9522D714511CA77174A0BBB08                                 |
+   | v2.0.0.rc2 | SHA256 | B20B07ABBEAA87D16708C6B4E07353B51ACDE4758871024A45F6979734422100 |
+   | v2.0.0.rc2 | MD5    | 7541ACA5DAD55059716953A4C57FE929                                 |
+   | v2.0.0.rc1 | SHA256 | 8FAC0C9A5BF4F2B870B1DDCA369B73AEC52714649AD07A5C4F24771A48E59C44 |
+   | v2.0.0.rc1 | MD5    | 7215AA83BB353792CC03002455D865BC                                 |
    | v1.3.0-rc3 | SHA256 | 4AC2CD815E97843095C734256B2CF8C381D54F165C86E262E49C627598522E11 |
    | v1.3.0-rc3 | MD5    | AA2A31FE676CB0A9BF43D2C391365631                                 |
    | v1.3.0-rc2 | SHA256 | A9494E334A51EEB29AB56209D1E96A1BD8D50261A2273138A6EEBFA5C146FD0E |
@@ -57,7 +59,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
    | v1.1.0-rc1 | MD5    | C0FE98D92EBBE4C3497233F7C281370F                                 |
 
 
-  - The check-sums of the `pijersi-cmalo` UGI servers on `windows` are:
+  - The check-sums of the `pijersi-cmalo` UGI servers on `windows` are in the next table; the release candidates have been removed:
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
@@ -70,7 +72,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
    | v2.0.0.rc1 | SHA256 | CF922DD3C4263DFA8E3EC3EAB1322B7E19D49471671FF4E0B1FABD494E4A8350 |
    | v2.0.0.rc1 | MD5    | 0E37EDAB469825F423689A7B8B56B587                                 |
 
-  - The check-sums of the `pijersi-cmalo` UGI servers on `linux` are:
+  - The check-sums of the `pijersi-cmalo` UGI servers on `linux` are in the next table; the release candidates have been removed:
 
    | Version    | Hash   | Expected hash value                                              |
    | ---------- | ------ | ---------------------------------------------------------------- |
