@@ -2879,7 +2879,8 @@ class GameGui(ttk.Frame):
                                      outline=polygon_line_color,
                                      width=CANVAS_CONFIG.HEXA_LINE_WIDTH*line_width_scaling,
                                      joinstyle=tk.MITER,
-                                     dash=line_dash)
+                                     dash=line_dash,
+                                     stipple='gray50')
 
         if label_position is not None:
             label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
