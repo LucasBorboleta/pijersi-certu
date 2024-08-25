@@ -300,6 +300,11 @@ class CubeColor(enum.Enum):
     WHITE = 'white'
 
 
+class LabelLocation(enum.Enum):
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
+
+
 @enum.unique
 class HexagonColor(enum.Enum):
     BORDER = rgb_color_as_hexadecimal((191, 89, 52))
@@ -332,7 +337,7 @@ class GraphicalHexagon:
 
     all = None
 
-    def __init__(self, hexagon, color):
+    def __init__(self, hexagon, color, label_location):
 
         assert hexagon.name not in GraphicalHexagon.__name_to_hexagon
         assert color in HexagonColor
@@ -341,6 +346,7 @@ class GraphicalHexagon:
         self.position_uv = hexagon.position_uv
         self.index = hexagon.index
         self.color = color
+        self.label_location = label_location
 
         self.highlighted_as_selectable = False
         self.highlighted_as_cube = False
@@ -496,17 +502,26 @@ class GraphicalHexagon:
         inner_ring += ['d3', 'd5']
         inner_ring += ['c3', 'c4']
 
+        left_labels = ['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1']
+        right_labels = ['a6', 'b7', 'c6', 'd7', 'e6', 'f7', 'g6']
+
         for hexagon in rules.Hexagon.all:
 
             if hexagon.name in outer_ring:
                 color = HexagonColor.DARK
-
             elif hexagon.name in inner_ring:
                 color = HexagonColor.DARK
             else:
                 color = HexagonColor.LIGHT
 
-            GraphicalHexagon(hexagon, color)
+            if hexagon.name in left_labels:
+                label_location = LabelLocation.LEFT
+            elif hexagon.name in right_labels:
+                label_location = LabelLocation.RIGHT
+            else:
+                label_location = None
+
+            GraphicalHexagon(hexagon, color, label_location)
 
 
 @enum.unique
@@ -2802,8 +2817,13 @@ class GameGui(ttk.Frame):
 
     def __draw_hexagon(self, hexagon):
 
-        label_position = (TinyVector((hexagon.vertex_data[6], hexagon.vertex_data[7])) +
-                          0.25*CANVAS_CONFIG.HEXA_SIDE*(CANVAS_CONFIG.UNIT_X + 0.75*CANVAS_CONFIG.UNIT_Y))
+        if hexagon.label_location is LabelLocation.LEFT:
+            label_position = hexagon.center - 1.10*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
+
+        elif hexagon.label_location is LabelLocation.RIGHT:
+            label_position = hexagon.center + 1.10*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
+        else:
+            label_position = None
 
         if self.__use_background_photo:
             polygon_line_color = ''
@@ -2841,7 +2861,7 @@ class GameGui(ttk.Frame):
 
         elif hexagon.highlighted_as_moved_by_black:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_MOVED_BY_BLACK.value
-            line_width_scaling = 4
+            line_width_scaling = 3
             line_dash = (5,5)
 
         if hexagon.highlighted_as_played_by_white:
@@ -2851,7 +2871,7 @@ class GameGui(ttk.Frame):
 
         elif hexagon.highlighted_as_played_by_black:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
-            line_width_scaling = 4
+            line_width_scaling = 3
             line_dash = None
 
         self.__canvas.create_polygon(hexagon.vertex_data,
@@ -2861,7 +2881,7 @@ class GameGui(ttk.Frame):
                                      joinstyle=tk.MITER,
                                      dash=line_dash)
 
-        if hexagon.name:
+        if label_position is not None:
             label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
 
             self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
