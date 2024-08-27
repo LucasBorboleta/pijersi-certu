@@ -2823,10 +2823,10 @@ class GameGui(ttk.Frame):
     def __draw_hexagon(self, hexagon):
 
         if hexagon.label_location is LabelLocation.LEFT:
-            label_position = hexagon.center - 1.10*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
+            label_position = hexagon.center - 1.15*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
 
         elif hexagon.label_location is LabelLocation.RIGHT:
-            label_position = hexagon.center + 1.10*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
+            label_position = hexagon.center + 1.15*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
         
         else:
             label_position = None
