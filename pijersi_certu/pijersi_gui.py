@@ -199,7 +199,10 @@ class TinyVector:
 
 class CanvasConfig:
 
-    def __init__(self):
+    def __init__(self, scale_factor=1):
+        # >> The "scale_factor" is just for experimenting the correctness of sizes computation and drawing methods.
+        # >> The actual design for dynamic resize is to use the "update" method, but it is frozen because it does not work right now.
+        
         # Canvas x-y dimensions in hexagon width units
         # >> This complex formula is related to the construction of the background picture for the board
         self.NX = 8
@@ -207,7 +210,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT = 640
+        self.HEIGHT = 640*scale_factor
         self.WIDTH = self.HEIGHT*self.RATIO
 
         # Canvas background
@@ -3138,7 +3141,7 @@ def make_artefact_platform_id():
     return artefact_platform_id
 
 
-CANVAS_CONFIG = CanvasConfig()
+CANVAS_CONFIG = CanvasConfig(scale_factor=1.00)
 GraphicalHexagon.init()
 
 
