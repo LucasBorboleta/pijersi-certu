@@ -202,7 +202,7 @@ class CanvasConfig:
     def __init__(self, scale_factor=1):
         # >> The "scale_factor" is just for experimenting the correctness of sizes computation and drawing methods.
         # >> The actual design for dynamic resize is to use the "update" method, but it is frozen because it does not work right now.
-        
+
         # Canvas x-y dimensions in hexagon width units
         # >> This complex formula is related to the construction of the background picture for the board
         self.NX = 8
@@ -611,8 +611,12 @@ class GameGui(ttk.Frame):
         self.__searcher_catalog = make_searcher_catalog(self.__ugi_clients)
 
         # Create widgets
-
+        
         self.__root = tk.Tk()
+
+        # >> Fonts cannot be created before the root widget
+        self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
+        self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
 
         title = ( "pijersi-certu for playing the pijersi boardgame and testing AI agents thanks to the UGI protocol" +
                   " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
@@ -2760,10 +2764,8 @@ class GameGui(ttk.Frame):
 
         legend_position = hexagon_vertex - 1.0*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_Y
 
-        legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
-
         self.__canvas.create_text(*legend_position, text=self.__legend, justify=tk.CENTER,
-                                  font=legend_font, fill=CANVAS_CONFIG.FONT_LEGEND_COLOR)
+                                  font=self.__legend_font, fill=CANVAS_CONFIG.FONT_LEGEND_COLOR)
 
     def __draw_all_cubes(self):
 
@@ -2825,6 +2827,7 @@ class GameGui(ttk.Frame):
 
         elif hexagon.label_location is LabelLocation.RIGHT:
             label_position = hexagon.center + 1.10*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
+        
         else:
             label_position = None
 
@@ -2886,9 +2889,7 @@ class GameGui(ttk.Frame):
                                      stipple='gray50')
 
         if label_position is not None:
-            label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
-
-            self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=label_font)
+            self.__canvas.create_text(*label_position, text=hexagon.name, justify=tk.CENTER, font=self.__label_font)
 
     def __draw_cube(self, name, config, cube_color, cube_sort, cube_label):
 
