@@ -657,7 +657,7 @@ class GameGui(ttk.Frame):
 
             # >> Ensure the wigets sizes are computed by Tkinter
             resize_init_delay = 50
-            self.__root.after(resize_init_delay, self.__resize_init)
+            self.__root.after(resize_init_delay, self.__resize_canvas_init)
 
         else:
             # Disable the resizable feature
@@ -930,7 +930,7 @@ class GameGui(ttk.Frame):
 
         self.__root.destroy()
 
-    def __resize_init(self, *_):
+    def __resize_canvas_init(self, *_):
 
         self.__initial_root_width = self.__root.winfo_width()
         self.__initial_root_height = self.__root.winfo_height()
