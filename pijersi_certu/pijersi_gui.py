@@ -940,7 +940,7 @@ class GameGui(ttk.Frame):
 
         if True:
             # ensure minimal size of the GUI
-            self.__root.minsize(width=self.__initial_root_width, height=self.__initial_root_height)
+            self.__root.minsize(width=int(self.__initial_root_width*0.75), height=int(self.__initial_root_height*0.75))
 
         # react if widget has changed size or position
         self.__root.bind("<Configure>", self.__resize_canvas_preview)
