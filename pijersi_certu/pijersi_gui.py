@@ -366,6 +366,10 @@ class GraphicalHexagon:
 
         GraphicalHexagon.__name_to_hexagon[self.name] = self
 
+        self.__compute_center_and_vertices()
+
+    def __compute_center_and_vertices(self):
+
         (u, v) = self.position_uv
 
         self.center = CANVAS_CONFIG.ORIGIN + CANVAS_CONFIG.HEXA_WIDTH * (u*CANVAS_CONFIG.UNIT_U + v*CANVAS_CONFIG.UNIT_V)
@@ -436,10 +440,9 @@ class GraphicalHexagon:
             GraphicalHexagon.__init_done = True
 
     @staticmethod
-    def reset():
-        GraphicalHexagon.__all_sorted_hexagons = []
-        GraphicalHexagon.__init_done = False
-        GraphicalHexagon.__name_to_hexagon = {}
+    def resize():
+        for hexagon in GraphicalHexagon.all:
+            hexagon.__compute_center_and_vertices()
 
     @staticmethod
     def reset_highlights():
@@ -988,8 +991,7 @@ class GameGui(ttk.Frame):
         self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
         # redraw the canvas
-        GraphicalHexagon.reset()
-        GraphicalHexagon.init()
+        GraphicalHexagon.resize()
         self.__draw_state()
 
         # launch a monitor to trigger the usage of photos
@@ -1020,8 +1022,7 @@ class GameGui(ttk.Frame):
             self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
             # redraw the canvas
-            GraphicalHexagon.reset()
-            GraphicalHexagon.init()
+            GraphicalHexagon.resize()
             self.__draw_state()
 
             # cancel the monitor
