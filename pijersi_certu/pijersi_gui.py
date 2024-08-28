@@ -201,7 +201,7 @@ class CanvasConfig:
 
     def __init__(self, scale_factor=1):
         # >> The "scale_factor" is just for experimenting the correctness of sizes computation and drawing methods.
-        # >> The actual design for dynamic resize is to use the "update" method, but it is frozen because it does not work right now.
+        # >> The actual design for dynamic resize is to use the "resize" method.
 
         # Canvas x-y dimensions in hexagon width units
         # >> This complex formula is related to the construction of the background picture for the board
@@ -252,7 +252,7 @@ class CanvasConfig:
         self.UNIT_U = self.UNIT_X
         self.UNIT_V = self.HEXA_COS_SIDE_ANGLE*self.UNIT_X + self.HEXA_SIN_SIDE_ANGLE*self.UNIT_Y
 
-    def update(self, height):
+    def resize(self, height):
         self.HEIGHT = height
         self.WIDTH = self.HEIGHT*self.RATIO
 
@@ -611,7 +611,7 @@ class GameGui(ttk.Frame):
         self.__searcher_catalog = make_searcher_catalog(self.__ugi_clients)
 
         # Create widgets
-        
+
         self.__root = tk.Tk()
 
         # >> Fonts cannot be created before the root widget
@@ -643,9 +643,11 @@ class GameGui(ttk.Frame):
             summary += f" ; {_NATSEL_NAME} version {_NATSEL_VERSION} {_NATSEL_COPYRIGHT}"
         self.__variable_summary.set(summary)
 
-        if False:
+        if True:
             # Prepare the resizable feature
             self.__root.resizable(width=True, height=True)
+
+            # >> Ensure the wigets sizes are computed by Tkinter
             self.__finalize_timer_delay = 1
             self.__root.after(self.__finalize_timer_delay, self.__finalize_widgets)
 
@@ -928,12 +930,6 @@ class GameGui(ttk.Frame):
         self.__initial_canvas_width = self.__canvas.winfo_width()
         self.__initial_canvas_height = self.__canvas.winfo_height()
 
-        if ( math.fabs(self.__initial_canvas_width/CANVAS_CONFIG.WIDTH - 1) > 0.01  or
-              math.fabs(self.__initial_canvas_height/CANVAS_CONFIG.HEIGHT - 1) > 0.01):
-
-            self.__finalize_timer_delay = 100
-            self.__root.after(self.__finalize_timer_delay, self.__finalize_widgets)
-
         print()
         print(f"DEBUG: __initial_root_width = {self.__initial_root_width}")
         print(f"DEBUG: __initial_root_height = {self.__initial_root_height}")
@@ -958,7 +954,10 @@ class GameGui(ttk.Frame):
 
             scale_factor = min(current_root_width/self.__initial_root_width, current_root_height/self.__initial_root_height)
 
-            if scale_factor > 1.01:
+            if True or math.fabs(scale_factor - 1) > 0.01:
+                # >> Remember that the __background_tk_photo needs to be rescaled and that it generates some delay
+                # >> Hints: improve the reactivness by drawing without __background_tk_photo until the scale is stable;
+                # >> Hints: this would requires monitoring the time changes of the scale
 
                 print()
                 print(f"DEBUG: current_root_width = {current_root_width}")
@@ -966,10 +965,9 @@ class GameGui(ttk.Frame):
                 print(f"DEBUG: scale_factor = {scale_factor}")
 
                 new_canevas_width = scale_factor*self.__initial_canvas_width
-                new_canevas_height = scale_factor*self.__initial_canvas_height
 
-                self.__canvas.config(width=new_canevas_width, height=new_canevas_height)
-                CANVAS_CONFIG.update(height=new_canevas_width)
+                CANVAS_CONFIG.resize(height=new_canevas_width)
+                self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
 
                 self.__background_tk_photo = None
                 self.__cube_photos = None
@@ -2827,7 +2825,7 @@ class GameGui(ttk.Frame):
 
         elif hexagon.label_location is LabelLocation.RIGHT:
             label_position = hexagon.center + 1.15*CANVAS_CONFIG.HEXA_SIDE*CANVAS_CONFIG.UNIT_X
-        
+
         else:
             label_position = None
 
