@@ -199,7 +199,7 @@ class TinyVector:
 
 class CanvasConfig:
 
-    def __init__(self, scale_factor=1):
+    def __init__(self):
         # >> The "scale_factor" is just for experimenting the correctness of sizes computation and drawing methods.
         # >> The actual design for dynamic resize is to use the "resize" method.
 
@@ -210,7 +210,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT = 640*scale_factor
+        self.HEIGHT = 640
         self.WIDTH = self.HEIGHT*self.RATIO
 
         # Canvas background
@@ -562,6 +562,13 @@ class GameGui(ttk.Frame):
         self.__background_tk_photo = None
         self.__use_background_photo = CANVAS_CONFIG.USE_BACKGROUND_PHOTO
 
+        self.__resize_scale_factor = 1.
+        self.__resize_timer_delay = 50
+        self.__resize_timer_id = None
+        self.__resize_time = None
+        self.__resize_saved_use_background_photo = None
+        self.__resize_saved_cube_faces = None
+
         self.__legend = ""
 
         self.__game_timer_delay = 500
@@ -569,7 +576,7 @@ class GameGui(ttk.Frame):
 
         self.__action_animation_duration = 500
 
-        self.__picture_canevas_delay = 125 # >> without such delay taking picture could be randomly wrong
+        self.__picture_canvas_delay = 125 # >> without such delay taking picture could be randomly wrong
         self.__picture_gif_duration = 750
 
         self.__edit_actions = False
@@ -617,6 +624,7 @@ class GameGui(ttk.Frame):
         # >> Fonts cannot be created before the root widget
         self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
         self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
+        self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
         title = ( "pijersi-certu for playing the pijersi boardgame and testing AI agents thanks to the UGI protocol" +
                   " ; the rules of the game can be found at https://github.com/LucasBorboleta/pijersi" )
@@ -648,8 +656,8 @@ class GameGui(ttk.Frame):
             self.__root.resizable(width=True, height=True)
 
             # >> Ensure the wigets sizes are computed by Tkinter
-            self.__finalize_timer_delay = 1
-            self.__root.after(self.__finalize_timer_delay, self.__finalize_widgets)
+            resize_init_delay = 50
+            self.__root.after(resize_init_delay, self.__resize_init)
 
         else:
             # Disable the resizable feature
@@ -922,7 +930,7 @@ class GameGui(ttk.Frame):
 
         self.__root.destroy()
 
-    def __finalize_widgets(self, *_):
+    def __resize_init(self, *_):
 
         self.__initial_root_width = self.__root.winfo_width()
         self.__initial_root_height = self.__root.winfo_height()
@@ -930,52 +938,100 @@ class GameGui(ttk.Frame):
         self.__initial_canvas_width = self.__canvas.winfo_width()
         self.__initial_canvas_height = self.__canvas.winfo_height()
 
-        print()
-        print(f"DEBUG: __initial_root_width = {self.__initial_root_width}")
-        print(f"DEBUG: __initial_root_height = {self.__initial_root_height}")
-
-        print()
-        print(f"DEBUG: __initial_canvas_width = {self.__initial_canvas_width}")
-        print(f"DEBUG: __initial_canvas_height = {self.__initial_canvas_height}")
-
-        self.__root.minsize(width=self.__initial_root_width, height=self.__initial_root_height)
+        if True:
+            # ensure minimal size of the GUI
+            self.__root.minsize(width=self.__initial_root_width, height=self.__initial_root_height)
 
         # react if widget has changed size or position
-        self.__root.bind("<Configure>", self.__resize_widgets)
+        self.__root.bind("<Configure>", self.__resize_canvas_preview)
 
 
-    def __resize_widgets(self, *_):
+    def __resize_canvas_preview(self, *_):
 
         current_root_width = self.__root.winfo_width()
         current_root_height = self.__root.winfo_height()
 
-        if ( math.fabs(current_root_width/self.__initial_root_width - 1) > 0.01 or
-             math.fabs(current_root_height/self.__initial_root_height - 1) > 0.01):
+        scale_factor = min(current_root_width/self.__initial_root_width, current_root_height/self.__initial_root_height)
 
-            scale_factor = min(current_root_width/self.__initial_root_width, current_root_height/self.__initial_root_height)
+        # filter "moving the window" from "resizing the window"
+        if math.fabs(scale_factor - self.__resize_scale_factor) < 0.0001:
+            return
 
-            if True or math.fabs(scale_factor - 1) > 0.01:
-                # >> Remember that the __background_tk_photo needs to be rescaled and that it generates some delay
-                # >> Hints: improve the reactivness by drawing without __background_tk_photo until the scale is stable;
-                # >> Hints: this would requires monitoring the time changes of the scale
+        self.__resize_scale_factor = scale_factor
+        self.__resize_time = time.time()
 
-                print()
-                print(f"DEBUG: current_root_width = {current_root_width}")
-                print(f"DEBUG: current_root_height = {current_root_height}")
-                print(f"DEBUG: scale_factor = {scale_factor}")
+        # >> disable photos because they require too much time for being resized
+        self.__background_tk_photo = None
+        self.__cube_photos = None
 
-                new_canevas_width = scale_factor*self.__initial_canvas_width
+        if self.__resize_saved_use_background_photo is None:
+            self.__resize_saved_use_background_photo = self.__use_background_photo
 
-                CANVAS_CONFIG.resize(height=new_canevas_width)
-                self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
+        if self.__resize_saved_cube_faces is None:
+            self.__resize_saved_cube_faces = self.__cube_faces
 
-                self.__background_tk_photo = None
-                self.__cube_photos = None
+        self.__use_background_photo = False
+        self.__cube_faces = self.__cube_faces_options[1]
 
-                GraphicalHexagon.reset()
-                GraphicalHexagon.init()
+        # compute the new width of the canvas
+        new_canvas_width = self.__resize_scale_factor*self.__initial_canvas_width
 
-                self.__draw_state()
+        # update the config data
+        CANVAS_CONFIG.resize(height=new_canvas_width)
+
+        # update the canvas sizes
+        self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
+
+        # update font sizes
+        self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
+        self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
+        self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
+
+        # redraw the canvas
+        GraphicalHexagon.reset()
+        GraphicalHexagon.init()
+        self.__draw_state()
+
+        # launch a monitor to trigger the usage of photos
+        if self.__resize_timer_id is None:
+            self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
+
+    def __resize_canvas_finalize(self):
+        if self.__resize_time is not None and (time.time() - self.__resize_time)*1000 < 2*self.__resize_timer_delay:
+
+            # restore the usage options of photos
+            self.__use_background_photo = self.__resize_saved_use_background_photo
+            self.__cube_faces = self.__resize_saved_cube_faces
+            self.__resize_saved_use_background_photo = None
+            self.__resize_saved_cube_faces = None
+
+            # compute the new width of the canvas
+            new_canvas_width = self.__resize_scale_factor*self.__initial_canvas_width
+
+            # update the config data
+            CANVAS_CONFIG.resize(height=new_canvas_width)
+
+            # update the canvas sizes
+            self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
+
+            # update font sizes
+            self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
+            self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
+            self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
+
+            # redraw the canvas
+            GraphicalHexagon.reset()
+            GraphicalHexagon.init()
+            self.__draw_state()
+
+            # cancel the monitor
+            self.__canvas.after_cancel(self.__resize_timer_id)
+            self.__resize_timer_id = None
+            self.__resize_time = None
+
+        else:
+            self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
+
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = self.__searcher_catalog.get(self.__variable_white_player.get())
@@ -1398,7 +1454,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__picture_canevas_delay)
+                    self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1424,7 +1480,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__picture_canevas_delay)
+                    self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1446,7 +1502,7 @@ class GameGui(ttk.Frame):
 
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__picture_canevas_delay)
+                    self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
                     self.__take_picture(animation_png_file)
@@ -1458,7 +1514,7 @@ class GameGui(ttk.Frame):
             self.__cmc_hightlight_moved_and_played_hexagons()
             self.__draw_state()
             self.__canvas.update()
-            self.__sleep_ms(self.__picture_canevas_delay)
+            self.__sleep_ms(self.__picture_canvas_delay)
 
             picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
             self.__take_picture(picture_png_file)
@@ -1475,7 +1531,7 @@ class GameGui(ttk.Frame):
                     self.__legend =  (pause_index + 1 ) *'.' + " " + saved_legend + " " + (pause_index + 1 ) *'.'
                     self.__draw_state()
                     self.__canvas.update()
-                    self.__sleep_ms(self.__picture_canevas_delay)
+                    self.__sleep_ms(self.__picture_canvas_delay)
 
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
@@ -2962,12 +3018,10 @@ class GameGui(ttk.Frame):
                                            fill=fill_color,
                                            outline=line_color)
 
-            face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
-
             self.__canvas.create_text(*cube_center,
                                       text=cube_label,
                                       justify=tk.CENTER,
-                                      font=face_font,
+                                      font=self.__face_font,
                                       fill=face_color)
         else:
             assert False
@@ -3140,7 +3194,7 @@ def make_artefact_platform_id():
     return artefact_platform_id
 
 
-CANVAS_CONFIG = CanvasConfig(scale_factor=1.00)
+CANVAS_CONFIG = CanvasConfig()
 GraphicalHexagon.init()
 
 
