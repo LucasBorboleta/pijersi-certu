@@ -1009,8 +1009,10 @@ class GameGui(ttk.Frame):
         if self.__resize_saved_cube_faces is None:
             self.__resize_saved_cube_faces = self.__cube_faces
 
-        self.__use_background_photo = False
-        self.__cube_faces = self.__cube_faces_options[1]
+        use_picture_preview = True
+        if not use_picture_preview:
+            self.__use_background_photo = False
+            self.__cube_faces = self.__cube_faces_options[1]
 
         # update the config data
         CANVAS_CONFIG.resize(scale_factor=self.__resize_scale_factor)
