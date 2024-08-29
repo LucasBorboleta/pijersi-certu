@@ -210,7 +210,8 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT = 640
+        self.HEIGHT_INITIAL = 640
+        self.HEIGHT = self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
         # Canvas background
@@ -252,8 +253,9 @@ class CanvasConfig:
         self.UNIT_U = self.UNIT_X
         self.UNIT_V = self.HEXA_COS_SIDE_ANGLE*self.UNIT_X + self.HEXA_SIN_SIDE_ANGLE*self.UNIT_Y
 
-    def resize(self, height):
-        self.HEIGHT = height
+    def resize(self, scale_factor=1):
+
+        self.HEIGHT = scale_factor*self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
         # Hexagon geometrical data
@@ -956,6 +958,7 @@ class GameGui(ttk.Frame):
         # print()
         # print(f"__resize_canvas_init: DEBUG: __resize_initial_root_width={self.__resize_initial_root_width} ; __resize_initial_root_height={self.__resize_initial_root_height}")
         # print(f"__resize_canvas_init: DEBUG: __resize_initial_canvas_width={self.__resize_initial_canvas_width} ; __resize_initial_canvas_height={self.__resize_initial_canvas_height}")
+        # print(f"__resize_canvas_init: DEBUG: CANVAS_CONFIG.WIDTH={CANVAS_CONFIG.WIDTH} ; CANVAS_CONFIG.HEIGHT={CANVAS_CONFIG.HEIGHT}")
 
         if True:
             # ensure minimal size of the GUI
@@ -982,14 +985,13 @@ class GameGui(ttk.Frame):
         scale_factor_height = 1 + (current_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
+        assert scale_factor > 0.999
+
+        # print()
         # print(f"__resize_canvas_preview: DEBUG: event={event}")
         # print(f"__resize_canvas_preview: DEBUG: event.width={event.width} ; event.height={event.height}")
         # print(f"__resize_canvas_preview: DEBUG: current_root_width={current_root_width} ; current_root_height={current_root_height}")
         # print(f"__resize_canvas_preview: DEBUG: scale_factor_width={scale_factor_width} ; scale_factor_height={scale_factor_height} ; scale_factor={scale_factor} ; ")
-
-        # filter strange events
-        if scale_factor < 0.99:
-            return
 
         # >> it seems to fix unstable behavior when unmaximizing
         self.__root.geometry (f"{current_root_width}x{current_root_height}")
@@ -1010,11 +1012,8 @@ class GameGui(ttk.Frame):
         self.__use_background_photo = False
         self.__cube_faces = self.__cube_faces_options[1]
 
-        # compute the new width of the canvas
-        new_canvas_width = self.__resize_scale_factor*self.__resize_initial_canvas_width
-
         # update the config data
-        CANVAS_CONFIG.resize(height=new_canvas_width)
+        CANVAS_CONFIG.resize(scale_factor=self.__resize_scale_factor)
 
         # update the canvas sizes
         self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
@@ -1045,11 +1044,8 @@ class GameGui(ttk.Frame):
             self.__resize_saved_use_background_photo = None
             self.__resize_saved_cube_faces = None
 
-            # compute the new width of the canvas
-            new_canvas_width = self.__resize_scale_factor*self.__resize_initial_canvas_width
-
             # update the config data
-            CANVAS_CONFIG.resize(height=new_canvas_width)
+            CANVAS_CONFIG.resize(scale_factor=self.__resize_scale_factor)
 
             # update the canvas sizes
             self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
