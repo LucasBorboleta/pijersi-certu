@@ -1033,8 +1033,9 @@ class GameGui(ttk.Frame):
         self.__resize_current_root_height = current_root_height
 
         # launch a monitor to trigger the usage of photos
-        if self.__resize_timer_id is None:
-            self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
+        if not use_picture_preview:
+            if self.__resize_timer_id is None:
+                self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
 
     def __resize_canvas_finalize(self):
 
