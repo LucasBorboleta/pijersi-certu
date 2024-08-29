@@ -953,11 +953,11 @@ class GameGui(ttk.Frame):
         self.__resize_initial_canvas_width = self.__canvas.winfo_width()
         self.__resize_initial_canvas_height = self.__canvas.winfo_height()
 
-        print()
-        print(f"__resize_canvas_init: DEBUG: __resize_initial_root_width={self.__resize_initial_root_width} ; __resize_initial_root_height={self.__resize_initial_root_height}")
-        print(f"__resize_canvas_init: DEBUG: __resize_initial_canvas_width={self.__resize_initial_canvas_width} ; __resize_initial_canvas_height={self.__resize_initial_canvas_height}")
+        # print()
+        # print(f"__resize_canvas_init: DEBUG: __resize_initial_root_width={self.__resize_initial_root_width} ; __resize_initial_root_height={self.__resize_initial_root_height}")
+        # print(f"__resize_canvas_init: DEBUG: __resize_initial_canvas_width={self.__resize_initial_canvas_width} ; __resize_initial_canvas_height={self.__resize_initial_canvas_height}")
 
-        if False:
+        if True:
             # ensure minimal size of the GUI
             self.__root.minsize(width=self.__resize_initial_root_width, height=self.__resize_initial_root_height)
 
@@ -965,22 +965,34 @@ class GameGui(ttk.Frame):
         self.__root.bind("<Configure>", self.__resize_canvas_preview)
 
 
-    def __resize_canvas_preview(self, *_):
+    def __resize_canvas_preview(self, event):
 
-        current_root_width = self.__root.winfo_width()
-        current_root_height = self.__root.winfo_height()
+        current_root_width = event.width
+        current_root_height = event.height
 
         # filter "moving the window" from "resizing the window"
-        if current_root_width == self.__resize_current_root_width and  current_root_height == self.__resize_current_root_height:
+        if current_root_width == self.__resize_current_root_width and current_root_height == self.__resize_current_root_height:
+            return
+
+        # filter not understood events
+        if current_root_width < self.__resize_initial_root_width or  current_root_height < self.__resize_initial_root_height:
             return
 
         scale_factor_width = 1 + (current_root_width - self.__resize_initial_root_width)/self.__resize_initial_canvas_width
         scale_factor_height = 1 + (current_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
-        print()
-        print(f"__resize_canvas_preview: DEBUG: current_root_width={current_root_width} ; current_root_height={current_root_height}")
-        print(f"__resize_canvas_preview: DEBUG: scale_factor_width={scale_factor_width} ; scale_factor_height={scale_factor_height} ; scale_factor={scale_factor} ; ")
+        # print(f"__resize_canvas_preview: DEBUG: event={event}")
+        # print(f"__resize_canvas_preview: DEBUG: event.width={event.width} ; event.height={event.height}")
+        # print(f"__resize_canvas_preview: DEBUG: current_root_width={current_root_width} ; current_root_height={current_root_height}")
+        # print(f"__resize_canvas_preview: DEBUG: scale_factor_width={scale_factor_width} ; scale_factor_height={scale_factor_height} ; scale_factor={scale_factor} ; ")
+
+        # filter strange events
+        if scale_factor < 0.99:
+            return
+
+        # >> it seems to fix unstable behavior when unmaximizing
+        self.__root.geometry (f"{current_root_width}x{current_root_height}")
 
         self.__resize_scale_factor = scale_factor
         self.__resize_time = time.time()
@@ -1016,9 +1028,8 @@ class GameGui(ttk.Frame):
         GraphicalHexagon.resize()
         self.__draw_state()
 
-        self.__resize_current_root_width = self.__root.winfo_width()
-        self.__resize_current_root_height = self.__root.winfo_height()
-
+        self.__resize_current_root_width = current_root_width
+        self.__resize_current_root_height = current_root_height
 
         # launch a monitor to trigger the usage of photos
         if self.__resize_timer_id is None:
