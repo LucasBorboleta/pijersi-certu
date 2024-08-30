@@ -955,11 +955,6 @@ class GameGui(ttk.Frame):
         self.__resize_initial_canvas_width = self.__canvas.winfo_width()
         self.__resize_initial_canvas_height = self.__canvas.winfo_height()
 
-        print()
-        print(f"__resize_canvas_init: DEBUG: __resize_initial_root_width={self.__resize_initial_root_width} ; __resize_initial_root_height={self.__resize_initial_root_height}")
-        print(f"__resize_canvas_init: DEBUG: __resize_initial_canvas_width={self.__resize_initial_canvas_width} ; __resize_initial_canvas_height={self.__resize_initial_canvas_height}")
-        print(f"__resize_canvas_init: DEBUG: CANVAS_CONFIG.WIDTH={CANVAS_CONFIG.WIDTH} ; CANVAS_CONFIG.HEIGHT={CANVAS_CONFIG.HEIGHT}")
-
         if True:
             # ensure minimal size of the GUI
             self.__root.minsize(width=self.__resize_initial_root_width, height=self.__resize_initial_root_height)
@@ -972,26 +967,14 @@ class GameGui(ttk.Frame):
 
         # filter event not associated with the root widget like event triggered by children of the root widget
         if event.widget != self.__root:
-            print()
-            print(f"__resize_canvas_preview: DEBUG: zero filter: event={event}")
             return
 
         current_root_width = event.width
         current_root_height = event.height
 
-        # filter "moving the window" from "resizing the window"
+        # filter "moving the window" event from "resizing the window" event
         if current_root_width == self.__resize_current_root_width and current_root_height == self.__resize_current_root_height:
-            print()
-            print(f"__resize_canvas_preview: DEBUG: first filter: event={event}")
             return
-
-        # filter not understood events
-        # >> TODO: improve this filter or maybe remove this no longer useful filters
-        if current_root_width < self.__resize_initial_root_width or  current_root_height < self.__resize_initial_root_height:
-            print()
-            print(f"__resize_canvas_preview: DEBUG: second filter: event={event}")
-            return
-
 
         # compute the scale_factor of the canvas ; the other widgets are not (forced to be) scaled
         #
@@ -1026,14 +1009,6 @@ class GameGui(ttk.Frame):
         scale_factor_height = 1 + (current_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
-        assert scale_factor > 0.999
-
-        print()
-        print(f"__resize_canvas_preview: DEBUG: event={event}")
-        print(f"__resize_canvas_preview: DEBUG: event.width={event.width} ; event.height={event.height}")
-        print(f"__resize_canvas_preview: DEBUG: current_root_width={current_root_width} ; current_root_height={current_root_height}")
-        print(f"__resize_canvas_preview: DEBUG: __resize_current_root_width={self.__resize_current_root_width} ; __resize_current_root_height={self.__resize_current_root_height}")
-        print(f"__resize_canvas_preview: DEBUG: scale_factor_width={scale_factor_width} ; scale_factor_height={scale_factor_height} ; scale_factor={scale_factor} ; ")
 
         # >> it seems to fix unstable behavior when unmaximizing
         self.__root.geometry (f"{current_root_width}x{current_root_height}")
