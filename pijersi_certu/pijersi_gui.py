@@ -970,6 +970,12 @@ class GameGui(ttk.Frame):
 
     def __resize_canvas_preview(self, event):
 
+        # filter event not associated with the root widget like event triggered by children of the root widget
+        if event.widget != self.__root:
+            print()
+            print(f"__resize_canvas_preview: DEBUG: zero filter: event={event}")
+            return
+
         current_root_width = event.width
         current_root_height = event.height
 
@@ -980,12 +986,12 @@ class GameGui(ttk.Frame):
             return
 
         # filter not understood events
-        # >> TODO: improve this filter
+        # >> TODO: improve this filter or maybe remove this no longer useful filters
         if current_root_width < self.__resize_initial_root_width or  current_root_height < self.__resize_initial_root_height:
             print()
             print(f"__resize_canvas_preview: DEBUG: second filter: event={event}")
             return
-            return
+
 
         # compute the scale_factor of the canvas ; the other widgets are not (forced to be) scaled
         #
