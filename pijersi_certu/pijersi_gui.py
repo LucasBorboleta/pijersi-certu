@@ -981,6 +981,35 @@ class GameGui(ttk.Frame):
         if current_root_width < self.__resize_initial_root_width or  current_root_height < self.__resize_initial_root_height:
             return
 
+        # compute the scale_factor of the canvas ; the other widgets are not (forced to be) scaled
+        #
+        # Principles:
+        #
+        #   Notations:
+        #       #     (R0w, R0h) : the initial width and height of the root widget
+        #       #       (Rw, Rh) : the new width and height of the root widget
+        #       #     (C0w, C0h) : the initial width and height of the canvas
+        #       # (s*C0w, s*C0h) : the new width and height of the canvas
+        #       #              s : the scale factor of the canvas
+        #       #     (T0w, T0h) : the initial width and height of the textual widgets
+        #       #     (M0w, M0h) : the initial width and height of the margins and paddings
+        #
+        #   Equations:
+        #       # R0w = C0w + T0w + M0w
+        #       # R0h = C0h + T0h + M0h
+        #
+        #       # Rw = s*C0w + Tw + Mw
+        #       # Rh = s*C0h + Th + Mh
+        #
+        #   Requirements:
+        #       # (R0w, R0h) is the smallest sizes drawn when the application is launched
+        #       # (Tw + Mw) >= (T0w + M0w) so it implies (Rw - s*C0w) >= (R0w -C0w), which implies (1 + (Rw - R0w)/C0w) >= s
+        #       # (Th + Mh) >= (T0h + M0h) so it implies (Rh - s*C0h) >= (R0h -C0h), which implies (1 + (Rh - R0h)/C0h) >= s
+        #
+        #   Conclusions:
+        #       # s = min((1 + (Rw - R0w)/C0w), (1 + (Rh - R0h)/C0h))
+        #       # s >= 1
+
         scale_factor_width = 1 + (current_root_width - self.__resize_initial_root_width)/self.__resize_initial_canvas_width
         scale_factor_height = 1 + (current_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
