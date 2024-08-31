@@ -567,12 +567,8 @@ class GameGui(ttk.Frame):
         self.__background_tk_photo = None
         self.__use_background_photo = CANVAS_CONFIG.USE_BACKGROUND_PHOTO
 
-        self.__resize_scale_factor = 1.
-        self.__resize_timer_delay = 50
-        self.__resize_timer_id = None
-        self.__resize_time = None
-        self.__resize_saved_use_background_photo = None
-        self.__resize_saved_cube_faces = None
+
+        # For handling the GUI resize
 
         self.__resize_initial_root_width = None
         self.__resize_initial_root_height = None
@@ -582,6 +578,7 @@ class GameGui(ttk.Frame):
 
         self.__resize_initial_canvas_width = None
         self.__resize_initial_canvas_height = None
+
 
         self.__legend = ""
 
@@ -666,15 +663,16 @@ class GameGui(ttk.Frame):
         self.__variable_summary.set(summary)
 
         if True:
-            # Prepare the resizable feature
+            # Prepare the "GUI resize" feature
             self.__root.resizable(width=True, height=True)
 
-            # >> Ensure the wigets sizes are computed by Tkinter
+            # >> get and memorize the widgets sizes after being rendered by Tkinter ;
+            # >> doing it before is not trustable
             resize_init_delay = 50
-            self.__root.after(resize_init_delay, self.__resize_canvas_init)
+            self.__root.after(resize_init_delay, self.__resize_gui_init)
 
         else:
-            # Disable the resizable feature
+            # Disable the "GUI resize" feature
             self.__root.resizable(width=False, height=False)
 
         # Wait events
@@ -944,39 +942,39 @@ class GameGui(ttk.Frame):
 
         self.__root.destroy()
 
-    def __resize_canvas_init(self, *_):
+
+    def __resize_gui_init(self, *_):
 
         self.__resize_initial_root_width = self.__root.winfo_width()
         self.__resize_initial_root_height = self.__root.winfo_height()
 
-        self.__resize_current_root_width = self.__root.winfo_width()
-        self.__resize_current_root_height = self.__root.winfo_height()
+        self.__resize_current_root_width = self.__resize_initial_root_width
+        self.__resize_current_root_height = self.__resize_initial_root_height
 
         self.__resize_initial_canvas_width = self.__canvas.winfo_width()
         self.__resize_initial_canvas_height = self.__canvas.winfo_height()
 
-        if True:
-            # ensure minimal size of the GUI
-            self.__root.minsize(width=self.__resize_initial_root_width, height=self.__resize_initial_root_height)
+        # ensure minimal sizes for the GUI
+        self.__root.minsize(width=self.__resize_initial_root_width, height=self.__resize_initial_root_height)
 
-        # react if widget has changed size or position
-        self.__root.bind("<Configure>", self.__resize_canvas_preview)
+        # react if the GUI is resized
+        self.__root.bind("<Configure>", self.__resize_gui)
 
-
-    def __resize_canvas_preview(self, event):
+    def __resize_gui(self, event):
 
         # filter event not associated with the root widget like event triggered by children of the root widget
         if event.widget != self.__root:
             return
 
-        current_root_width = event.width
-        current_root_height = event.height
+        # the newly requested GUI sizes
+        new_root_width = event.width
+        new_root_height = event.height
 
         # filter "moving the window" event from "resizing the window" event
-        if current_root_width == self.__resize_current_root_width and current_root_height == self.__resize_current_root_height:
+        if new_root_width == self.__resize_current_root_width and new_root_height == self.__resize_current_root_height:
             return
 
-        # compute the scale_factor of the canvas ; the other widgets are not (forced to be) scaled
+        # compute the scale_factor of the canvas ; the other widgets of the GUI are not (forced to be) scaled
         #
         # Principles:
         #
@@ -1005,34 +1003,15 @@ class GameGui(ttk.Frame):
         #       # s = min((1 + (Rw - R0w)/C0w), (1 + (Rh - R0h)/C0h))
         #       # s >= 1
 
-        scale_factor_width = 1 + (current_root_width - self.__resize_initial_root_width)/self.__resize_initial_canvas_width
-        scale_factor_height = 1 + (current_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
+        scale_factor_width = 1 + (new_root_width - self.__resize_initial_root_width)/self.__resize_initial_canvas_width
+        scale_factor_height = 1 + (new_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
-
         # >> it seems to fix unstable behavior when unmaximizing
-        self.__root.geometry (f"{current_root_width}x{current_root_height}")
+        self.__root.geometry (f"{new_root_width}x{new_root_height}")
 
-        self.__resize_scale_factor = scale_factor
-        self.__resize_time = time.time()
-
-        # >> disable photos because they require too much time for being resized
-        self.__background_tk_photo = None
-        self.__cube_photos = None
-
-        if self.__resize_saved_use_background_photo is None:
-            self.__resize_saved_use_background_photo = self.__use_background_photo
-
-        if self.__resize_saved_cube_faces is None:
-            self.__resize_saved_cube_faces = self.__cube_faces
-
-        use_picture_preview = True
-        if not use_picture_preview:
-            self.__use_background_photo = False
-            self.__cube_faces = self.__cube_faces_options[1]
-
-        # update the config data
-        CANVAS_CONFIG.resize(scale_factor=self.__resize_scale_factor)
+        # update the config data of the canvas
+        CANVAS_CONFIG.resize(scale_factor)
 
         # update the canvas sizes
         self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
@@ -1042,50 +1021,17 @@ class GameGui(ttk.Frame):
         self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
         self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
+        # >> reset photos to force the update of their sizes
+        self.__background_tk_photo = None
+        self.__cube_photos = None
+
         # redraw the canvas
         GraphicalHexagon.resize()
         self.__draw_state()
 
-        self.__resize_current_root_width = current_root_width
-        self.__resize_current_root_height = current_root_height
-
-        # launch a monitor to trigger the usage of photos
-        if not use_picture_preview:
-            if self.__resize_timer_id is None:
-                self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
-
-    def __resize_canvas_finalize(self):
-
-        if  (time.time() - self.__resize_time)*1000 > self.__resize_timer_delay:
-
-            # restore the usage options of photos
-            self.__use_background_photo = self.__resize_saved_use_background_photo
-            self.__cube_faces = self.__resize_saved_cube_faces
-            self.__resize_saved_use_background_photo = None
-            self.__resize_saved_cube_faces = None
-
-            # update the config data
-            CANVAS_CONFIG.resize(scale_factor=self.__resize_scale_factor)
-
-            # update the canvas sizes
-            self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
-
-            # update font sizes
-            self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
-            self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
-            self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
-
-            # redraw the canvas
-            GraphicalHexagon.resize()
-            self.__draw_state()
-
-            # cancel the monitor
-            self.__canvas.after_cancel(self.__resize_timer_id)
-            self.__resize_timer_id = None
-            self.__resize_time = None
-
-        else:
-            self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_canvas_finalize)
+        # update the GUI sizes
+        self.__resize_current_root_width = new_root_width
+        self.__resize_current_root_height = new_root_height
 
 
     def __command_update_players(self, *_):
