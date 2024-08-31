@@ -2894,8 +2894,12 @@ class GameGui(ttk.Frame):
             polygon_line_color = HexagonLineColor.NORMAL.value
             fill_color = hexagon.color.value
 
-        line_width_scaling = 1
+        line_width_scaling = 1.0
+        line_dash_played_width_scaling = 4.0
+        line_dash_moved_width_scaling = 2.25
+
         line_dash = None
+        line_dash_pattern = (int(CANVAS_CONFIG.HEXA_SIDE*0.5), int(CANVAS_CONFIG.HEXA_SIDE*0.5))
 
         # Respect priority order in lighting
 
@@ -2917,22 +2921,22 @@ class GameGui(ttk.Frame):
 
         if hexagon.highlighted_as_moved_by_white:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_MOVED_BY_WHITE.value
-            line_width_scaling = 3
-            line_dash = (5,5)
+            line_dash = line_dash_pattern
+            line_width_scaling = line_dash_moved_width_scaling
 
         elif hexagon.highlighted_as_moved_by_black:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_MOVED_BY_BLACK.value
-            line_width_scaling = 3
-            line_dash = (5,5)
+            line_dash = line_dash_pattern
+            line_width_scaling = line_dash_moved_width_scaling
 
         if hexagon.highlighted_as_played_by_white:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_WHITE.value
-            line_width_scaling = 3
+            line_width_scaling = line_dash_played_width_scaling
             line_dash = None
 
         elif hexagon.highlighted_as_played_by_black:
             polygon_line_color = HexagonLineColor.HIGHLIGHT_PLAYED_BY_BLACK.value
-            line_width_scaling = 3
+            line_width_scaling = line_dash_played_width_scaling
             line_dash = None
 
         self.__canvas.create_polygon(hexagon.vertex_data,
