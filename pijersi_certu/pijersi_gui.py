@@ -560,12 +560,14 @@ class GameGui(ttk.Frame):
         self.__face_drawers[rules.Cube.T.WISE] = self.__draw_wise_face
 
         self.__cube_photos = None
+        self.__cube_resized_tk_photos = None
 
         self.__cube_faces_options = ("faces=letters", "faces=drawings", "faces=pictures")
         self.__cube_faces = self.__cube_faces_options[2]
 
-        self.__background_tk_photo = None
         self.__use_background_photo = CANVAS_CONFIG.USE_BACKGROUND_PHOTO
+        self.__background_photo = None
+        self.__background_tk_resized_photo = None
 
 
         # For handling the GUI resize
@@ -921,17 +923,26 @@ class GameGui(ttk.Frame):
         self.__button_reset_actions.config(state="disabled")
 
     def __create_cube_photos(self):
-        if self.__cube_photos is None:
 
-            cube_photo_width = int(CANVAS_CONFIG.HEXA_SIDE*math.cos(math.pi/4))
+        if self.__cube_photos is None:
 
             self.__cube_photos = {}
 
             for (key, file) in CubeConfig.CUBE_FILE_PATH.items():
-                cube_photo = Image.open(file)
+                self.__cube_photos[key] = Image.open(file)
+
+
+        if self.__cube_resized_tk_photos is None:
+
+            self.__cube_resized_tk_photos = {}
+
+            cube_photo_width = int(CANVAS_CONFIG.HEXA_SIDE*math.cos(math.pi/4))
+
+            for (key, file) in CubeConfig.CUBE_FILE_PATH.items():
+                cube_photo = self.__cube_photos[key]
                 cube_photo = cube_photo.resize((cube_photo_width, cube_photo_width))
                 cube_tk_photo = ImageTk.PhotoImage(cube_photo)
-                self.__cube_photos[key] = cube_tk_photo
+                self.__cube_resized_tk_photos[key] = cube_tk_photo
 
     def __command_quit(self, *_):
 
@@ -1022,8 +1033,8 @@ class GameGui(ttk.Frame):
         self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
 
         # >> reset photos to force the update of their sizes
-        self.__background_tk_photo = None
-        self.__cube_photos = None
+        self.__background_tk_resized_photo = None
+        self.__cube_resized_tk_photos = None
 
         # redraw the canvas
         GraphicalHexagon.resize()
@@ -2727,11 +2738,11 @@ class GameGui(ttk.Frame):
             lower = y + h
 
             if self.__use_background_photo:
-                upper += self.__background_tk_photo_delta_y
-                lower -= self.__background_tk_photo_delta_y
+                upper += self.__background_tk_resized_photo_delta_y
+                lower -= self.__background_tk_resized_photo_delta_y
 
-                left += self.__background_tk_photo_delta_x
-                right -= self.__background_tk_photo_delta_x
+                left += self.__background_tk_resized_photo_delta_x
+                right -= self.__background_tk_resized_photo_delta_x
 
                 upper += int(0.01*h)
                 lower -= int(0.01*h)
@@ -2785,24 +2796,28 @@ class GameGui(ttk.Frame):
         self.__draw_legend()
 
     def __draw_canvas_background(self):
-        if self.__background_tk_photo is None:
+
+        if self.__background_photo is None:
+            self.__background_photo = Image.open(CANVAS_CONFIG.BACKGROUND_PHOTO_PATH)
+
+        if self.__background_tk_resized_photo is None:
 
             # Create the background image
-            bg_photo = Image.open(CANVAS_CONFIG.BACKGROUND_PHOTO_PATH)
+            bg_photo = self.__background_photo
             (bg_width, bg_height) = bg_photo.size
 
             bg_new_width = int(math.ceil(CANVAS_CONFIG.WIDTH))
             bg_new_height = int(math.ceil(CANVAS_CONFIG.WIDTH*bg_height/bg_width))
 
             bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
-            self.__background_tk_photo = ImageTk.PhotoImage(bg_photo)
+            self.__background_tk_resized_photo = ImageTk.PhotoImage(bg_photo)
 
-            self.__background_tk_photo_delta_x = (bg_new_width - CANVAS_CONFIG.WIDTH)/2
-            self.__background_tk_photo_delta_y = (bg_new_height - CANVAS_CONFIG.HEIGHT)/2
+            self.__background_tk_resized_photo_delta_x = (bg_new_width - CANVAS_CONFIG.WIDTH)/2
+            self.__background_tk_resized_photo_delta_y = (bg_new_height - CANVAS_CONFIG.HEIGHT)/2
 
         # Add the background image
-        self.__canvas.create_image(self.__background_tk_photo_delta_x, self.__background_tk_photo_delta_y,
-                                   image=self.__background_tk_photo,
+        self.__canvas.create_image(self.__background_tk_resized_photo_delta_x, self.__background_tk_resized_photo_delta_y,
+                                   image=self.__background_tk_resized_photo,
                                    anchor=tk.NW)
 
     def __draw_legend(self):
@@ -3004,10 +3019,10 @@ class GameGui(ttk.Frame):
 
         if self.__cube_faces == 'faces=pictures':
 
-            if self.__cube_photos is None:
+            if self.__cube_resized_tk_photos is None:
                 self.__create_cube_photos()
 
-            cube_tk_photo = self.__cube_photos[(cube_color, cube_sort)]
+            cube_tk_photo = self.__cube_resized_tk_photos[(cube_color, cube_sort)]
             self.__canvas.create_image(cube_center[0], cube_center[1], image=cube_tk_photo, anchor=tk.CENTER)
 
         elif self.__cube_faces == 'faces=drawings':
