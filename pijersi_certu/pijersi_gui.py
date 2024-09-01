@@ -3011,11 +3011,21 @@ class GameGui(ttk.Frame):
             fill_color = hexagon.color.value
 
         line_width_scaling = 1.0
+        
+        # played parameters
         line_dash_played_width_scaling = 4.0
-        line_dash_moved_width_scaling = 2.25
+        
+        # moved parameters
+        if False:
+            # using dashed line
+            line_dash_moved_width_scaling = 2.25
+            line_dash_pattern = (int(CANVAS_CONFIG.HEXA_SIDE*0.5), int(CANVAS_CONFIG.HEXA_SIDE*0.5))
+        else:
+            # using thiner line
+            line_dash_moved_width_scaling = 1.5
+            line_dash_pattern = None
 
         line_dash = None
-        line_dash_pattern = (int(CANVAS_CONFIG.HEXA_SIDE*0.5), int(CANVAS_CONFIG.HEXA_SIDE*0.5))
 
         # Respect priority order in lighting
 
