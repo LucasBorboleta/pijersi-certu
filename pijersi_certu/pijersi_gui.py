@@ -581,6 +581,13 @@ class GameGui(ttk.Frame):
         self.__resize_initial_canvas_width = None
         self.__resize_initial_canvas_height = None
 
+        self.__resize_preview_photo = None
+        self.__resize_scale_factor = None
+        self.__resize_time = None
+        self.__resize_timer_id = None
+        self.__resize_timer_delay = 50
+        self.__resize_last_event_is_maximize = False
+
 
         self.__legend = ""
 
@@ -969,9 +976,10 @@ class GameGui(ttk.Frame):
         self.__root.minsize(width=self.__resize_initial_root_width, height=self.__resize_initial_root_height)
 
         # react if the GUI is resized
-        self.__root.bind("<Configure>", self.__resize_gui)
+        self.__root.bind("<Configure>", self.__resize_gui_preview)
 
-    def __resize_gui(self, event):
+
+    def __resize_gui_preview(self, event):
 
         # filter event not associated with the root widget like event triggered by children of the root widget
         if event.widget != self.__root:
@@ -1018,8 +1026,33 @@ class GameGui(ttk.Frame):
         scale_factor_height = 1 + (new_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
+        use_fast_preview = True
+
+        # >> Disable the fast preview for "maximize" and "unmaximze/restore" events:
+        # >> - the method "__take_picture" does miss the right coordinates of the canvas, for some misunderstood reasons.
+        # >> - but it is OK, because the fast preview is not needed for "maximize" and "unmaximze/restore" events.
+        if self.__root.state() == 'zoomed':
+            use_fast_preview = False
+            self.__resize_last_event_is_maximize = True
+
+        else:
+            if self.__resize_last_event_is_maximize:
+                # >> should detect unmaximze/restore event
+                use_fast_preview = False
+
+            self.__resize_last_event_is_maximize = False
+
+
+        if use_fast_preview:
+            if self.__resize_preview_photo is None:
+                self.__resize_preview_photo = self.__take_picture()
+
         # >> it seems to fix unstable behavior when unmaximizing
         self.__root.geometry (f"{new_root_width}x{new_root_height}")
+
+        # update the GUI sizes
+        self.__resize_current_root_width = new_root_width
+        self.__resize_current_root_height = new_root_height
 
         # update the config data of the canvas
         CANVAS_CONFIG.resize(scale_factor)
@@ -1036,14 +1069,76 @@ class GameGui(ttk.Frame):
         self.__background_tk_resized_photo = None
         self.__cube_resized_tk_photos = None
 
-        # redraw the canvas
-        GraphicalHexagon.resize()
-        self.__draw_state()
+        if not use_fast_preview:
+            # redraw the canvas
 
-        # update the GUI sizes
-        self.__resize_current_root_width = new_root_width
-        self.__resize_current_root_height = new_root_height
+            GraphicalHexagon.resize()
+            self.__draw_state()
 
+        else:
+            # draw a fast preview of the canvas
+
+            self.__canvas.delete('all')
+
+            bg_photo = self.__resize_preview_photo
+            (bg_width, bg_height) = bg_photo.size
+
+            bg_new_width = int(math.ceil(CANVAS_CONFIG.WIDTH))
+            bg_new_height = int(math.ceil(CANVAS_CONFIG.WIDTH*bg_height/bg_width))
+
+            bg_photo = bg_photo.resize((bg_new_width, bg_new_height))
+            self.__background_tk_resized_photo = ImageTk.PhotoImage(bg_photo)
+
+            self.__background_tk_resized_photo_delta_x = (bg_new_width - CANVAS_CONFIG.WIDTH)/2
+            self.__background_tk_resized_photo_delta_y = (bg_new_height - CANVAS_CONFIG.HEIGHT)/2
+
+            self.__canvas.create_image(self.__background_tk_resized_photo_delta_x, self.__background_tk_resized_photo_delta_y,
+                                   image=self.__background_tk_resized_photo,
+                                   anchor=tk.NW)
+
+            # set data for the finalizer fo the GUI resize
+            self.__resize_scale_factor = scale_factor
+            self.__resize_time = time.time()
+
+            if self.__resize_timer_id is None:
+                self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_gui_finalize)
+
+
+    def __resize_gui_finalize(self):
+
+        if  (time.time() - self.__resize_time)*1000 > self.__resize_timer_delay:
+
+            # update the config data of the canvas
+            CANVAS_CONFIG.resize(self.__resize_scale_factor)
+
+            # update the canvas sizes
+            self.__canvas.config(width=CANVAS_CONFIG.WIDTH, height=CANVAS_CONFIG.HEIGHT)
+
+            # update font sizes
+            self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
+            self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
+            self.__face_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_FACE_SIZE, weight='bold')
+
+            # >> reset photos to force the update of their sizes
+            self.__background_tk_resized_photo = None
+            self.__cube_resized_tk_photos = None
+
+            # redraw the canvas
+            GraphicalHexagon.resize()
+            self.__draw_state()
+
+            # remove fast preview data
+            self.__resize_preview_photo = None
+            self.__resize_scale_factor = None
+            self.__resize_time = None
+
+            # cancel the monitor
+            self.__canvas.after_cancel(self.__resize_timer_id)
+            self.__resize_timer_id = None
+            self.__resize_time = None
+
+        else:
+            self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_gui_finalize)
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = self.__searcher_catalog.get(self.__variable_white_player.get())
@@ -1469,7 +1564,7 @@ class GameGui(ttk.Frame):
                     self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    self.__take_and_save_picture(animation_png_file)
 
                 elif len(action_simple_name) == 8:
                     intermediate_move = action_simple_name[0:5]
@@ -1495,7 +1590,7 @@ class GameGui(ttk.Frame):
                     self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    self.__take_and_save_picture(animation_png_file)
 
                     intermediate_action = self.__pijersi_state.get_action_by_simple_name(intermediate_move)
                     self.__pijersi_state = self.__pijersi_state.take_action(intermediate_action)
@@ -1517,7 +1612,7 @@ class GameGui(ttk.Frame):
                     self.__sleep_ms(self.__picture_canvas_delay)
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    self.__take_and_save_picture(animation_png_file)
 
                 self.__pijersi_state = pijersi_saved_state
                 pijersi_saved_state = None
@@ -1529,12 +1624,12 @@ class GameGui(ttk.Frame):
             self.__sleep_ms(self.__picture_canvas_delay)
 
             picture_png_file = os.path.join(AppConfig.TMP_PICTURE_DIR, "state-%3.3d" % turn_index) + '.png'
-            self.__take_picture(picture_png_file)
+            self.__take_and_save_picture(picture_png_file)
 
             if turn_index != 0:
                 animation_index += 1
             animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-            self.__take_picture(animation_png_file)
+            self.__take_and_save_picture(animation_png_file)
 
             # simulate thinking and let the reader thinking too
             if animation_index != 0:
@@ -1547,7 +1642,7 @@ class GameGui(ttk.Frame):
 
                     animation_index += 1
                     animation_png_file = os.path.join(AppConfig.TMP_ANIMATION_DIR, "state-%3.3d" % animation_index) + '.png'
-                    self.__take_picture(animation_png_file)
+                    self.__take_and_save_picture(animation_png_file)
 
                 self.__legend = saved_legend
                 self.__draw_state()
@@ -2722,7 +2817,13 @@ class GameGui(ttk.Frame):
 
         return legend_score
 
-    def __take_picture(self, picture_file: str):
+
+    def __take_and_save_picture(self, picture_file: str):
+        picture = self.__take_picture()
+        picture.save(picture_file)
+
+
+    def __take_picture(self):
         grab_canvas_only = True
 
         if grab_canvas_only:
@@ -2755,9 +2856,9 @@ class GameGui(ttk.Frame):
         else:
             picture_bbox = None
 
-        image = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
         # >> all_screens – Capture all monitors. Windows OS only
-        image.save(picture_file)
+        picture = ImageGrab.grab(bbox=picture_bbox, all_screens=True)
+        return picture
 
     def __make_animated_pictures(self):
 
