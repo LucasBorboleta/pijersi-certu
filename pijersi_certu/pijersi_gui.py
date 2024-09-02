@@ -932,6 +932,7 @@ class GameGui(ttk.Frame):
 
         self.__text_actions.config(state="disabled")
         self.__button_resume.config(state="disabled")
+        self.__button_review.config(state="disabled")
         self.__button_reset_actions.config(state="disabled")
 
     def __create_cube_photos(self):
@@ -1189,8 +1190,10 @@ class GameGui(ttk.Frame):
 
         if turn_index != len(self.__turn_states) - 1 or not self.__game_terminated:
             self.__button_resume.config(state="enabled")
+            self.__button_review.config(state="enabled")
         else:
             self.__button_resume.config(state="disabled")
+            self.__button_review.config(state="disabled")
 
         self.__cmc_reset()
         self.__cmc_hightlight_moved_and_played_hexagons()
@@ -1247,6 +1250,7 @@ class GameGui(ttk.Frame):
         self.__draw_state()
 
         self.__button_resume.config(state="disabled")
+        self.__button_review.config(state="disabled")
 
 
     def __command_edit_actions(self):
@@ -1274,6 +1278,7 @@ class GameGui(ttk.Frame):
             self.__button_make_pictures.config(state="disabled")
 
             self.__button_resume.config(state="disabled")
+            self.__button_review.config(state="disabled")
 
             return
 
@@ -1474,8 +1479,10 @@ class GameGui(ttk.Frame):
 
                 if not self.__game_terminated:
                     self.__button_resume.config(state="enabled")
+                    self.__button_review.config(state="enabled")
                 else:
                     self.__button_resume.config(state="disabled")
+                    self.__button_review.config(state="disabled")
 
             return
 
@@ -1501,6 +1508,7 @@ class GameGui(ttk.Frame):
         self.__combobox_setup.config(state="disabled")
 
         self.__button_resume.config(state="disabled")
+        self.__button_review.config(state="disabled")
 
         self.__button_edit_actions.config(state="disabled")
         self.__spinbox_turn.config(state="disabled")
@@ -1671,6 +1679,7 @@ class GameGui(ttk.Frame):
         self.__combobox_setup.config(state="readonly")
 
         self.__button_resume.config(state="enabled")
+        self.__button_review.config(state="enabled")
 
         self.__button_edit_actions.config(state="enabled")
         self.__spinbox_turn.config(state="enabled")
@@ -1752,6 +1761,7 @@ class GameGui(ttk.Frame):
             self.__button_make_pictures.config(state="disabled")
 
             self.__button_resume.config(state="disabled")
+            self.__button_review.config(state="disabled")
 
             self.__cmc_reset()
             self.__draw_state()
@@ -1787,8 +1797,10 @@ class GameGui(ttk.Frame):
 
             if not self.__game_terminated:
                 self.__button_resume.config(state="enabled")
+                self.__button_review.config(state="enabled")
             else:
                 self.__button_resume.config(state="disabled")
+                self.__button_review.config(state="disabled")
 
             self.__cmc_reset()
             self.__cmc_hightlight_moved_and_played_hexagons()
@@ -1939,6 +1951,7 @@ class GameGui(ttk.Frame):
         self.__button_make_pictures.config(state="disabled")
 
         self.__button_resume.config(state="disabled")
+        self.__button_review.config(state="disabled")
 
         # start timer
         self.__game.set_turn_start(time.time())
