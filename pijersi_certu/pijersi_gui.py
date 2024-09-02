@@ -751,11 +751,16 @@ class GameGui(ttk.Frame):
                                               text='Resume',
                                               command=self.__command_resume)
 
+        self.__button_review = ttk.Button(self.__frame_commands,
+                                              text='Review',
+                                              command=self.__command_review)
+
 
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
         self.__button_resume.grid(row=1, column=1)
+        self.__button_review.grid(row=1, column=0)
 
         self.__frame_commands.rowconfigure(0, pad=5)
         self.__frame_commands.rowconfigure(1, pad=5)
@@ -1941,6 +1946,11 @@ class GameGui(ttk.Frame):
 
         # watch next turn
         self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
+
+
+    def __command_review(self):
+        print()
+        print("DEBUG: __command_review: not yet implemented")
 
     def __command_next_turn(self):
 
