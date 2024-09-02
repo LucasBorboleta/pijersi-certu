@@ -604,6 +604,7 @@ class GameGui(ttk.Frame):
 
         self.__turn_states = list()
         self.__turn_actions = list()
+        self.__turn_reviews = list()
 
         self.__game = None
 
@@ -623,6 +624,7 @@ class GameGui(ttk.Frame):
 
         self.__turn_states.append(self.__pijersi_state)
         self.__turn_actions.append("")
+        self.__turn_reviews.append(None)
 
         # For concurrent execution
         self.__concurrent_executor = None
@@ -1233,8 +1235,13 @@ class GameGui(ttk.Frame):
 
         self.__turn_states = list()
         self.__turn_states.append(self.__pijersi_state)
+
         self.__turn_actions = list()
         self.__turn_actions.append("")
+
+        self.__turn_reviews = list()
+        self.__turn_reviews.append(None)
+
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -1369,8 +1376,13 @@ class GameGui(ttk.Frame):
 
                 self.__turn_states = list()
                 self.__turn_states.append(self.__game.get_state())
+
                 self.__turn_actions = list()
                 self.__turn_actions.append("")
+
+                self.__turn_reviews = list()
+                self.__turn_reviews.append(None)
+
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -1401,6 +1413,7 @@ class GameGui(ttk.Frame):
 
                     self.__turn_states.append(self.__game.get_state())
                     self.__turn_actions.append(self.__game.get_last_action())
+                    self.__turn_reviews.append(None)
 
                     self.__variable_summary.set(self.__game.get_summary())
                     self.__variable_log.set(self.__game.get_log())
@@ -1481,7 +1494,7 @@ class GameGui(ttk.Frame):
                     self.__button_resume.config(state="enabled")
                 else:
                     self.__button_resume.config(state="disabled")
-                    
+
                 self.__button_review.config(state="enabled")
 
             return
@@ -1734,8 +1747,13 @@ class GameGui(ttk.Frame):
 
             self.__turn_states = list()
             self.__turn_states.append(self.__game.get_state())
+
             self.__turn_actions = list()
             self.__turn_actions.append("")
+
+            self.__turn_reviews = list()
+            self.__turn_reviews.append(None)
+
             self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
             self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -1799,7 +1817,7 @@ class GameGui(ttk.Frame):
                 self.__button_resume.config(state="enabled")
             else:
                 self.__button_resume.config(state="disabled")
- 
+
             self.__button_review.config(state="enabled")
 
             self.__cmc_reset()
@@ -1838,8 +1856,12 @@ class GameGui(ttk.Frame):
 
         self.__turn_states = list()
         self.__turn_states.append(self.__game.get_state())
+
         self.__turn_actions = list()
         self.__turn_actions.append("")
+
+        self.__turn_reviews = self.__turn_reviews[0: resume_turn_index + 1]
+
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
@@ -1964,6 +1986,9 @@ class GameGui(ttk.Frame):
     def __command_review(self):
         print()
         print("DEBUG: __command_review: not yet implemented")
+        print(f"DEBUG: _len(self.__turn_reviews) = {len(self.__turn_reviews)}")
+        print(f"DEBUG: _len(self.__turn_actions) = {len(self.__turn_actions)}")
+        assert len(self.__turn_reviews) == len(self.__turn_actions)
 
     def __command_next_turn(self):
 
@@ -2178,6 +2203,7 @@ class GameGui(ttk.Frame):
 
                 self.__turn_states.append(self.__game.get_state())
                 self.__turn_actions.append(self.__game.get_last_action())
+                self.__turn_reviews.append(None)
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
