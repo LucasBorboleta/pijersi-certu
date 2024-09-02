@@ -1045,7 +1045,7 @@ class GameGui(ttk.Frame):
 
         if use_fast_preview:
             if self.__resize_preview_photo is None:
-                self.__resize_preview_photo = self.__take_picture()
+                self.__resize_preview_photo = self.__take_picture(with_margins=False)
 
         # >> it seems to fix unstable behavior when unmaximizing
         self.__root.geometry (f"{new_root_width}x{new_root_height}")
@@ -2823,7 +2823,7 @@ class GameGui(ttk.Frame):
         picture.save(picture_file)
 
 
-    def __take_picture(self):
+    def __take_picture(self, with_margins=True):
         grab_canvas_only = True
 
         if grab_canvas_only:
@@ -2842,14 +2842,15 @@ class GameGui(ttk.Frame):
                 upper += self.__background_tk_resized_photo_delta_y
                 lower -= self.__background_tk_resized_photo_delta_y
 
-                left += self.__background_tk_resized_photo_delta_x
-                right -= self.__background_tk_resized_photo_delta_x
+                if with_margins:
+                    left += self.__background_tk_resized_photo_delta_x
+                    right -= self.__background_tk_resized_photo_delta_x
 
-                upper += int(0.01*h)
-                lower -= int(0.01*h)
+                    upper += int(0.01*h)
+                    lower -= int(0.01*h)
 
-                left += int(0.01*w)
-                right -= int(0.01*w)
+                    left += int(0.01*w)
+                    right -= int(0.01*w)
 
             picture_bbox = (left, upper, right, lower)
 
@@ -3011,10 +3012,10 @@ class GameGui(ttk.Frame):
             fill_color = hexagon.color.value
 
         line_width_scaling = 1.0
-        
+
         # played parameters
         line_dash_played_width_scaling = 4.0
-        
+
         # moved parameters
         if False:
             # using dashed line
