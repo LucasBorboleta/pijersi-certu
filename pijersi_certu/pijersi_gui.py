@@ -70,6 +70,7 @@ from pijersi_ugi import UgiSearcher
 # >> AI searchers for performing the action review
 REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+REVIEW_MAX_ACTION_GRADE = 10
 
 
 def rgb_color_as_hexadecimal(rgb_triplet):
@@ -569,6 +570,10 @@ class GameGui(ttk.Frame):
         self.__background_photo = None
         self.__background_tk_resized_photo = None
 
+        # For handling the game review
+        self.__enable_review = True
+        self.__review_sup_searcher = REVIEW_SUP_SEARCHER
+        self.__review_inf_searcher = REVIEW_INF_SEARCHER
 
         # For handling the GUI resize
 
@@ -1366,9 +1371,6 @@ class GameGui(ttk.Frame):
 
                 self.__game.set_white_searcher(white_replayer)
                 self.__game.set_black_searcher(black_replayer)
-                self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
-                self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
-                self.__game.enable_review(False)
 
                 self.__game.start()
                 self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
@@ -1430,7 +1432,6 @@ class GameGui(ttk.Frame):
                     self.__text_actions.config(state="disabled")
 
                 self.__game_terminated = not self.__game.has_next_turn()
-                self.__game.enable_review(True)
 
                 self.__pijersi_state = self.__game.get_state()
 
@@ -1730,9 +1731,6 @@ class GameGui(ttk.Frame):
 
             self.__game.set_white_searcher(self.__frontend_searchers[rules.Player.T.WHITE])
             self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
-            self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
-            self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
-            self.__game.enable_review(True)
 
             self.__game.start()
             self.__game.set_turn_start(time.time())
@@ -1848,9 +1846,6 @@ class GameGui(ttk.Frame):
 
         self.__game.set_white_searcher(white_replayer)
         self.__game.set_black_searcher(black_replayer)
-        self.__game.set_review_sup_searcher(REVIEW_SUP_SEARCHER)
-        self.__game.set_review_inf_searcher(REVIEW_INF_SEARCHER)
-        self.__game.enable_review(False)
 
         self.__game.start()
 
@@ -1900,7 +1895,6 @@ class GameGui(ttk.Frame):
         assert self.__game.has_next_turn()
         self.__game_played = True
         self.__game_terminated = False
-        self.__game.enable_review(True)
 
         self.__pijersi_state = self.__game.get_state()
 
@@ -1984,11 +1978,100 @@ class GameGui(ttk.Frame):
 
 
     def __command_review(self):
-        print()
-        print("DEBUG: __command_review: not yet implemented")
-        print(f"DEBUG: _len(self.__turn_reviews) = {len(self.__turn_reviews)}")
-        print(f"DEBUG: _len(self.__turn_actions) = {len(self.__turn_actions)}")
+
+        if not self.__enable_review:
+            return
+
         assert len(self.__turn_reviews) == len(self.__turn_actions)
+        assert len(self.__turn_reviews) == len(self.__turn_states)
+
+        print()
+        print("DEBUG: __command_review:")
+
+        for (action_index, action) in enumerate(self.__turn_actions):
+            if action_index == 0:
+                continue
+
+            if self.__turn_reviews[action_index] is not None:
+                continue
+
+            print(f"DEBUG: __command_review: reviewing action {action_index} ...")
+            action_review_grade = self.__review_action(action_review_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+            print(f"DEBUG: __command_review: reviewing action {action_index} done ; action_review_grade = {action_review_grade}")
+
+            self.__turn_reviews[action_index] = action_review_grade
+
+
+        print()
+        print("DEBUG: __command_review: summary ...")
+
+        for (action_index, action) in enumerate(self.__turn_actions):
+
+            if action_index == 0:
+                continue
+
+            action_review_grade = self.__turn_reviews[action_index]
+            action_name = str(action)
+
+            if action_review_grade is None:
+                print(f"DEBUG: __command_review: {action_index} {action_name}")
+
+            elif action_review_grade == -1:
+                print(f"DEBUG: __command_review: {action_index} {action_name} ??/{REVIEW_MAX_ACTION_GRADE:02d}")
+
+            else:
+                print(f"DEBUG: __command_review: {action_index} {action_name} {action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}")
+
+        print("DEBUG: __command_review: summary done")
+
+
+    def __review_action(self, action_review_name, pijersi_state):
+
+        # >> The review of action is experimental.
+        # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
+        # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
+        # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
+
+
+        sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(pijersi_state)
+
+        # >> make a mapping action -> rank that ensures that equal values have equal ranks
+        sup_ranks_by_actions = {}
+        sup_values = list(set(sup_evaluated_actions.values()))
+        sup_values.sort()
+        for (action_name, action_value) in sup_evaluated_actions.items():
+            action_name = action_name.replace('!', '')
+            sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
+
+        action_review_name = action_review_name.replace('!', '')
+
+        if action_review_name not in sup_ranks_by_actions:
+            action_review_grade = -1
+
+        else:
+            action_rank = sup_ranks_by_actions[action_review_name]
+
+            inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
+            inf_action_name = inf_action_name.replace('!', '')
+
+            if inf_action_name in sup_ranks_by_actions:
+                inf_rank = sup_ranks_by_actions[inf_action_name]
+            else:
+                inf_rank = 1
+
+            if action_rank < inf_rank :
+                action_review_grade = 0
+
+            elif inf_rank == len(sup_values):
+
+                if action_rank == inf_rank:
+                    action_review_grade = REVIEW_MAX_ACTION_GRADE
+                else:
+                    action_review_grade = 0
+            else:
+                action_review_grade = int(REVIEW_MAX_ACTION_GRADE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
+
+        return action_review_grade
 
     def __command_next_turn(self):
 
@@ -2191,9 +2274,6 @@ class GameGui(ttk.Frame):
 
                 turn = self.__game.get_turn()
                 notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
-                last_action_review = self.__game.get_last_action_review()
-                if last_action_review is not None:
-                    notation += ' ' + last_action_review
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
 

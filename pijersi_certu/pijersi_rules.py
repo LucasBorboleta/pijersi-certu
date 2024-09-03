@@ -2695,7 +2695,7 @@ class MinimaxSearcher(Searcher):
         return evaluated_actions
 
 
-    def search(self, state: PijersiState) -> PijersiAction:
+    def search(self, state: PijersiState, use_opening_file=True) -> PijersiAction:
 
         do_check = False
 
@@ -2713,7 +2713,7 @@ class MinimaxSearcher(Searcher):
         self.__transposition_table_depth_n = {}
 
         if self.get_time_limit() is None:
-            (best_value, best_branch, valued_actions) = self.alphabeta_plus(state=initial_state, player=1)
+            (best_value, best_branch, valued_actions) = self.alphabeta_plus(state=initial_state, player=1, use_opening_file=use_opening_file)
 
             best_actions = [action for action in valued_actions if action.value == best_value]
             best_action = random.choice(best_actions)
@@ -2792,7 +2792,7 @@ class MinimaxSearcher(Searcher):
                 log()
                 log("no action found after time limit ; force new search by minimax-1")
                 fallback_minimax_searcher = MinimaxSearcher("minimax-1", max_depth=1)
-                action = fallback_minimax_searcher.search(state)
+                action = fallback_minimax_searcher.search(state, use_opening_file=use_opening_file)
                 action_search_index = 0
 
             assert action is not None
@@ -3052,7 +3052,7 @@ class MinimaxSearcher(Searcher):
                 log(f"HB: iterative deepening at depth {pre_depth} ...")
 
             pre_minimax_searcher = MinimaxSearcher(f"minimax-pre-{pre_depth}", max_depth=pre_depth, searcher_parent=self)
-            (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player)
+            (_, _, _) = pre_minimax_searcher.alphabeta_plus(state=state, player=player, use_opening_file=use_opening_file)
 
             self.__evaluation_count += pre_minimax_searcher.__evaluation_count
             self.__fun_evaluation_count += pre_minimax_searcher.__fun_evaluation_count
@@ -3096,19 +3096,22 @@ class MinimaxSearcher(Searcher):
                 if not do_null_window_search or first_action:
                     first_action = False
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                                                                     alpha=alpha, beta=beta,
+                                                                     use_opening_file=use_opening_file)
 
                 else:
                     self.__null_windowing_count += 1
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=alpha + self.__NULL_ALPHA_BETA_WINDOW)
+                                                                     alpha=alpha, beta=alpha + self.__NULL_ALPHA_BETA_WINDOW,
+                                                                     use_opening_file=use_opening_file)
 
                     self.__null_windowing_count -= 1
 
                     if alpha < child_value < beta:
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                         alpha=alpha, beta=beta)
+                                                                         alpha=alpha, beta=beta,
+                                                                         use_opening_file=use_opening_file)
                         if False and self.__debugging:
                             log(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
@@ -3170,7 +3173,8 @@ class MinimaxSearcher(Searcher):
                     child_state = state.take_action(action, use_cache=True)
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                                                                     alpha=alpha, beta=beta,
+                                                                     use_opening_file=use_opening_file)
 
                     # >> HB: store value just for sorting
                     action.value = child_value
@@ -3230,18 +3234,21 @@ class MinimaxSearcher(Searcher):
                 if not do_null_window_search or first_action:
                     first_action = False
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                                                                     alpha=alpha, beta=beta,
+                                                                     use_opening_file=use_opening_file)
 
                 else:
                     self.__null_windowing_count += 1
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=beta - self.__NULL_ALPHA_BETA_WINDOW, beta=beta)
+                                                                     alpha=beta - self.__NULL_ALPHA_BETA_WINDOW, beta=beta,
+                                                                     use_opening_file=use_opening_file)
                     self.__null_windowing_count -= 1
 
                     if alpha < child_value < beta:
                         (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                         alpha=alpha, beta=beta)
+                                                                         alpha=alpha, beta=beta,
+                                                                         use_opening_file=use_opening_file)
                         if False and self.__debugging:
                             log(f"HD: null-window failed for action {action_count}/{len(actions)} at depth {depth}/{self.__max_depth} for player {player}")
                     else:
@@ -3303,7 +3310,8 @@ class MinimaxSearcher(Searcher):
                     child_state = state.take_action(action, use_cache=True)
 
                     (child_value, child_branch, _) = self.alphabeta_plus(state=child_state, player=-player, depth=depth - 1,
-                                                                     alpha=alpha, beta=beta)
+                                                                     alpha=alpha, beta=beta,
+                                                                     use_opening_file=use_opening_file)
 
                     # >> HB: store value just for sorting
                     action.value = child_value
@@ -3397,7 +3405,6 @@ class SearcherCatalog:
 class Game:
 
     __slots__ = ('__searcher',
-                 '__review_sup_searcher', '__review_inf_searcher', '__enabled_review', '__last_action_review',
                  '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
                  '__enabled_log', '__log', '__turn', '__last_action',
                  '__turn_duration', '__turn_start', '__turn_end')
@@ -3409,11 +3416,6 @@ class Game:
         self.__pijersi_state = None
         self.__pijersi_setup = setup
         self.__pijersi_setup_board_codes = board_codes
-
-        self.__enabled_review = False
-        self.__last_action_review = None
-        self.__review_sup_searcher = None
-        self.__review_inf_searcher = None
 
         self.__enabled_log = True
         self.__log = ""
@@ -3430,24 +3432,12 @@ class Game:
             self.__log = ""
 
 
-    def enable_review(self, condition: bool):
-        self.__enabled_review = condition
-
-
     def set_white_searcher(self, searcher: Searcher):
         self.__searcher[Player.T.WHITE] = searcher
 
 
     def set_black_searcher(self, searcher: Searcher):
         self.__searcher[Player.T.BLACK] = searcher
-
-
-    def set_review_sup_searcher(self, searcher: Searcher):
-        self.__review_sup_searcher = searcher
-
-
-    def set_review_inf_searcher(self, searcher: Searcher):
-        self.__review_inf_searcher = searcher
 
 
     def start(self):
@@ -3495,10 +3485,6 @@ class Game:
     def get_last_action(self) -> str:
         assert self.__last_action is not None
         return self.__last_action
-
-
-    def get_last_action_review(self) -> Optional[str]:
-        return self.__last_action_review
 
 
     def get_summary(self) -> str:
@@ -3556,62 +3542,9 @@ class Game:
                 action_count = len(self.__pijersi_state.get_actions())
                 self.__log = f"Turn {self.__turn} : after {turn_duration:.1f} seconds {player_name} selects {action} amongst {action_count} actions"
 
-
-            if False: # >> Game/action review feature is planned after pijersi-certu v2.0.0 !
-            #if self.__enabled_review:
-
-                # >> The review of action is experimental.
-                # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
-                # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
-                # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
-
-                if self.__enabled_log:
-                    log("Move review ...")
-
-                assert self.__review_sup_searcher is not None
-                assert self.__review_inf_searcher is not None
-
-                ACTION_REVIEW_SCORE_MAX = 10
-
-                sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(self.__pijersi_state)
-
-                # >> make a mapping action -> rank that ensures that equal values have equal ranks
-                sup_ranks_by_actions = {}
-                sup_values = list(set(sup_evaluated_actions.values()))
-                sup_values.sort()
-                for (action_name, action_value) in sup_evaluated_actions.items():
-                    sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
-
-                action_rank = sup_ranks_by_actions[self.__last_action]
-
-                inf_action = str(self.__review_inf_searcher.search(self.__pijersi_state))
-                inf_rank = sup_ranks_by_actions[inf_action]
-
-                if action_rank < inf_rank :
-                    action_review_score = 0
-
-                elif inf_rank == len(sup_values):
-
-                    if action_rank == inf_rank:
-                        action_review_score = ACTION_REVIEW_SCORE_MAX
-                    else:
-                        action_review_score = 0
-
-                else:
-                    action_review_score = int(ACTION_REVIEW_SCORE_MAX*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
-
-
-                self.__last_action_review = f"{action_review_score:02d}/{ACTION_REVIEW_SCORE_MAX:02d}"
-
-                self.__log += f" ; review: {self.__last_action_review}"
-
-            else:
-                self.__enabled_review = None
-
             if self.__enabled_log:
                 log(self.__log)
                 log("-"*40)
-
 
             self.__pijersi_state = self.__pijersi_state.take_action(action)
 
