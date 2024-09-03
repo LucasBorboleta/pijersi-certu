@@ -2014,13 +2014,13 @@ class GameGui(ttk.Frame):
             action_name = str(action)
 
             if action_review_grade is None:
-                print(f"DEBUG: __command_review: {action_index} {action_name}")
+                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)}")
 
             elif action_review_grade == -1:
-                print(f"DEBUG: __command_review: {action_index} {action_name} ??/{REVIEW_MAX_ACTION_GRADE:02d}")
+                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)} ??/{REVIEW_MAX_ACTION_GRADE:02d}")
 
             else:
-                print(f"DEBUG: __command_review: {action_index} {action_name} {action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}")
+                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)} {action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}")
 
         print("DEBUG: __command_review: summary done")
 
@@ -2047,6 +2047,7 @@ class GameGui(ttk.Frame):
 
         if action_review_name not in sup_ranks_by_actions:
             action_review_grade = -1
+            print("DEBUG: __review_action: action_review_name not in sup_ranks_by_actions")
 
         else:
             action_rank = sup_ranks_by_actions[action_review_name]
@@ -2058,9 +2059,13 @@ class GameGui(ttk.Frame):
                 inf_rank = sup_ranks_by_actions[inf_action_name]
             else:
                 inf_rank = 1
+                print("DEBUG: __review_action: inf_action_name not in sup_ranks_by_actions")
+
+            print(f"DEBUG: __review_action: inf_rank={inf_rank} ; action_rank={action_rank} ; len(sup_values)={len(sup_values)}")
 
             if action_rank < inf_rank :
                 action_review_grade = 0
+                print("DEBUG: __review_action: action_rank < inf_rank")
 
             elif inf_rank == len(sup_values):
 
@@ -2068,6 +2073,7 @@ class GameGui(ttk.Frame):
                     action_review_grade = REVIEW_MAX_ACTION_GRADE
                 else:
                     action_review_grade = 0
+                    print("DEBUG: __review_action: action_rank != inf_rank")
             else:
                 action_review_grade = int(REVIEW_MAX_ACTION_GRADE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
 
