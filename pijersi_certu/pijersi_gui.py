@@ -1982,8 +1982,24 @@ class GameGui(ttk.Frame):
         if not self.__enable_review:
             return
 
+        # Disable widgets
+
+        self.__button_new_stop.config(state="disabled")
+        self.__combobox_white_player.config(state="disabled")
+        self.__combobox_black_player.config(state="disabled")
+        self.__button_switch.config(state="disabled")
+        self.__combobox_setup.config(state="disabled")
+
+        self.__spinbox_turn.config(state="disabled")
+        self.__button_make_pictures.config(state="disabled")
+
+        self.__button_resume.config(state="disabled")
+        self.__button_review.config(state="disabled")
+
         assert len(self.__turn_reviews) == len(self.__turn_actions)
         assert len(self.__turn_reviews) == len(self.__turn_states)
+
+        # Compute a grade for each reviewed action
 
         print()
         print("DEBUG: __command_review:")
@@ -2001,28 +2017,59 @@ class GameGui(ttk.Frame):
 
             self.__turn_reviews[action_index] = action_review_grade
 
+        # Show the grade of each reviewed action
 
-        print()
-        print("DEBUG: __command_review: summary ...")
+        self.__text_actions.config(state="normal")
+        self.__text_actions.delete('1.0', tk.END)
+        self.__text_actions.config(state="disabled")
+
+        self.__write_setup()
 
         for (action_index, action) in enumerate(self.__turn_actions):
 
             if action_index == 0:
                 continue
 
-            action_review_grade = self.__turn_reviews[action_index]
             action_name = str(action)
+            turn = action_index
+
+            action_review_grade = self.__turn_reviews[action_index]
 
             if action_review_grade is None:
-                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)}")
+                action_review_grade_text = ""
 
             elif action_review_grade == -1:
-                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)} ??/{REVIEW_MAX_ACTION_GRADE:02d}")
+                action_review_grade_text = f"??/{REVIEW_MAX_ACTION_GRADE:02d}"
 
             else:
-                print(f"DEBUG: __command_review: {action_index:2d} {action_name.ljust(10)} {action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}")
+                action_review_grade_text = f"{action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}"
 
-        print("DEBUG: __command_review: summary done")
+            notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_review_grade_text.ljust(5)
+            if turn % 2 == 0:
+                notation = ' '*2 + notation + "\n"
+
+            self.__text_actions.config(state="normal")
+            self.__text_actions.insert(tk.END, notation)
+            self.__text_actions.see(tk.END)
+            self.__text_actions.config(state="disabled")
+
+        # Enable widgets
+
+        self.__button_new_stop.config(state="enabled")
+        self.__combobox_white_player.config(state="readonly")
+        self.__combobox_black_player.config(state="readonly")
+        self.__button_switch.config(state="enabled")
+        self.__combobox_setup.config(state="readonly")
+
+        self.__spinbox_turn.config(state="enabled")
+        self.__button_make_pictures.config(state="enabled")
+
+        if not self.__game_terminated:
+            self.__button_resume.config(state="enabled")
+        else:
+            self.__button_resume.config(state="disabled")
+
+        self.__button_review.config(state="enabled")
 
 
     def __review_action(self, action_review_name, pijersi_state):
@@ -2031,7 +2078,6 @@ class GameGui(ttk.Frame):
         # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
         # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
         # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
-
 
         sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(pijersi_state)
 
@@ -2047,7 +2093,6 @@ class GameGui(ttk.Frame):
 
         if action_review_name not in sup_ranks_by_actions:
             action_review_grade = -1
-            print("DEBUG: __review_action: action_review_name not in sup_ranks_by_actions")
 
         else:
             action_rank = sup_ranks_by_actions[action_review_name]
@@ -2059,13 +2104,9 @@ class GameGui(ttk.Frame):
                 inf_rank = sup_ranks_by_actions[inf_action_name]
             else:
                 inf_rank = 1
-                print("DEBUG: __review_action: inf_action_name not in sup_ranks_by_actions")
-
-            print(f"DEBUG: __review_action: inf_rank={inf_rank} ; action_rank={action_rank} ; len(sup_values)={len(sup_values)}")
 
             if action_rank < inf_rank :
                 action_review_grade = 0
-                print("DEBUG: __review_action: action_rank < inf_rank")
 
             elif inf_rank == len(sup_values):
 
@@ -2073,7 +2114,6 @@ class GameGui(ttk.Frame):
                     action_review_grade = REVIEW_MAX_ACTION_GRADE
                 else:
                     action_review_grade = 0
-                    print("DEBUG: __review_action: action_rank != inf_rank")
             else:
                 action_review_grade = int(REVIEW_MAX_ACTION_GRADE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
 
