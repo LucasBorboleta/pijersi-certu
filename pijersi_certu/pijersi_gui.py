@@ -2087,10 +2087,15 @@ class GameGui(ttk.Frame):
             black_grade_max = max(black_grades) if len(black_grades) != 0 else '*'
             black_grade_ave = int(sum(black_grades)/len(black_grades)) if len(black_grades) != 0 else '*'
 
-            self.__variable_log.set("review done ; " +
-                                    f"white  average={white_grade_ave}  min={white_grade_min}  max={white_grade_max}  #?={white_unseens}" +
-                                    " / " +
-                                    f"black  average={black_grade_ave}  min={black_grade_min}  max={black_grade_max}  #?={black_unseens}")
+            if True:
+                # simple statistics
+                self.__variable_log.set(f"review done ; white  average={white_grade_ave}  /  black  average={black_grade_ave}")
+            else:
+                # more elaborated statistics
+                self.__variable_log.set("review done ; " +
+                                        f"white  average={white_grade_ave}  min={white_grade_min}  max={white_grade_max}  #?={white_unseens}" +
+                                        " / " +
+                                        f"black  average={black_grade_ave}  min={black_grade_min}  max={black_grade_max}  #?={black_unseens}")
             self.__review_in_progress = False
 
         if not self.__review_in_progress:
