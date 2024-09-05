@@ -571,9 +571,14 @@ class GameGui(ttk.Frame):
         self.__background_tk_resized_photo = None
 
         # For handling the game review
-        self.__enable_review = True
+        self.__review_enabled = True
         self.__review_sup_searcher = REVIEW_SUP_SEARCHER
         self.__review_inf_searcher = REVIEW_INF_SEARCHER
+        self.__review_in_progress = False
+        self.__review_action_index = None
+        self.__review_timer_id = None
+        self.__review_timer_delay = 500
+
 
         # For handling the GUI resize
 
@@ -1979,30 +1984,32 @@ class GameGui(ttk.Frame):
 
     def __command_review(self):
 
-        if not self.__enable_review:
+        if not self.__review_enabled:
             return
 
         # Disable widgets
+        if not self.__review_in_progress:
+            self.__review_in_progress = True
 
-        self.__button_new_stop.config(state="disabled")
-        self.__combobox_white_player.config(state="disabled")
-        self.__combobox_black_player.config(state="disabled")
-        self.__button_switch.config(state="disabled")
-        self.__combobox_setup.config(state="disabled")
+            self.__button_new_stop.config(state="disabled")
+            self.__combobox_white_player.config(state="disabled")
+            self.__combobox_black_player.config(state="disabled")
+            self.__button_switch.config(state="disabled")
+            self.__combobox_setup.config(state="disabled")
 
-        self.__spinbox_turn.config(state="disabled")
-        self.__button_make_pictures.config(state="disabled")
+            self.__spinbox_turn.config(state="disabled")
+            self.__button_make_pictures.config(state="disabled")
 
-        self.__button_resume.config(state="disabled")
-        self.__button_review.config(state="disabled")
+            self.__button_resume.config(state="disabled")
+            self.__button_review.config(state="disabled")
+
+
+        # Compute a grade for the first noy yet reviewed action
 
         assert len(self.__turn_reviews) == len(self.__turn_actions)
         assert len(self.__turn_reviews) == len(self.__turn_states)
 
-        # Compute a grade for each reviewed action
-
-        print()
-        print("DEBUG: __command_review:")
+        self.__review_action_index = None
 
         for (action_index, action) in enumerate(self.__turn_actions):
             if action_index == 0:
@@ -2011,65 +2018,87 @@ class GameGui(ttk.Frame):
             if self.__turn_reviews[action_index] is not None:
                 continue
 
-            print(f"DEBUG: __command_review: reviewing action {action_index} ...")
+            self.__review_action_index = action_index
+            break
+
+        if self.__review_action_index is not None:
+
+            self.__variable_log.set(f"action {self.__review_action_index} review ...")
+            self.__label_log.update()
+
             action_review_grade = self.__review_action(action_review_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
-            print(f"DEBUG: __command_review: reviewing action {action_index} done ; action_review_grade = {action_review_grade}")
+            self.__turn_reviews[self.__review_action_index] = action_review_grade
 
-            self.__turn_reviews[action_index] = action_review_grade
-
-        # Show the grade of each reviewed action
-
-        self.__text_actions.config(state="normal")
-        self.__text_actions.delete('1.0', tk.END)
-        self.__text_actions.config(state="disabled")
-
-        self.__write_setup()
-
-        for (action_index, action) in enumerate(self.__turn_actions):
-
-            if action_index == 0:
-                continue
-
-            action_name = str(action)
-            turn = action_index
-
-            action_review_grade = self.__turn_reviews[action_index]
-
-            if action_review_grade is None:
-                action_review_grade_text = ""
-
-            elif action_review_grade == -1:
-                action_review_grade_text = f"??/{REVIEW_MAX_ACTION_GRADE:02d}"
-
-            else:
-                action_review_grade_text = f"{action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}"
-
-            notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_review_grade_text.ljust(5)
-            if turn % 2 == 0:
-                notation = ' '*2 + notation + "\n"
+            # Show the grade of each reviewed action
 
             self.__text_actions.config(state="normal")
-            self.__text_actions.insert(tk.END, notation)
-            self.__text_actions.see(tk.END)
+            self.__text_actions.delete('1.0', tk.END)
             self.__text_actions.config(state="disabled")
 
-        # Enable widgets
+            self.__write_setup()
 
-        self.__button_new_stop.config(state="enabled")
-        self.__combobox_white_player.config(state="readonly")
-        self.__combobox_black_player.config(state="readonly")
-        self.__button_switch.config(state="enabled")
-        self.__combobox_setup.config(state="readonly")
+            for (action_index, action) in enumerate(self.__turn_actions):
 
-        self.__spinbox_turn.config(state="enabled")
-        self.__button_make_pictures.config(state="enabled")
+                if action_index == 0:
+                    continue
 
-        if not self.__game_terminated:
-            self.__button_resume.config(state="enabled")
+                action_name = str(action)
+                turn = action_index
+
+                action_review_grade = self.__turn_reviews[action_index]
+
+                if action_review_grade is None:
+                    action_review_grade_text = ""
+
+                elif action_review_grade == -1:
+                    action_review_grade_text = f"??/{REVIEW_MAX_ACTION_GRADE:02d}"
+
+                else:
+                    action_review_grade_text = f"{action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}"
+
+                notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_review_grade_text.ljust(5)
+                if turn % 2 == 0:
+                    notation = ' '*2 + notation + "\n"
+
+                self.__text_actions.config(state="normal")
+                self.__text_actions.insert(tk.END, notation)
+                self.__text_actions.see(tk.END)
+                self.__text_actions.config(state="disabled")
+
+            self.__variable_log.set(f"action {self.__review_action_index} review done")
+            self.__review_action_index = None
+
+            self.__review_timer_id = self.__root.after(self.__review_timer_delay, self.__command_review)
+
         else:
-            self.__button_resume.config(state="disabled")
+            self.__review_in_progress = False
+            self.__variable_log.set("review done")
 
-        self.__button_review.config(state="enabled")
+        if not self.__review_in_progress:
+
+            # Enable widgets
+
+            self.__button_new_stop.config(state="enabled")
+            self.__combobox_white_player.config(state="readonly")
+            self.__combobox_black_player.config(state="readonly")
+            self.__button_switch.config(state="enabled")
+            self.__combobox_setup.config(state="readonly")
+
+            self.__spinbox_turn.config(state="enabled")
+            self.__button_make_pictures.config(state="enabled")
+
+            if not self.__game_terminated:
+                self.__button_resume.config(state="enabled")
+            else:
+                self.__button_resume.config(state="disabled")
+
+            self.__button_review.config(state="enabled")
+
+
+            if self.__review_timer_id is not None:
+                self.__root.after_cancel(self.__review_timer_id)
+                self.__review_timer_id = None
+
 
 
     def __review_action(self, action_review_name, pijersi_state):
