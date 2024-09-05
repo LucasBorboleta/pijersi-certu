@@ -2051,7 +2051,7 @@ class GameGui(ttk.Frame):
                     action_review_grade_text = ""
 
                 elif action_review_grade == -1:
-                    action_review_grade_text = f"??/{REVIEW_MAX_ACTION_GRADE:02d}"
+                    action_review_grade_text = f" ?/{REVIEW_MAX_ACTION_GRADE:02d}"
 
                 else:
                     action_review_grade_text = f"{action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}"
@@ -2071,8 +2071,27 @@ class GameGui(ttk.Frame):
             self.__review_timer_id = self.__root.after(self.__review_timer_delay, self.__command_review)
 
         else:
+
+            white_reviews = self.__turn_reviews[1::2]
+            black_reviews = self.__turn_reviews[2::2]
+
+            white_unseens = len([grade for grade in white_reviews if grade is not None and grade == -1])
+            white_grades = [grade for grade in white_reviews if grade is not None and grade != -1]
+            white_grade_min = min(white_grades) if len(white_grades) != 0 else '*'
+            white_grade_max = max(white_grades) if len(white_grades) != 0 else '*'
+            white_grade_ave = int(sum(white_grades)/len(white_grades)) if len(white_grades) != 0 else '*'
+
+            black_unseens = len([grade for grade in black_reviews if grade is not None and grade == -1])
+            black_grades = [grade for grade in black_reviews if grade is not None and grade != -1]
+            black_grade_min = min(black_grades) if len(black_grades) != 0 else '*'
+            black_grade_max = max(black_grades) if len(black_grades) != 0 else '*'
+            black_grade_ave = int(sum(black_grades)/len(black_grades)) if len(black_grades) != 0 else '*'
+
+            self.__variable_log.set("review done ; " +
+                                    f"white  average={white_grade_ave}  min={white_grade_min}  max={white_grade_max}  #?={white_unseens}" +
+                                    " / " +
+                                    f"black  average={black_grade_ave}  min={black_grade_min}  max={black_grade_max}  #?={black_unseens}")
             self.__review_in_progress = False
-            self.__variable_log.set("review done")
 
         if not self.__review_in_progress:
 
