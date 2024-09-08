@@ -70,7 +70,7 @@ from pijersi_ugi import UgiSearcher
 # >> AI searchers for performing the action review
 REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
-REVIEW_MAX_ACTION_GRADE = 10
+REVIEW_MAX_ACTION_SCORE = 10
 
 
 def rgb_color_as_hexadecimal(rgb_triplet):
@@ -574,7 +574,7 @@ class GameGui(ttk.Frame):
         self.__review_enabled = True
         self.__review_sup_searcher = REVIEW_SUP_SEARCHER
         self.__review_inf_searcher = REVIEW_INF_SEARCHER
-        self.__review_in_progress = False
+        self.__review_running = False
         self.__review_action_index = None
         self.__review_timer_id = None
         self.__review_timer_delay = 500
@@ -765,7 +765,7 @@ class GameGui(ttk.Frame):
 
         self.__button_review = ttk.Button(self.__frame_commands,
                                               text='Review',
-                                              command=self.__command_review)
+                                              command=self.__command_review_start_stop)
 
 
         self.__button_new_stop.grid(row=0, column=0)
@@ -1889,7 +1889,21 @@ class GameGui(ttk.Frame):
             self.__text_actions.config(state="normal")
 
             turn = self.__game.get_turn()
-            notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+
+            action_name = str(self.__game.get_last_action())
+
+            action_score = self.__turn_reviews[turn]
+
+            if action_score is None:
+                action_score_text = ""
+
+            elif action_score == -1:
+                action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
+
+            else:
+                action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
+
+            notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
             if turn % 2 == 0:
                 notation = ' '*2 + notation + "\n"
 
@@ -1982,14 +1996,14 @@ class GameGui(ttk.Frame):
         self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
 
 
-    def __command_review(self):
+    def __command_review_start_stop(self):
 
         if not self.__review_enabled:
             return
 
-        # Disable widgets
-        if not self.__review_in_progress:
-            self.__review_in_progress = True
+        if not self.__review_running:
+
+            # Disable widgets
 
             self.__button_new_stop.config(state="disabled")
             self.__combobox_white_player.config(state="disabled")
@@ -2001,35 +2015,50 @@ class GameGui(ttk.Frame):
             self.__button_make_pictures.config(state="disabled")
 
             self.__button_resume.config(state="disabled")
-            self.__button_review.config(state="disabled")
+
+            self.__button_review.configure(text="Stop")
 
 
-        # Compute a grade for the first noy yet reviewed action
+            # review the first not yet review action
+            self.__review_running = True
+            self.__command_review_update()
+
+        elif self.__review_running:
+            # finalize the rview
+            self.__review_running = False
+            self.__command_review_update()
+
+
+    def __command_review_update(self):
+
+        # Compute a score for the first not yet reviewed action
 
         assert len(self.__turn_reviews) == len(self.__turn_actions)
         assert len(self.__turn_reviews) == len(self.__turn_states)
 
         self.__review_action_index = None
 
-        for (action_index, action) in enumerate(self.__turn_actions):
-            if action_index == 0:
-                continue
+        if self.__review_running:
 
-            if self.__turn_reviews[action_index] is not None:
-                continue
+            for (action_index, action) in enumerate(self.__turn_actions):
+                if action_index == 0:
+                    continue
 
-            self.__review_action_index = action_index
-            break
+                if self.__turn_reviews[action_index] is not None:
+                    continue
+
+                self.__review_action_index = action_index
+                break
 
         if self.__review_action_index is not None:
 
             self.__variable_log.set(f"action {self.__review_action_index} review ...")
             self.__label_log.update()
 
-            action_review_grade = self.__review_action(action_review_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
-            self.__turn_reviews[self.__review_action_index] = action_review_grade
+            action_score = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+            self.__turn_reviews[self.__review_action_index] = action_score
 
-            # Show the grade of each reviewed action
+            # Show the score of each reviewed action
 
             self.__text_actions.config(state="normal")
             self.__text_actions.delete('1.0', tk.END)
@@ -2041,22 +2070,22 @@ class GameGui(ttk.Frame):
 
                 if action_index == 0:
                     continue
-
-                action_name = str(action)
                 turn = action_index
 
-                action_review_grade = self.__turn_reviews[action_index]
+                action_name = str(action)
 
-                if action_review_grade is None:
-                    action_review_grade_text = ""
+                action_score = self.__turn_reviews[turn]
 
-                elif action_review_grade == -1:
-                    action_review_grade_text = f" ?/{REVIEW_MAX_ACTION_GRADE:02d}"
+                if action_score is None:
+                    action_score_text = ""
+
+                elif action_score == -1:
+                    action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
 
                 else:
-                    action_review_grade_text = f"{action_review_grade:02d}/{REVIEW_MAX_ACTION_GRADE:02d}"
+                    action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
 
-                notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_review_grade_text.ljust(5)
+                notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
 
@@ -2068,24 +2097,29 @@ class GameGui(ttk.Frame):
             self.__variable_log.set(f"action {self.__review_action_index} review done")
             self.__review_action_index = None
 
-            self.__review_timer_id = self.__root.after(self.__review_timer_delay, self.__command_review)
+            if self.__review_running:
+                self.__review_timer_id = self.__root.after(self.__review_timer_delay, self.__command_review_update)
 
-        else:
+        elif self.__review_action_index is  None:
 
-            # copute and show simple statistics
+            # compute and show simple statistics
             white_reviews = self.__turn_reviews[1::2]
             black_reviews = self.__turn_reviews[2::2]
 
-            white_grades = [grade for grade in white_reviews if grade is not None and grade != -1]
-            white_grade_ave = int(sum(white_grades)/len(white_grades)) if len(white_grades) != 0 else '*'
+            white_scores = [score for score in white_reviews if score is not None and score != -1]
+            white_score_ave = int(sum(white_scores)/len(white_scores)) if len(white_scores) != 0 else '*'
 
-            black_grades = [grade for grade in black_reviews if grade is not None and grade != -1]
-            black_grade_ave = int(sum(black_grades)/len(black_grades)) if len(black_grades) != 0 else '*'
+            black_scores = [score for score in black_reviews if score is not None and score != -1]
+            black_score_ave = int(sum(black_scores)/len(black_scores)) if len(black_scores) != 0 else '*'
 
-            self.__variable_log.set(f"review done ; white  average={white_grade_ave}  /  black  average={black_grade_ave}")
-            self.__review_in_progress = False
+            if self.__review_running:
+                self.__variable_log.set(f"review completed ; white  average={white_score_ave}  /  black  average={black_score_ave}")
+            else:
+                self.__variable_log.set(f"review stopped ; white  average={white_score_ave}  /  black  average={black_score_ave}")
 
-        if not self.__review_in_progress:
+            self.__review_running = False
+
+        if not self.__review_running:
 
             # Enable widgets
 
@@ -2103,18 +2137,15 @@ class GameGui(ttk.Frame):
             else:
                 self.__button_resume.config(state="disabled")
 
-            self.__button_review.config(state="enabled")
-
+            self.__button_review.configure(text="Review")
 
             if self.__review_timer_id is not None:
                 self.__root.after_cancel(self.__review_timer_id)
                 self.__review_timer_id = None
 
 
+    def __review_evaluate_action_score(self, action_name, pijersi_state):
 
-    def __review_action(self, action_review_name, pijersi_state):
-
-        # >> The review of action is experimental.
         # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
         # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
         # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
@@ -2125,39 +2156,39 @@ class GameGui(ttk.Frame):
         sup_ranks_by_actions = {}
         sup_values = list(set(sup_evaluated_actions.values()))
         sup_values.sort()
-        for (action_name, action_value) in sup_evaluated_actions.items():
-            action_name = action_name.replace('!', '')
-            sup_ranks_by_actions[action_name] = sup_values.index(action_value) + 1
+        for (an_action_name, an_action_value) in sup_evaluated_actions.items():
+            an_action_simple_name = an_action_name.replace('!', '')
+            sup_ranks_by_actions[an_action_simple_name] = sup_values.index(an_action_value) + 1
 
-        action_review_name = action_review_name.replace('!', '')
+        action_simple_name = action_name.replace('!', '')
 
-        if action_review_name not in sup_ranks_by_actions:
-            action_review_grade = -1
+        if action_simple_name not in sup_ranks_by_actions:
+            action_score = -1
 
         else:
-            action_rank = sup_ranks_by_actions[action_review_name]
+            action_rank = sup_ranks_by_actions[action_simple_name]
 
             inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
-            inf_action_name = inf_action_name.replace('!', '')
+            inf_action_simple_name = inf_action_name.replace('!', '')
 
-            if inf_action_name in sup_ranks_by_actions:
-                inf_rank = sup_ranks_by_actions[inf_action_name]
+            if inf_action_simple_name in sup_ranks_by_actions:
+                inf_rank = sup_ranks_by_actions[inf_action_simple_name]
             else:
                 inf_rank = 1
 
             if action_rank < inf_rank :
-                action_review_grade = 0
+                action_score = 0
 
             elif inf_rank == len(sup_values):
 
                 if action_rank == inf_rank:
-                    action_review_grade = REVIEW_MAX_ACTION_GRADE
+                    action_score = REVIEW_MAX_ACTION_SCORE
                 else:
-                    action_review_grade = 0
+                    action_score = 0
             else:
-                action_review_grade = int(REVIEW_MAX_ACTION_GRADE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
+                action_score = int(REVIEW_MAX_ACTION_SCORE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
 
-        return action_review_grade
+        return action_score
 
     def __command_next_turn(self):
 
