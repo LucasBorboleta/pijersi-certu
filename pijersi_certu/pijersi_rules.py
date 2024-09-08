@@ -235,19 +235,19 @@ class Notation:
 
     @staticmethod
     def classify_simple_notation(notation: str) -> SimpleCase:
-        if re.match(r'^[a-i][1-9]-[a-i][1-9]$', notation):
+        if re.match(r'^[a-g][1-9]-[a-g][1-9]$', notation):
             # move cube
             return Notation.SimpleCase.MOVE_CUBE
 
-        if re.match(r'^[a-i][1-9]=[a-i][1-9]$', notation):
+        if re.match(r'^[a-g][1-9]=[a-g][1-9]$', notation):
             # move stack
             return Notation.SimpleCase.MOVE_STACK
 
-        if re.match(r'^[a-i][1-9]-[a-i][1-9]=[a-i][1-9]$', notation):
+        if re.match(r'^[a-g][1-9]-[a-g][1-9]=[a-g][1-9]$', notation):
             # move cube move stack
             return Notation.SimpleCase.MOVE_CUBE_MOVE_STACK
 
-        if re.match(r'^[a-i][1-9]=[a-i][1-9]-[a-i][1-9]$', notation):
+        if re.match(r'^[a-g][1-9]=[a-g][1-9]-[a-g][1-9]$', notation):
             # move stack move cube
             return Notation.SimpleCase.MOVE_STACK_MOVE_CUBE
 

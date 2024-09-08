@@ -1343,27 +1343,60 @@ class GameGui(ttk.Frame):
                     validated_edited_actions = False
                     # >> left unchanged self.__game_setup and self.__game_setup_board_codes
 
-            # check length of action items
-            if validated_edited_actions and not len(actions_items) % 2 == 0:
-                validated_edited_actions = False
-                self.__variable_log.set("Error: not an even count of words")
-
-            # check action indices
-            if validated_edited_actions:
-                action_count = int(len(actions_items)/2)
-                for action_index in range(action_count):
-                    even_action_item = actions_items[2*action_index]
-                    if even_action_item != str(action_index + 1):
-                        validated_edited_actions = False
-                        self.__variable_log.set("Error: bad index '%s'" % even_action_item)
-
-            # extract actions
+            # extract actions and scores
             if validated_edited_actions:
                 edited_actions = list()
-                for action_index in range(action_count):
-                    action = actions_items[2*action_index + 1]
-                    action = action.replace("!", "")
-                    edited_actions.append(action)
+                action_index = 0
+
+                actions_item_index = 0
+                while actions_item_index < len(actions_items):
+                    action_item = actions_items[actions_item_index]
+
+                    if action_item != str(action_index + 1):
+                        validated_edited_actions = False
+                        self.__variable_log.set(f"Error: bad index '{action_item}'")
+                        break
+
+                    actions_item_index += 1
+                    if actions_item_index >= len(actions_items):
+                        validated_edited_actions = False
+                        self.__variable_log.set(f"Error: missing action at turn '{action_index + 1}'")
+                        break
+
+                    action_item = actions_items[actions_item_index]
+                    action = action_item.replace("!", "")
+
+                    if rules.Notation.classify_simple_notation(action) == rules.Notation.SimpleCase.INVALID:
+                        validated_edited_actions = False
+                        self.__variable_log.set(f"Error: invalid notation for action '{action_item}' at turn '{action_index + 1}'")
+                        break
+
+                    actions_item_index += 1
+                    action_score = None
+                    if actions_item_index < len(actions_items):
+                        action_item = actions_items[actions_item_index]
+
+                        if action_item == f"?/{REVIEW_MAX_ACTION_SCORE:02d}":
+                            action_score = -1
+                            actions_item_index += 1
+
+                        elif re.match(f"[0-9][0-9]/{REVIEW_MAX_ACTION_SCORE:02d}", action_item):
+                            action_score = int(action_item[:2])
+                            actions_item_index += 1
+
+                            if not (0 <= action_score <= REVIEW_MAX_ACTION_SCORE):
+                                validated_edited_actions = False
+                                self.__variable_log.set(f"Error: invalid score value '{action_item}' at turn '{action_index + 1}'")
+                                break
+
+                        elif re.match(r".*/.*", action_item):
+                            validated_edited_actions = False
+                            self.__variable_log.set(f"Error: invalid score syntax '{action_item}' at turn '{action_index + 1}'")
+                            break
+
+                    action_index += 1
+
+                    edited_actions.append((action, action_score))
 
             # interpret actions
             if validated_edited_actions:
@@ -1393,7 +1426,7 @@ class GameGui(ttk.Frame):
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
-                for (action_index, action) in enumerate(edited_actions):
+                for (action_index, (action, action_score)) in enumerate(edited_actions):
 
                     if not self.__game.has_next_turn():
                         validated_edited_actions = False
@@ -1420,7 +1453,7 @@ class GameGui(ttk.Frame):
 
                     self.__turn_states.append(self.__game.get_state())
                     self.__turn_actions.append(self.__game.get_last_action())
-                    self.__turn_reviews.append(None)
+                    self.__turn_reviews.append(action_score)
 
                     self.__variable_summary.set(self.__game.get_summary())
                     self.__variable_log.set(self.__game.get_log())
@@ -1428,7 +1461,21 @@ class GameGui(ttk.Frame):
                     self.__text_actions.config(state="normal")
 
                     turn = self.__game.get_turn()
-                    notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+
+                    action_name = str(self.__game.get_last_action())
+
+                    action_score = self.__turn_reviews[turn]
+
+                    if action_score is None:
+                        action_score_text = ""
+
+                    elif action_score == -1:
+                        action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
+
+                    else:
+                        action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
+
+                    notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                     if turn % 2 == 0:
                         notation = ' '*2 + notation + "\n"
 
