@@ -68,9 +68,10 @@ from pijersi_ugi import UgiSearcher
 
 
 # >> AI searchers for performing the action review
+REVIEW_MAX_ACTION_SCORE = 10
 REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
-REVIEW_MAX_ACTION_SCORE = 10
+REVIEW_INF_SEARCH_COUNT = 10
 
 
 def rgb_color_as_hexadecimal(rgb_triplet):
@@ -2215,13 +2216,18 @@ class GameGui(ttk.Frame):
         else:
             action_rank = sup_ranks_by_actions[action_simple_name]
 
-            inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
-            inf_action_simple_name = inf_action_name.replace('!', '')
+            # >> repeat several time the evaluation of the review_inf_searcher
+            # >> because of its own random selection of its evaluation of the best action
+            inf_rank = len(sup_values)
+            for _ in range(REVIEW_INF_SEARCH_COUNT):
+                inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
+                inf_action_simple_name = inf_action_name.replace('!', '')
 
-            if inf_action_simple_name in sup_ranks_by_actions:
-                inf_rank = sup_ranks_by_actions[inf_action_simple_name]
-            else:
-                inf_rank = 1
+                if inf_action_simple_name in sup_ranks_by_actions:
+                    inf_rank_trial = sup_ranks_by_actions[inf_action_simple_name]
+                    inf_rank = min(inf_rank, inf_rank_trial)
+                else:
+                    inf_rank = 1
 
             if action_rank < inf_rank :
                 action_score = 0
