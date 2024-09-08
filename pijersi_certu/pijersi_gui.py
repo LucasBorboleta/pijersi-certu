@@ -2208,6 +2208,8 @@ class GameGui(ttk.Frame):
             an_action_simple_name = an_action_name.replace('!', '')
             sup_ranks_by_actions[an_action_simple_name] = sup_values.index(an_action_value) + 1
 
+        sup_rank = len(sup_values)
+
         action_simple_name = action_name.replace('!', '')
 
         if action_simple_name not in sup_ranks_by_actions:
@@ -2218,7 +2220,7 @@ class GameGui(ttk.Frame):
 
             # >> repeat several time the evaluation of the review_inf_searcher
             # >> because of its own random selection of its evaluation of the best action
-            inf_rank = len(sup_values)
+            inf_rank = sup_rank
             for _ in range(REVIEW_INF_SEARCH_COUNT):
                 inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
                 inf_action_simple_name = inf_action_name.replace('!', '')
@@ -2232,14 +2234,16 @@ class GameGui(ttk.Frame):
             if action_rank < inf_rank :
                 action_score = 0
 
-            elif inf_rank == len(sup_values):
+            elif inf_rank == sup_rank:
 
                 if action_rank == inf_rank:
                     action_score = REVIEW_MAX_ACTION_SCORE
                 else:
                     action_score = 0
             else:
-                action_score = int(REVIEW_MAX_ACTION_SCORE*(action_rank - inf_rank)/(len(sup_values) - inf_rank))
+                # linearly maps [inf_rank, sup_rank] into [1, REVIEW_MAX_ACTION_SCORE]
+                action_score = int( (action_rank - inf_rank)/(sup_rank - inf_rank)*REVIEW_MAX_ACTION_SCORE +
+                                    (sup_rank - action_rank)/(sup_rank - inf_rank)*1 )
 
         return action_score
 
@@ -3583,6 +3587,7 @@ def make_searcher_catalog(ugi_clients):
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-1", max_depth=1) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=2, time_limit=20) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-2mn", max_depth=3, time_limit=2*60) )
