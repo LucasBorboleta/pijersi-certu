@@ -69,10 +69,9 @@ from pijersi_ugi import UgiSearcher
 
 # >> AI searchers for performing the action review
 REVIEW_MAX_ACTION_SCORE = 10
-REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
+REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
-REVIEW_INF_SEARCH_COUNT = 10
-
+REVIEW_INF_HIGH_VALUE_RATIO = 0.90
 
 def rgb_color_as_hexadecimal(rgb_triplet):
     (red, green, blue) = rgb_triplet
@@ -2066,13 +2065,12 @@ class GameGui(ttk.Frame):
 
             self.__button_review.configure(text="Stop")
 
-
             # review the first not yet review action
             self.__review_running = True
             self.__command_review_update()
 
         elif self.__review_running:
-            # finalize the rview
+            # finalize the review
             self.__review_running = False
             self.__command_review_update()
 
@@ -2198,17 +2196,40 @@ class GameGui(ttk.Frame):
         # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
         # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
 
+        # retrieve the evaluations by the two "sup" and "inf" AI
         sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(pijersi_state)
+        inf_evaluated_actions = self.__review_inf_searcher.evaluate_actions(pijersi_state)
 
-        # >> make a mapping action -> rank that ensures that equal values have equal ranks
+        # make a mapping "action -> rank" that ensures that equal values have equal ranks
         sup_ranks_by_actions = {}
-        sup_values = list(set(sup_evaluated_actions.values()))
-        sup_values.sort()
-        for (an_action_name, an_action_value) in sup_evaluated_actions.items():
-            an_action_simple_name = an_action_name.replace('!', '')
-            sup_ranks_by_actions[an_action_simple_name] = sup_values.index(an_action_value) + 1
+        sup_unique_values = list(set(sup_evaluated_actions.values()))
+        sup_unique_values.sort()
+        for (sup_action_name, sup_action_value) in sup_evaluated_actions.items():
+            sup_action_simple_name = sup_action_name.replace('!', '')
+            sup_ranks_by_actions[sup_action_simple_name] = sup_unique_values.index(sup_action_value) + 1
 
-        sup_rank = len(sup_values)
+        # evalute the "sup_rank"
+        sup_rank = len(sup_unique_values)
+
+        # evalute the "inf_rank"
+        inf_unique_values = list(set(inf_evaluated_actions.values()))
+        inf_high_values = []
+        inf_max_value = max(inf_unique_values)
+        for inf_action_value in inf_unique_values:
+            if inf_action_value*inf_max_value > 0:
+                if math.fabs(inf_action_value) >= REVIEW_INF_HIGH_VALUE_RATIO*math.fabs(inf_max_value):
+                    inf_high_values.append(inf_action_value)
+
+        inf_rank = sup_rank
+        for (inf_action_name, inf_action_value) in inf_evaluated_actions.items():
+            if inf_action_value in inf_high_values:
+                inf_action_simple_name = inf_action_name.replace('!', '')
+                if inf_action_simple_name in sup_ranks_by_actions:
+                    inf_rank = min(inf_rank, sup_ranks_by_actions[inf_action_simple_name])
+                else:
+                    inf_rank = 1
+
+        # evalute the "action_rank" and deduces the "action_score"
 
         action_simple_name = action_name.replace('!', '')
 
@@ -2217,19 +2238,6 @@ class GameGui(ttk.Frame):
 
         else:
             action_rank = sup_ranks_by_actions[action_simple_name]
-
-            # >> repeat several time the evaluation of the review_inf_searcher
-            # >> because of its own random selection of its evaluation of the best action
-            inf_rank = sup_rank
-            for _ in range(REVIEW_INF_SEARCH_COUNT):
-                inf_action_name = str(self.__review_inf_searcher.search(pijersi_state))
-                inf_action_simple_name = inf_action_name.replace('!', '')
-
-                if inf_action_simple_name in sup_ranks_by_actions:
-                    inf_rank_trial = sup_ranks_by_actions[inf_action_simple_name]
-                    inf_rank = min(inf_rank, inf_rank_trial)
-                else:
-                    inf_rank = 1
 
             if action_rank < inf_rank :
                 action_score = 0
