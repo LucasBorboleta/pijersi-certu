@@ -69,9 +69,9 @@ from pijersi_ugi import UgiSearcher
 
 # >> AI searchers for performing the action review
 REVIEW_MAX_ACTION_SCORE = 10
-REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
+REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-2-sup", max_depth=2)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
-REVIEW_INF_HIGH_VALUE_RATIO = 0.90
+REVIEW_INF_HIGH_VALUE_RATIO = 0.999
 
 def rgb_color_as_hexadecimal(rgb_triplet):
     (red, green, blue) = rgb_triplet
@@ -2217,8 +2217,14 @@ class GameGui(ttk.Frame):
         inf_max_value = max(inf_unique_values)
         for inf_action_value in inf_unique_values:
             if inf_action_value*inf_max_value > 0:
-                if math.fabs(inf_action_value) >= REVIEW_INF_HIGH_VALUE_RATIO*math.fabs(inf_max_value):
-                    inf_high_values.append(inf_action_value)
+
+                if inf_max_value > 0:
+                    if inf_action_value >= REVIEW_INF_HIGH_VALUE_RATIO*inf_max_value:
+                        inf_high_values.append(inf_action_value)
+
+                elif inf_max_value < 0:
+                    if inf_action_value >= inf_max_value/REVIEW_INF_HIGH_VALUE_RATIO:
+                        inf_high_values.append(inf_action_value)
 
         inf_rank = sup_rank
         for (inf_action_name, inf_action_value) in inf_evaluated_actions.items():
