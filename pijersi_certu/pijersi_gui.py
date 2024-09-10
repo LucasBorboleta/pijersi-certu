@@ -67,10 +67,16 @@ from pijersi_ugi import UgiClient
 from pijersi_ugi import UgiSearcher
 
 
-# >> AI searchers for performing the action review
-REVIEW_MAX_ACTION_SCORE = 10
+# AI searchers for performing the action review
 REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
 REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+
+# constant for scoring the action review
+REVIEW_MAX_SCORE = 10
+REVIEW_MIN_SCORE = 1
+REVIEW_OUT_SCORE = 0
+REVIEW_UNKNOWN_SCORE = -1
+
 
 
 def rgb_color_as_hexadecimal(rgb_triplet):
@@ -1376,15 +1382,15 @@ class GameGui(ttk.Frame):
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
-                        if action_item == f"?/{REVIEW_MAX_ACTION_SCORE:02d}":
-                            action_score = -1
+                        if action_item == f"?/{REVIEW_MAX_SCORE:02d}":
+                            action_score = REVIEW_UNKNOWN_SCORE
                             actions_item_index += 1
 
-                        elif re.match(f"[0-9][0-9]/{REVIEW_MAX_ACTION_SCORE:02d}", action_item):
+                        elif re.match(f"[0-9][0-9]/{REVIEW_MAX_SCORE:02d}", action_item):
                             action_score = int(action_item[:2])
                             actions_item_index += 1
 
-                            if not (0 <= action_score <= REVIEW_MAX_ACTION_SCORE):
+                            if not (REVIEW_OUT_SCORE <= action_score <= REVIEW_MAX_SCORE):
                                 validated_edited_actions = False
                                 self.__variable_log.set(f"Error: invalid score value '{action_item}' at turn '{action_index + 1}'")
                                 break
@@ -1469,11 +1475,11 @@ class GameGui(ttk.Frame):
                     if action_score is None:
                         action_score_text = ""
 
-                    elif action_score == -1:
-                        action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
+                    elif action_score == REVIEW_UNKNOWN_SCORE:
+                        action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
 
                     else:
-                        action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
+                        action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
 
                     notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                     if turn % 2 == 0:
@@ -1944,11 +1950,11 @@ class GameGui(ttk.Frame):
             if action_score is None:
                 action_score_text = ""
 
-            elif action_score == -1:
-                action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
+            elif action_score == REVIEW_UNKNOWN_SCORE:
+                action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
 
             else:
-                action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
+                action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
 
             notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
             if turn % 2 == 0:
@@ -2125,11 +2131,11 @@ class GameGui(ttk.Frame):
                 if action_score is None:
                     action_score_text = ""
 
-                elif action_score == -1:
-                    action_score_text = f" ?/{REVIEW_MAX_ACTION_SCORE:02d}"
+                elif action_score == REVIEW_UNKNOWN_SCORE:
+                    action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
 
                 else:
-                    action_score_text = f"{action_score:02d}/{REVIEW_MAX_ACTION_SCORE:02d}"
+                    action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
 
                 notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                 if turn % 2 == 0:
@@ -2192,7 +2198,7 @@ class GameGui(ttk.Frame):
 
     def __review_evaluate_action_score(self, action_name, pijersi_state):
 
-        # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher"
+        # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher".
         # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
         # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
 
@@ -2211,7 +2217,7 @@ class GameGui(ttk.Frame):
         # evalute the "sup_rank"
         sup_rank = len(sup_unique_values)
 
-        # evalute the "inf_rank"
+        # evalute the "inf_rank": the average of all "inf" actions with max "inf" values
         inf_unique_values = list(set(inf_evaluated_actions.values()))
         inf_max_value = max(inf_unique_values)
 
@@ -2232,24 +2238,24 @@ class GameGui(ttk.Frame):
         action_simple_name = action_name.replace('!', '')
 
         if action_simple_name not in sup_ranks_by_actions:
-            action_score = -1
+            action_score = REVIEW_UNKNOWN_SCORE
 
         else:
             action_rank = sup_ranks_by_actions[action_simple_name]
 
             if action_rank < inf_rank :
-                action_score = 0
+                action_score = REVIEW_MAX_SCORE
 
             elif inf_rank == sup_rank:
 
                 if action_rank == inf_rank:
-                    action_score = REVIEW_MAX_ACTION_SCORE
+                    action_score = REVIEW_MAX_SCORE
                 else:
-                    action_score = 0
+                    action_score = REVIEW_OUT_SCORE
             else:
-                # linearly maps [inf_rank, sup_rank] into [1, REVIEW_MAX_ACTION_SCORE]
-                action_score = int( (action_rank - inf_rank)/(sup_rank - inf_rank)*REVIEW_MAX_ACTION_SCORE +
-                                    (sup_rank - action_rank)/(sup_rank - inf_rank)*1 )
+                # linearly maps [inf_rank, sup_rank] into [REVIEW_MIN_SCORE, REVIEW_MAX_SCORE]
+                action_score = int( (action_rank - inf_rank)/(sup_rank - inf_rank)*REVIEW_MAX_SCORE +
+                                    (sup_rank - action_rank)/(sup_rank - inf_rank)*REVIEW_MIN_SCORE )
 
         return action_score
 
