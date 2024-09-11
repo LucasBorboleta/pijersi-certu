@@ -1,16 +1,17 @@
 # TODO
 The foreseen tasks on pijersi-certu are as follows:
 
-- [ ] Provide user of the GUI with "**game review**" ; hints :
-  - The game review is performed only when the game is stopped if it is CPU demanding, otherwise it could be performed after each move.
-  - Use a reference AI engine, for example natsel at level 5.
-  - For each agent move the reference AI is launched on the state played by the agent and the AI score for each possible moves are returned and used to evaluate the performance of the agent using some algorithm.
-  - Performance algorithm :
-    - Sort the N available moves in increasing score by the reference AI ; it gives rank 1 to N.
-    - Identify the agent move and its rank R.
-    - Make a relative rank r=R/100 between 0 and 1.
-    - Maybe: apply a transformation using a increasing function: inverse of the CDF of a truncated Gaussian distribution of mean m and variance s2.
-    -   Manage the truncation to obtain all the outputs in a user friendly interval like[0 ; 10].
-    -   Calibrate m and s2 regarding some not too strong AI like cmalo-2.
+- [ ] Provide user of the GUI with "**game review**" based on an evaluation of a position after each action: 
+  - Such review is performed by a reference AI.
+  - The analysis is returned for the pijersi-state corresponding to the best-action found by the AI.
+  - In addition to return the name of the best-move and, maybe, the value of the AI own evaluation function, the AI must return a standard position evaluation.
+  - Here is a proposal for the standard position evaluation (SPA):
+    - In priority, report "mat" in 1, 2 or 3 turns.
+    - Report a numerical score denoting the advantage : position for White advantage, negative for Black advantage.
+    - Compute the advantage by the difference between White and Black of a global player score (GPS).
+    - GPS = 1 x "count of  rock/paper/scissors"  + 1.5 x "count of wises" + 8/"minimal distance to goal" 
+    - GPS is rounded to 1 decimal
+    - advantage when White = GPS_White - GPS_Black 
+    - advantage when Black = GPS_Black - GPS_White
 - [ ] Re-optimize the Minimax weights using CMA-ES to account for random setups and to account for Minimax-4.
 

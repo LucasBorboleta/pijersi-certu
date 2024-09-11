@@ -3599,7 +3599,6 @@ def make_searcher_catalog(ugi_clients):
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-1", max_depth=1) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=2, time_limit=20) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-2mn", max_depth=3, time_limit=2*60) )
