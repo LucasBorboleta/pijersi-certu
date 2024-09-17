@@ -770,15 +770,16 @@ class GameGui(ttk.Frame):
                                               command=self.__command_resume)
 
         self.__button_review = ttk.Button(self.__frame_commands,
-                                              text='Review',
-                                              command=self.__command_review_start_stop)
+                                                  text='Review',
+                                                  command=self.__command_review_start_stop)
 
 
         self.__button_new_stop.grid(row=0, column=0)
         self.__button_quit.grid(row=0, column=1)
 
         self.__button_resume.grid(row=1, column=1)
-        self.__button_review.grid(row=1, column=0)
+        if False: # >> postpone the release of the "review" feature
+            self.__button_review.grid(row=1, column=0)
 
         self.__frame_commands.rowconfigure(0, pad=5)
         self.__frame_commands.rowconfigure(1, pad=5)
