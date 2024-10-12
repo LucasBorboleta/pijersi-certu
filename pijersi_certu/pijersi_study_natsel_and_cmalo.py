@@ -99,7 +99,7 @@ def study(setup: Setup.T=Setup.T.CLASSIC, natsel_start=True, natsel_depth: int=N
     if cmalo_depth is None:
         cmalo_depth = depth
 
-    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v1.0.1_windows_x86_64.exe")
+    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers", "natsel", "pijersi_natural_selection_ugi_server_v1.1.0_windows_x86_64.exe")
 
     ugi_client = UgiClient(name="natsel", server_executable_path=natsel_server_executable_path, permanent=False)
     ugi_client_name = ugi_client.get_name()

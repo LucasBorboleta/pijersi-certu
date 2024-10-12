@@ -8,7 +8,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 ## Installing as single executable for Windows platform
 
 - From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. Also the UGI server `pijersi-cmalo` can be found there.
-- The latest stable version is `v2.0.0`.
+- The latest stable version is `v2.1.0`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
@@ -16,6 +16,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version | Hash   | Expected hash value                                          |
   | ------- | ------ | ------------------------------------------------------------ |
+  | v2.1.0  | SHA256 | B5EC493FA5C06C9190F8BF01A58759B49736FB7A2345714325912F205945A55E |
+  | v2.1.0  | MD5    | 169731954E81B0D8CA2AC4BDE1D4D4BF                             |
   | v2.0.0  | SHA256 | ED5416E03A519D54465896FF6249F203D35E8302252CEB0E71A87D82AE244186 |
   | v2.0.0  | MD5    | 30D26CF1C8798662EC1B6DDEADC54D18                             |
   | v1.3.0  | SHA256 | 66E306910D943F25F090A0CA36580736CEA1EA6349D6A4C04F2E9A5D23447180 |
