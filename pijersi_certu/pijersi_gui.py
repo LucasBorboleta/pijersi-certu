@@ -557,74 +557,6 @@ def search_task(searcher, pijersi_state):
     return action_simple_name
 
 
-class Clock:
-    __slots__ = ('__name', '__duration', '__start', '__stop')
-
-    def __init__(self, name: str):
-        self.__name = name
-        self.__duration = 0
-        self.__start = None
-        self.__stop = None
-
-
-    def reset(self):
-        self.__duration = 0
-        self.__start = None
-        self.__stop = None
-
-
-    def start(self):
-        if self.__start is None:
-            self.__start = time.time()
-            self.__stop = None
-
-
-    def stop(self):
-        if self.__stop is None and self.__start is not None:
-            self.__stop = time.time()
-            self.__duration += self.__stop - self.__start
-            self.__start = None
-
-
-    def get_duration(self) -> float:
-
-        if self.__stop is not None:
-            return self.__duration
-
-        elif self.__start is not None:
-            duration = self.__duration + (time.time() - self.__start)
-            return duration
-
-        else:
-            return self.__duration
-
-
-    def get_duration_as_string(self) -> str:
-
-        duration = self.get_duration()
-
-        if duration is None:
-            return "\u23F1 00:00"
-
-        else:
-            duration_int = round(duration)
-            duration_sec = duration_int % 60
-            duration_min = duration_int // 60
-
-            if duration_min < 100:
-                return f"\u23F1 {duration_min:02d}:{duration_sec:02d}"
-            else:
-                return f"\u23F1 {duration_min}:{duration_sec:02d}"
-
-
-    def get_name(self) -> str:
-        return self.__name
-
-
-    def show(self):
-        print(f"clock {self.get_name()} {self.get_duration_as_string()} s")
-
-
 class GameGui(ttk.Frame):
 
     def __init__(self):
@@ -703,7 +635,6 @@ class GameGui(ttk.Frame):
         self.__searcher = [None, None]
         self.__searcher_max_time = None
         self.__searcher_start_time = None
-        self.__clocks = [Clock(rules.Player.to_name(0)), Clock(rules.Player.to_name(1))]
 
         self.__action_input = None
         self.__action_validated = False
@@ -866,7 +797,6 @@ class GameGui(ttk.Frame):
 
         self.__variable_white_clock = tk.StringVar()
         self.__label_white_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_white_clock, style="Clock.TLabel")
-        self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
 
         self.__variable_white_player = tk.StringVar()
         self.__combobox_white_player = ttk.Combobox(self.__frame_players,
@@ -882,7 +812,6 @@ class GameGui(ttk.Frame):
 
         self.__variable_black_clock = tk.StringVar()
         self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="Clock.TLabel")
-        self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
 
         self.__variable_black_player = tk.StringVar()
         self.__combobox_black_player = ttk.Combobox(self.__frame_players,
@@ -922,6 +851,8 @@ class GameGui(ttk.Frame):
 
         self.__variable_white_player.trace_add('write', self.__command_update_players)
         self.__variable_black_player.trace_add('write', self.__command_update_players)
+
+        self.__update_clocks()
 
         # In __frame_board
 
@@ -1880,9 +1811,6 @@ class GameGui(ttk.Frame):
 
             self.__game.set_turn_start(time.time())
             self.__game.set_turn_end(None)
-            self.__clocks[rules.Player.T.WHITE].reset()
-            self.__clocks[rules.Player.T.BLACK].reset()
-            self.__clocks[self.__game.get_state().get_current_player()].start()
 
             self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
 
@@ -1911,8 +1839,7 @@ class GameGui(ttk.Frame):
             self.__variable_summary.set(self.__game.get_summary())
             self.__progressbar['value'] = 0.
 
-            self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
-            self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
+            self.__update_clocks()
 
             self.__combobox_white_player.config(state="disabled")
             self.__combobox_black_player.config(state="disabled")
@@ -1942,11 +1869,6 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = not self.__game.has_next_turn()
 
-            self.__clocks[rules.Player.T.WHITE].stop()
-            self.__clocks[rules.Player.T.BLACK].stop()
-            self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
-            self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
-
             if self.__concurrent_executor is not None:
                 self.__backend_futures = [None for player in rules.Player.T]
                 self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
@@ -1956,6 +1878,8 @@ class GameGui(ttk.Frame):
 
             self.__variable_log.set("Game stopped")
             self.__progressbar['value'] = 0.
+
+            self.__update_clocks()
 
             self.__combobox_white_player.config(state="readonly")
             self.__combobox_black_player.config(state="readonly")
@@ -2144,10 +2068,6 @@ class GameGui(ttk.Frame):
         # start timer
         self.__game.set_turn_start(time.time())
         self.__game.set_turn_end(None)
-
-        self.__clocks[rules.Player.T.WHITE].reset()
-        self.__clocks[rules.Player.T.BLACK].reset()
-        self.__clocks[self.__game.get_state().get_current_player()].start()
 
         # watch next turn
         self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
@@ -2369,8 +2289,7 @@ class GameGui(ttk.Frame):
             self.__canvas.after_cancel(self.__game_timer_id)
             self.__game_timer_id = None
 
-        self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
-        self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
+        self.__update_clocks()
 
         if self.__game_played and self.__game.has_next_turn():
 
@@ -2545,16 +2464,11 @@ class GameGui(ttk.Frame):
                 self.__game.next_turn()
                 self.__game.set_turn_start(time.time())
                 self.__game.set_turn_end(None)
-
-                self.__clocks[rules.Player.T.WHITE].stop()
-                self.__clocks[rules.Player.T.BLACK].stop()
-                self.__clocks[self.__game.get_state().get_current_player()].start()
+                self.__update_clocks()
 
                 self.__pijersi_state = self.__game.get_state()
                 self.__game_terminated = not self.__game.has_next_turn()
 
-                self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
-                self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
@@ -2598,10 +2512,7 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = True
 
-            self.__clocks[rules.Player.T.WHITE].stop()
-            self.__clocks[rules.Player.T.BLACK].stop()
-            self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
-            self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
+            self.__update_clocks()
 
             self.__backend_futures = [None for player in rules.Player.T]
             if self.__concurrent_executor is not None:
@@ -2622,6 +2533,28 @@ class GameGui(ttk.Frame):
             self.__button_edit_actions.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
             self.__button_review.config(state="enabled")
+
+
+    def __update_clocks(self):
+
+        def format_duration(duration):
+            duration_int = round(duration)
+            duration_sec = duration_int % 60
+            duration_min = duration_int // 60
+
+            if duration_min < 100:
+                return f"{duration_min:02d}:{duration_sec:02d}"
+            else:
+                return f"{duration_min}:{duration_sec:02d}"
+
+        if self.__game is None:
+            (white_clock, black_clock) = (0, 0)
+        else:
+            (white_clock, black_clock) = self.__game.get_clocks()
+
+        self.__variable_white_clock.set('\u23F1' + format_duration(white_clock))
+        self.__variable_black_clock.set('\u23F1' + format_duration(black_clock))
+
 
     ### CMC (Mouse Canevas Control) methods
     ### !! idea and prototype by MarcLeclere

@@ -3511,6 +3511,28 @@ class Game:
         return self.__pijersi_state.get_rewards()
 
 
+    def get_clocks(self) -> Tuple[float, float]:
+        white_clock = sum(self.__turn_duration[Player.T.WHITE])
+        black_clock = sum(self.__turn_duration[Player.T.BLACK])
+
+        if self.__pijersi_state.is_terminal():
+            return (white_clock, black_clock)
+
+        else:
+            if self.__turn_start is not None and self.__turn_end is None:
+                turn_duration = time.time() - self.__turn_start
+
+                player = self.__pijersi_state.get_current_player()
+
+                if player == Player.T.WHITE:
+                    white_clock += turn_duration
+
+                elif player == Player.T.BLACK:
+                    black_clock += turn_duration
+
+            return (white_clock, black_clock)
+
+
     def has_next_turn(self) -> bool:
         return not self.__pijersi_state.is_terminal()
 
