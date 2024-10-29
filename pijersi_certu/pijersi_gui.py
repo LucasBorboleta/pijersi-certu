@@ -32,7 +32,7 @@ _NATSEL_COPYRIGHT = "(c) 2024 Eclypse-Prime"
 _NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
 _NATSEL_NAME = "Natural Selection"
 _NATSEL_KEY = "natsel"
-_NATSEL_VERSION = "1.1.0"
+_NATSEL_VERSION = "1.2.0"
 
 
 
@@ -49,8 +49,6 @@ import time
 from tkinter import font
 from tkinter import ttk
 import tkinter as tk
-
-from typing import Optional
 
 
 from concurrent.futures import ProcessPoolExecutor as PoolExecutor
@@ -1879,16 +1877,18 @@ class GameGui(ttk.Frame):
             self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
 
             self.__game.start()
+
             self.__game.set_turn_start(time.time())
             self.__game.set_turn_end(None)
+            self.__clocks[rules.Player.T.WHITE].reset()
+            self.__clocks[rules.Player.T.BLACK].reset()
+            self.__clocks[self.__game.get_state().get_current_player()].start()
+
             self.__game_setup_board_codes = self.__game.get_state().get_board_codes()
 
             self.__searcher_max_time = None
             self.__searcher_start_time = None
 
-            self.__clocks[rules.Player.T.WHITE].reset()
-            self.__clocks[rules.Player.T.BLACK].reset()
-            self.__clocks[self.__game.get_state().get_current_player()].start()
 
             self.__pijersi_state = self.__game.get_state()
             self.__legend = ""
@@ -2111,10 +2111,6 @@ class GameGui(ttk.Frame):
         player = self.__pijersi_state.get_current_player()
         backend_searcher = self.__backend_searchers[player]
 
-        self.__clocks[rules.Player.T.WHITE].reset()
-        self.__clocks[rules.Player.T.BLACK].reset()
-        self.__clocks[self.__game.get_state().get_current_player()].start()
-
         if backend_searcher.is_interactive():
             if player == rules.Player.T.WHITE:
                 self.__progressbar.configure(style="White.Horizontal.TProgressbar")
@@ -2148,6 +2144,10 @@ class GameGui(ttk.Frame):
         # start timer
         self.__game.set_turn_start(time.time())
         self.__game.set_turn_end(None)
+
+        self.__clocks[rules.Player.T.WHITE].reset()
+        self.__clocks[rules.Player.T.BLACK].reset()
+        self.__clocks[self.__game.get_state().get_current_player()].start()
 
         # watch next turn
         self.__game_timer_id = self.__canvas.after(self.__game_timer_delay, self.__command_next_turn)
@@ -2546,12 +2546,15 @@ class GameGui(ttk.Frame):
                 self.__game.set_turn_start(time.time())
                 self.__game.set_turn_end(None)
 
-                self.__pijersi_state = self.__game.get_state()
-                self.__game_terminated = not self.__game.has_next_turn()
-
                 self.__clocks[rules.Player.T.WHITE].stop()
                 self.__clocks[rules.Player.T.BLACK].stop()
                 self.__clocks[self.__game.get_state().get_current_player()].start()
+
+                self.__pijersi_state = self.__game.get_state()
+                self.__game_terminated = not self.__game.has_next_turn()
+
+                self.__variable_white_clock.set(self.__clocks[rules.Player.T.WHITE].get_duration_as_string())
+                self.__variable_black_clock.set(self.__clocks[rules.Player.T.BLACK].get_duration_as_string())
 
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
@@ -3723,7 +3726,7 @@ def make_searcher_catalog(ugi_clients):
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-4", max_depth=4) )
 
     if True:
-        depth_list = [2, 3, 4, 5]
+        depth_list = [2, 3, 4, 5, 6]
         time_list = [(20, '20s'), (60, '1mn'), (2*60, '2mn'), (10*60, '10mn')]
 
         for (ugi_client_name, ugi_client) in ugi_clients.items():
