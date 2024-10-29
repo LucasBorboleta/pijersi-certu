@@ -2537,23 +2537,23 @@ class GameGui(ttk.Frame):
 
     def __update_clocks(self):
 
-        def format_duration(duration):
-            duration_int = round(duration)
-            duration_sec = duration_int % 60
-            duration_min = duration_int // 60
+        def format_clock(clock_float):
+            clock_int = round(clock_float)
+            clock_sec = clock_int % 60
+            clock_min = clock_int // 60
 
-            if duration_min < 100:
-                return f"{duration_min:02d}:{duration_sec:02d}"
+            if clock_min < 100:
+                return f"{clock_min:02d}:{clock_sec:02d}"
             else:
-                return f"{duration_min}:{duration_sec:02d}"
+                return f"{clock_min}:{clock_sec:02d}"
 
         if self.__game is None:
             (white_clock, black_clock) = (0, 0)
         else:
             (white_clock, black_clock) = self.__game.get_clocks()
 
-        self.__variable_white_clock.set('\u23F1' + format_duration(white_clock))
-        self.__variable_black_clock.set('\u23F1' + format_duration(black_clock))
+        self.__variable_white_clock.set('\u23F1' + format_clock(white_clock))
+        self.__variable_black_clock.set('\u23F1' + format_clock(black_clock))
 
 
     ### CMC (Mouse Canevas Control) methods

@@ -3520,15 +3520,15 @@ class Game:
 
         else:
             if self.__turn_start is not None and self.__turn_end is None:
-                turn_duration = time.time() - self.__turn_start
+                actual_turn_duration = time.time() - self.__turn_start
 
                 player = self.__pijersi_state.get_current_player()
 
                 if player == Player.T.WHITE:
-                    white_clock += turn_duration
+                    white_clock += actual_turn_duration
 
                 elif player == Player.T.BLACK:
-                    black_clock += turn_duration
+                    black_clock += actual_turn_duration
 
             return (white_clock, black_clock)
 
