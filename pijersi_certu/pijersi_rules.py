@@ -3560,8 +3560,8 @@ class Game:
                 log()
                 log("-"*40)
 
-                white_time = sum(self.__turn_duration[Player.T.WHITE])
-                black_time = sum(self.__turn_duration[Player.T.BLACK])
+                white_time = round(sum(self.__turn_duration[Player.T.WHITE]))
+                black_time = round(sum(self.__turn_duration[Player.T.BLACK]))
 
                 white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"

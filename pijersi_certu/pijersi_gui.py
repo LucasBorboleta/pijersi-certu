@@ -604,17 +604,17 @@ class Clock:
         duration = self.get_duration()
 
         if duration is None:
-            return '00:00'
+            return "\u23F1 00:00"
 
         else:
-            duration_int = int(duration)
+            duration_int = round(duration)
             duration_sec = duration_int % 60
             duration_min = duration_int // 60
 
             if duration_min < 100:
-                return f"{duration_min:02d}:{duration_sec:02d}"
+                return f"\u23F1 {duration_min:02d}:{duration_sec:02d}"
             else:
-                return f"{duration_min}:{duration_sec:02d}"
+                return f"\u23F1 {duration_min}:{duration_sec:02d}"
 
 
     def get_name(self) -> str:
@@ -730,7 +730,7 @@ class GameGui(ttk.Frame):
         self.__root = tk.Tk()
 
         # >> Fonts cannot be created before the root widget
-        self.__time_font = font.Font(family='Courier New', size=12, weight='bold')
+        self.__time_font = font.Font(family='Courier New', size=16, weight='bold')
 
         self.__legend_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LEGEND_SIZE, weight='bold')
         self.__label_font = font.Font(family=CANVAS_CONFIG.FONT_FAMILY, size=CANVAS_CONFIG.FONT_LABEL_SIZE, weight='bold')
