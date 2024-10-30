@@ -795,9 +795,6 @@ class GameGui(ttk.Frame):
 
         self.__label_white_player = ttk.Label(self.__frame_players, text='White :')
 
-        self.__variable_white_clock = tk.StringVar()
-        self.__label_white_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_white_clock, style="Clock.TLabel")
-
         self.__variable_white_player = tk.StringVar()
         self.__combobox_white_player = ttk.Combobox(self.__frame_players,
                                                     width=searcher_catalog_names_width,
@@ -810,9 +807,6 @@ class GameGui(ttk.Frame):
 
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
-        self.__variable_black_clock = tk.StringVar()
-        self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="Clock.TLabel")
-
         self.__variable_black_player = tk.StringVar()
         self.__combobox_black_player = ttk.Combobox(self.__frame_players,
                                                     width=searcher_catalog_names_width,
@@ -820,6 +814,28 @@ class GameGui(ttk.Frame):
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
         self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
+
+
+        self.__variable_white_clock = tk.StringVar()
+        self.__label_white_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_white_clock, style="Clock.TLabel")
+
+        self.__variable_black_clock = tk.StringVar()
+        self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="Clock.TLabel")
+
+
+        time_control_catalog = {}
+        time_control_catalog["free time"] = None
+        time_control_catalog_names = list(sorted(time_control_catalog.keys()))
+        time_control_catalog_names_width = max([len(x) for x in time_control_catalog_names])
+
+        self.__variable_time_control = tk.StringVar()
+        self.__combobox_time_control = ttk.Combobox(self.__frame_players,
+                                                    width=time_control_catalog_names_width,
+                                                    textvariable=self.__variable_time_control,
+                                                    values=time_control_catalog_names)
+        self.__combobox_time_control.config(state="readonly")
+        self.__variable_time_control.set("free time")
+
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -837,6 +853,7 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.grid(row=0, column=4)
 
         self.__label_white_clock.grid(row=1, column=1)
+        self.__combobox_time_control.grid(row=1, column=2, columnspan=2)
         self.__label_black_clock.grid(row=1, column=4)
 
         self.__progressbar.grid(row=2, columnspan=5)
