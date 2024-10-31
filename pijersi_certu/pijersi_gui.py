@@ -803,7 +803,7 @@ class GameGui(ttk.Frame):
         self.__combobox_white_player.config(state="readonly")
         self.__variable_white_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
 
-        self.__button_switch = ttk.Button(self.__frame_players, text='<->', width=0, command=self.__command_switch_players)
+        self.__button_switch = ttk.Button(self.__frame_players, text='>> Switch <<', width=0, command=self.__command_switch_players)
 
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
@@ -824,10 +824,10 @@ class GameGui(ttk.Frame):
 
 
         time_control_catalog = {}
-        time_control_catalog["free time"] = None
-        time_control_catalog["max 05 minutes"] = 5*60
-        time_control_catalog["max 10 minutes"] = 10*60
-        time_control_catalog["max 15 minutes"] = 15*60
+        time_control_catalog["Free time"] = None
+        time_control_catalog["Max 05 minutes"] = 5*60
+        time_control_catalog["Max 10 minutes"] = 10*60
+        time_control_catalog["Max 15 minutes"] = 15*60
 
         time_control_catalog_name_default = [key for (key, value ) in time_control_catalog.items() if value == None][0]
 
@@ -853,16 +853,17 @@ class GameGui(ttk.Frame):
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
 
-        self.__button_switch.grid(row=0, column=2, sticky='e')
+        self.__button_switch.grid(row=0, column=3)
 
-        self.__label_black_player.grid(row=0, column=3)
-        self.__combobox_black_player.grid(row=0, column=4)
+        self.__label_black_player.grid(row=0, column=5)
+        self.__combobox_black_player.grid(row=0, column=6)
 
-        self.__label_white_clock.grid(row=1, column=1)
-        self.__combobox_time_control.grid(row=1, column=2, columnspan=2)
-        self.__label_black_clock.grid(row=1, column=4)
+        self.__progressbar.grid(row=1, column=0, columnspan=7, sticky='we')
 
-        self.__progressbar.grid(row=2, columnspan=5)
+        self.__label_white_clock.grid(row=2, column=0, columnspan=2)
+        self.__combobox_time_control.grid(row=2, column=3)
+        self.__label_black_clock.grid(row=2, column=5, columnspan=2)
+
 
         self.__frame_players.rowconfigure(0, pad=5)
         self.__frame_players.rowconfigure(1, pad=5)
