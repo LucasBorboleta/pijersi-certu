@@ -716,6 +716,17 @@ class GameGui(ttk.Frame):
         setup_names = rules.Setup.get_names()
         setup_names_width = max(map(len, setup_names))
 
+        time_control_catalog = {}
+        time_control_catalog["Free time"] = None
+        time_control_catalog["Max 05 minutes"] = 5*60
+        time_control_catalog["Max 10 minutes"] = 10*60
+        time_control_catalog["Max 15 minutes"] = 15*60
+
+        self.__time_control_catalog_name_default = [key for (key, value ) in time_control_catalog.items() if value == None][0]
+
+        time_control_catalog_names = list(sorted(time_control_catalog.keys()))
+        time_control_catalog_names_width = max([len(x) for x in time_control_catalog_names]) + 1
+
         self.__style = ttk.Style()
         # >> builtin theme_names()  are ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
         # >> default and nice theme is 'vista'
@@ -823,24 +834,13 @@ class GameGui(ttk.Frame):
         self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="Clock.TLabel")
 
 
-        time_control_catalog = {}
-        time_control_catalog["Free time"] = None
-        time_control_catalog["Max 05 minutes"] = 5*60
-        time_control_catalog["Max 10 minutes"] = 10*60
-        time_control_catalog["Max 15 minutes"] = 15*60
-
-        time_control_catalog_name_default = [key for (key, value ) in time_control_catalog.items() if value == None][0]
-
-        time_control_catalog_names = list(sorted(time_control_catalog.keys()))
-        time_control_catalog_names_width = max([len(x) for x in time_control_catalog_names]) + 1
-
         self.__variable_time_control = tk.StringVar()
         self.__combobox_time_control = ttk.Combobox(self.__frame_players,
                                                     width=time_control_catalog_names_width,
                                                     textvariable=self.__variable_time_control,
                                                     values=time_control_catalog_names)
         self.__combobox_time_control.config(state="readonly")
-        self.__variable_time_control.set(time_control_catalog_name_default)
+        self.__variable_time_control.set(self.__time_control_catalog_name_default)
 
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
@@ -2066,6 +2066,8 @@ class GameGui(ttk.Frame):
         self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
 
         # update widgets status
+
+        self.__variable_time_control.set(self.__time_control_catalog_name_default)
 
         self.__pijersi_state = self.__game.get_state()
         player = self.__pijersi_state.get_current_player()
