@@ -1338,6 +1338,8 @@ class GameGui(ttk.Frame):
             self.__button_switch.config(state="disabled")
             self.__combobox_setup.config(state="disabled")
 
+            self.__combobox_time_control.config(state="disabled")
+
             self.__spinbox_turn.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
 
@@ -1587,6 +1589,8 @@ class GameGui(ttk.Frame):
                 self.__button_switch.config(state="enabled")
                 self.__combobox_setup.config(state="readonly")
 
+                self.__combobox_time_control.config(state="readonly")
+
                 self.__spinbox_turn.config(state="enabled")
                 self.__button_make_pictures.config(state="enabled")
 
@@ -1619,6 +1623,8 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.config(state="disabled")
         self.__button_switch.config(state="disabled")
         self.__combobox_setup.config(state="disabled")
+
+        self.__combobox_time_control.config(state="disabled")
 
         self.__button_resume.config(state="disabled")
         self.__button_review.config(state="disabled")
@@ -1791,6 +1797,8 @@ class GameGui(ttk.Frame):
         self.__button_switch.config(state="enabled")
         self.__combobox_setup.config(state="readonly")
 
+        self.__combobox_time_control.config(state="readonly")
+
         self.__button_resume.config(state="enabled")
         self.__button_review.config(state="enabled")
 
@@ -1870,6 +1878,8 @@ class GameGui(ttk.Frame):
             self.__button_switch.config(state="disabled")
             self.__combobox_setup.config(state="disabled")
 
+            self.__combobox_time_control.config(state="disabled")
+
             self.__spinbox_turn.config(state="disabled")
 
             self.__text_actions.config(state="normal")
@@ -1909,6 +1919,8 @@ class GameGui(ttk.Frame):
             self.__combobox_black_player.config(state="readonly")
             self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
+
+            self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
 
@@ -2079,6 +2091,8 @@ class GameGui(ttk.Frame):
         self.__button_switch.config(state="disabled")
         self.__combobox_setup.config(state="disabled")
 
+        self.__combobox_time_control.config(state="disabled")
+
         self.__spinbox_turn.config(state="disabled")
 
         self.__text_actions.config(state="disabled")
@@ -2111,6 +2125,8 @@ class GameGui(ttk.Frame):
             self.__combobox_black_player.config(state="disabled")
             self.__button_switch.config(state="disabled")
             self.__combobox_setup.config(state="disabled")
+
+            self.__combobox_time_control.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
             self.__button_make_pictures.config(state="disabled")
@@ -2228,6 +2244,8 @@ class GameGui(ttk.Frame):
             self.__combobox_black_player.config(state="readonly")
             self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
+
+            self.__combobox_control_time.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
@@ -2549,6 +2567,8 @@ class GameGui(ttk.Frame):
             self.__combobox_black_player.config(state="readonly")
             self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
+
+            self.__combobox_control_time.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
 
