@@ -849,7 +849,6 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_time_control,
                                                     values=time_control_catalog_names)
         self.__combobox_time_control.config(state="readonly")
-        self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == 5*60][0])
 
 
         self.__label_white_player.grid(row=0, column=0)
@@ -878,6 +877,7 @@ class GameGui(ttk.Frame):
         self.__variable_white_player.trace_add('write', self.__command_update_players)
         self.__variable_black_player.trace_add('write', self.__command_update_players)
         self.__variable_time_control.trace_add('write', self.__command_update_time_control)
+        self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == 5*60][0])
 
         self.__update_clocks()
 
