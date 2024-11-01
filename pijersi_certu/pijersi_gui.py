@@ -629,6 +629,15 @@ class GameGui(ttk.Frame):
         self.__game_setup = rules.Setup.T.CLASSIC
         self.__game_setup_board_codes = self.__game_setup_board_codes_classic
 
+        self.__game_time_control = None
+        self.__game_time_control_catalog = {}
+        self.__game_time_control_catalog["Free time"] = None
+        self.__game_time_control_catalog["Max 10 seconds"] = 10
+        self.__game_time_control_catalog["Max 30 seconds"] = 30
+        self.__game_time_control_catalog["Max 05 minutes"] = 5*60
+        self.__game_time_control_catalog["Max 10 minutes"] = 10*60
+        self.__game_time_control_catalog["Max 15 minutes"] = 15*60
+
         self.__game_played = False
         self.__game_terminated = False
         self.__pijersi_state = rules.PijersiState()
@@ -716,15 +725,7 @@ class GameGui(ttk.Frame):
         setup_names = rules.Setup.get_names()
         setup_names_width = max(map(len, setup_names))
 
-        time_control_catalog = {}
-        time_control_catalog["Free time"] = None
-        time_control_catalog["Max 05 minutes"] = 5*60
-        time_control_catalog["Max 10 minutes"] = 10*60
-        time_control_catalog["Max 15 minutes"] = 15*60
-
-        self.__time_control_catalog_name_default = [key for (key, value ) in time_control_catalog.items() if value == None][0]
-
-        time_control_catalog_names = list(sorted(time_control_catalog.keys()))
+        time_control_catalog_names = list(sorted(self.__game_time_control_catalog.keys()))
         time_control_catalog_names_width = max([len(x) for x in time_control_catalog_names]) + 1
 
         self.__style = ttk.Style()
@@ -734,7 +735,8 @@ class GameGui(ttk.Frame):
         # >> so 'clam' is used instead, as a second nice choice
         self.__style.theme_use('clam')
 
-        self.__style.configure("Clock.TLabel", foreground='black', font=self.__time_font)
+        self.__style.configure("PositiveClock.TLabel", foreground='black', font=self.__time_font)
+        self.__style.configure("NegativeClock.TLabel", foreground='red', font=self.__time_font)
 
         self.__style.configure("White.Horizontal.TProgressbar", background='white')
         self.__style.configure("Black.Horizontal.TProgressbar", background='black')
@@ -826,12 +828,19 @@ class GameGui(ttk.Frame):
         self.__combobox_black_player.config(state="readonly")
         self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
 
+        self.__progressbar = ttk.Progressbar(self.__frame_players,
+                                             orient=tk.HORIZONTAL,
+                                             length=390,
+                                             maximum=100,
+                                             mode='determinate')
+        self.__progressbar.configure(style="White.Horizontal.TProgressbar")
+
 
         self.__variable_white_clock = tk.StringVar()
-        self.__label_white_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_white_clock, style="Clock.TLabel")
+        self.__label_white_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_white_clock, style="PositiveClock.TLabel")
 
         self.__variable_black_clock = tk.StringVar()
-        self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="Clock.TLabel")
+        self.__label_black_clock = ttk.Label(self.__frame_players, textvariable=self.__variable_black_clock, style="PositiveClock.TLabel")
 
 
         self.__variable_time_control = tk.StringVar()
@@ -840,15 +849,8 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_time_control,
                                                     values=time_control_catalog_names)
         self.__combobox_time_control.config(state="readonly")
-        self.__variable_time_control.set(self.__time_control_catalog_name_default)
+        self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == None][0])
 
-
-        self.__progressbar = ttk.Progressbar(self.__frame_players,
-                                             orient=tk.HORIZONTAL,
-                                             length=390,
-                                             maximum=100,
-                                             mode='determinate')
-        self.__progressbar.configure(style="White.Horizontal.TProgressbar")
 
         self.__label_white_player.grid(row=0, column=0)
         self.__combobox_white_player.grid(row=0, column=1)
@@ -875,6 +877,7 @@ class GameGui(ttk.Frame):
 
         self.__variable_white_player.trace_add('write', self.__command_update_players)
         self.__variable_black_player.trace_add('write', self.__command_update_players)
+        self.__variable_time_control.trace_add('write', self.__command_update_time_control)
 
         self.__update_clocks()
 
@@ -1204,6 +1207,16 @@ class GameGui(ttk.Frame):
 
         else:
             self.__resize_timer_id = self.__canvas.after(self.__resize_timer_delay, self.__resize_gui_finalize)
+
+
+    def __command_update_time_control(self, *_):
+        self.__game_time_control = self.__game_time_control_catalog.get(self.__variable_time_control.get())
+
+        if self.__game is not None:
+            self.__game.set_time_control(self.__game_time_control)
+
+        self.__update_clocks()
+
 
     def __command_update_players(self, *_):
         self.__searcher[rules.Player.T.WHITE] = self.__searcher_catalog.get(self.__variable_white_player.get())
@@ -1829,6 +1842,7 @@ class GameGui(ttk.Frame):
                 self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
 
             self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
+            self.__game.set_time_control(self.__game_time_control)
 
             self.__backend_searchers[rules.Player.T.WHITE] = self.__searcher[rules.Player.T.WHITE]
             self.__backend_searchers[rules.Player.T.BLACK] = self.__searcher[rules.Player.T.BLACK]
@@ -1903,6 +1917,9 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = not self.__game.has_next_turn()
 
+            self.__game.set_turn_start(None)
+            self.__game.set_turn_end(None)
+
             if self.__concurrent_executor is not None:
                 self.__backend_futures = [None for player in rules.Player.T]
                 self.__concurrent_executor.shutdown(wait=False, cancel_futures=True)
@@ -1954,10 +1971,24 @@ class GameGui(ttk.Frame):
 
         self.__write_setup()
 
+        turn_durations = self.__game.get_turn_durations()
+        resume_turn_durations = {rules.Player.T.WHITE:[], rules.Player.T.BLACK:[]}
+        if resume_turn_index != 0:
+
+            if resume_turn_index % 2 == 0:
+                resume_turn_durations[rules.Player.T.BLACK] = turn_durations[rules.Player.T.BLACK][:resume_turn_index//2]
+                resume_turn_durations[rules.Player.T.WHITE] = turn_durations[rules.Player.T.WHITE][:resume_turn_index//2]
+
+            elif resume_turn_index % 2 == 1:
+                resume_turn_durations[rules.Player.T.WHITE] = turn_durations[rules.Player.T.WHITE][:resume_turn_index//2 + 1]
+                resume_turn_durations[rules.Player.T.BLACK] = turn_durations[rules.Player.T.BLACK][:resume_turn_index//2]
+
         # interpret actions
 
         self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
+
         self.__game = rules.Game(setup=self.__game_setup, board_codes=self.__game_setup_board_codes)
+        self.__game.set_time_control(self.__game_time_control)
 
         white_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.WHITE].get_name())
         black_replayer = rules.HumanSearcher(self.__searcher[rules.Player.T.BLACK].get_name())
@@ -2025,6 +2056,9 @@ class GameGui(ttk.Frame):
             self.__text_actions.config(state="disabled")
 
         assert self.__game.has_next_turn()
+
+        self.__game.set_turn_durations(resume_turn_durations)
+
         self.__game_played = True
         self.__game_terminated = False
 
@@ -2066,8 +2100,6 @@ class GameGui(ttk.Frame):
         self.__game.set_black_searcher(self.__frontend_searchers[rules.Player.T.BLACK])
 
         # update widgets status
-
-        self.__variable_time_control.set(self.__time_control_catalog_name_default)
 
         self.__pijersi_state = self.__game.get_state()
         player = self.__pijersi_state.get_current_player()
@@ -2247,7 +2279,7 @@ class GameGui(ttk.Frame):
             self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
 
-            self.__combobox_control_time.config(state="readonly")
+            self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
             self.__button_make_pictures.config(state="enabled")
@@ -2332,6 +2364,9 @@ class GameGui(ttk.Frame):
         if self.__game_timer_id is not None:
             self.__canvas.after_cancel(self.__game_timer_id)
             self.__game_timer_id = None
+
+        if not self.__game.has_next_turn():
+          self.__game.set_turn_end(time.time())
 
         self.__update_clocks()
 
@@ -2556,7 +2591,15 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = True
 
+            self.__game.next_turn() # >> to finalize the game
             self.__update_clocks()
+
+            self.__variable_summary.set(self.__game.get_summary())
+            self.__variable_log.set(self.__game.get_log())
+
+            self.__cmc_reset()
+            self.__cmc_hightlight_moved_and_played_hexagons()
+            self.__draw_state()
 
             self.__backend_futures = [None for player in rules.Player.T]
             if self.__concurrent_executor is not None:
@@ -2570,7 +2613,7 @@ class GameGui(ttk.Frame):
             self.__button_switch.config(state="enabled")
             self.__combobox_setup.config(state="readonly")
 
-            self.__combobox_control_time.config(state="readonly")
+            self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
 
@@ -2593,13 +2636,27 @@ class GameGui(ttk.Frame):
             else:
                 return f"{clock_min}:{clock_sec:02d}"
 
-        if self.__game is None:
-            (white_clock, black_clock) = (0, 0)
-        else:
+        if self.__game is not None:
             (white_clock, black_clock) = self.__game.get_clocks()
+
+        else:
+            if self.__game_time_control is None:
+                (white_clock, black_clock) = (0, 0)
+            else:
+                (white_clock, black_clock) = (self.__game_time_control, self.__game_time_control)
 
         self.__variable_white_clock.set('\u23F1' + format_clock(white_clock))
         self.__variable_black_clock.set('\u23F1' + format_clock(black_clock))
+
+        if round(white_clock) >= 0:
+            self.__label_white_clock.configure(style="PositiveClock.TLabel")
+        else:
+            self.__label_white_clock.configure(style="NegativeClock.TLabel")
+
+        if round(black_clock) >= 0:
+            self.__label_black_clock.configure(style="PositiveClock.TLabel")
+        else:
+            self.__label_black_clock.configure(style="NegativeClock.TLabel")
 
 
     ### CMC (Mouse Canevas Control) methods
@@ -3216,11 +3273,14 @@ class GameGui(ttk.Frame):
 
     def __make_legend_score(self, pijersi_state):
         rewards = pijersi_state.get_rewards()
+        (white_clock, black_clock) = self.__game.get_clocks()
 
-        if rewards[rules.Player.T.WHITE] == rules.Reward.WIN:
+        if ((rewards is not None and rewards[rules.Player.T.WHITE] == rules.Reward.WIN) or
+            (self.__game_time_control is not None and black_clock < 0)):
             legend_score = "1-0"
 
-        elif rewards[rules.Player.T.BLACK] == rules.Reward.WIN:
+        elif ((rewards is not None and rewards[rules.Player.T.BLACK] == rules.Reward.WIN) or
+              (self.__game_time_control is not None and white_clock < 0)):
             legend_score = "0-1"
 
         elif rewards[rules.Player.T.WHITE] == rules.Reward.DRAW:

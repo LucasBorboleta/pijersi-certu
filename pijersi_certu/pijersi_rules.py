@@ -3407,7 +3407,7 @@ class Game:
     __slots__ = ('__searcher',
                  '__pijersi_state', '__pijersi_setup', '__pijersi_setup_board_codes',
                  '__enabled_log', '__log', '__turn', '__last_action',
-                 '__turn_duration', '__turn_start', '__turn_end')
+                 '__turn_durations', '__turn_start', '__turn_end', '__time_control', '__time_ended', '__time_ended_for_white', '__time_ended_for_black')
 
 
     def __init__(self, setup: Setup.T=Setup.T.CLASSIC, board_codes: Optional[BoardCodes]=None):
@@ -3421,9 +3421,14 @@ class Game:
         self.__log = ""
         self.__turn = 0
         self.__last_action = None
-        self.__turn_duration = {Player.T.WHITE:[], Player.T.BLACK:[]}
+        self.__turn_durations = {Player.T.WHITE:[], Player.T.BLACK:[]}
         self.__turn_start = None
         self.__turn_end = None
+        self.__time_control = None
+        self.__time_ended = False
+        self.__time_ended_for_white = False
+        self.__time_ended_for_black = False
+
 
 
     def enable_log(self, condition: bool):
@@ -3444,6 +3449,10 @@ class Game:
 
         assert self.__searcher[Player.T.WHITE] is not None
         assert self.__searcher[Player.T.BLACK] is not None
+
+        self.__time_ended = False
+        self.__time_ended_for_white = False
+        self.__time_ended_for_black = False
 
         self.__pijersi_state = PijersiState(setup=self.__pijersi_setup, board_codes=self.__pijersi_setup_board_codes)
 
@@ -3503,8 +3512,37 @@ class Game:
         self.__turn_start = turn_start
 
 
+    def set_time_control(self, time_control: Optional[float]):
+        if time_control is not None:
+            assert time_control > 0
+
+        self.__time_control = time_control
+
+
     def set_turn_end(self, turn_end: Optional[float]):
         self.__turn_end = turn_end
+
+
+    def set_turn_durations(self, turn_durations: Mapping[Player.T, float]):
+        assert set(turn_durations.keys()) == set([Player.T.WHITE, Player.T.BLACK])
+
+        if self.__turn == 0:
+            assert len(turn_durations[Player.T.WHITE]) == 0
+            assert len(turn_durations[Player.T.BLACK]) == 0
+
+        elif self.__turn % 2 == 0:
+            assert len(turn_durations[Player.T.WHITE]) == self.__turn//2
+            assert len(turn_durations[Player.T.BLACK]) == self.__turn//2
+
+        elif self.__turn % 2 == 1:
+            assert len(turn_durations[Player.T.WHITE]) == self.__turn//2 + 1
+            assert len(turn_durations[Player.T.BLACK]) == self.__turn//2
+
+        self.__turn_durations = turn_durations
+
+
+    def get_turn_durations(self) -> Mapping[Player.T, float]:
+        return self.__turn_durations
 
 
     def get_rewards(self) -> Optional[Tuple[Reward, Reward]]:
@@ -3512,28 +3550,49 @@ class Game:
 
 
     def get_clocks(self) -> Tuple[float, float]:
-        white_clock = sum(self.__turn_duration[Player.T.WHITE])
-        black_clock = sum(self.__turn_duration[Player.T.BLACK])
+        white_clock = sum(self.__turn_durations[Player.T.WHITE])
+        black_clock = sum(self.__turn_durations[Player.T.BLACK])
 
-        if self.__pijersi_state.is_terminal():
+        if self.__turn_start is not None and self.__turn_end is None:
+            actual_turn_duration = time.time() - self.__turn_start
+
+            player = self.__pijersi_state.get_current_player()
+
+            if player == Player.T.WHITE:
+                white_clock += actual_turn_duration
+
+            elif player == Player.T.BLACK:
+                black_clock += actual_turn_duration
+
+        if self.__time_control is None:
             return (white_clock, black_clock)
 
         else:
-            if self.__turn_start is not None and self.__turn_end is None:
-                actual_turn_duration = time.time() - self.__turn_start
-
-                player = self.__pijersi_state.get_current_player()
-
-                if player == Player.T.WHITE:
-                    white_clock += actual_turn_duration
-
-                elif player == Player.T.BLACK:
-                    black_clock += actual_turn_duration
-
-            return (white_clock, black_clock)
+            return (self.__time_control - white_clock, self.__time_control - black_clock)
 
 
     def has_next_turn(self) -> bool:
+
+        if self.__time_control is not None:
+            (white_clock, black_clock) = self.get_clocks()
+            
+            white_clock = round(white_clock)
+            black_clock = round(black_clock)
+            log(f"DEBUG: white_clock = {white_clock} ; black_clock = {black_clock}")
+
+            if white_clock < 0 or black_clock < 0:
+
+                if self.__turn_end is None:
+                    self.__turn_end = time.time()
+
+                self.__time_ended = True
+                self.__time_ended_for_white = (white_clock < 0)
+                self.__time_ended_for_black = (black_clock < 0)
+                
+                log("DEBUG: has_next_turn: return False")
+                return False
+
+        log(f"DEBUG: has_next_turn: return not self.__pijersi_state.is_terminal() = {not self.__pijersi_state.is_terminal()}")
         return not self.__pijersi_state.is_terminal()
 
 
@@ -3558,7 +3617,7 @@ class Game:
             if self.__enabled_log:
                 turn_end = time.time() if self.__turn_end is None else self.__turn_end
                 turn_duration = turn_end - turn_start
-                self.__turn_duration[player].append(turn_duration)
+                self.__turn_durations[player].append(turn_duration)
                 log(f"Player {player_name} is done after %.1f seconds" % turn_duration)
 
                 action_count = len(self.__pijersi_state.get_actions())
@@ -3582,8 +3641,8 @@ class Game:
                 log()
                 log("-"*40)
 
-                white_time = round(sum(self.__turn_duration[Player.T.WHITE]))
-                black_time = round(sum(self.__turn_duration[Player.T.BLACK]))
+                white_time = round(sum(self.__turn_durations[Player.T.WHITE]))
+                black_time = round(sum(self.__turn_durations[Player.T.BLACK]))
 
                 white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
@@ -3598,6 +3657,24 @@ class Game:
                     self.__log = f"Player {black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
 
                 log(self.__log)
+
+        elif self.__time_ended:
+            log()
+            log("-"*40)
+
+            white_time = round(sum(self.__turn_durations[Player.T.WHITE]))
+            black_time = round(sum(self.__turn_durations[Player.T.BLACK]))
+
+            white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
+            black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
+
+            if self.__time_ended_for_black:
+                    self.__log = f"Player {white_player} flags {black_player} at time control ; {white_time:.0f} versus {black_time:.0f} seconds"
+
+            if self.__time_ended_for_white:
+                    self.__log = f"Player {black_player} flags {white_player} at time control ; {black_time:.0f} versus {white_time:.0f} seconds"
+
+            log(self.__log)
 
 
 Hexagon.init()
