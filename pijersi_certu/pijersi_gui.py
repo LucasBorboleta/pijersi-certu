@@ -849,7 +849,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_time_control,
                                                     values=time_control_catalog_names)
         self.__combobox_time_control.config(state="readonly")
-        self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == None][0])
+        self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == 5*60][0])
 
 
         self.__label_white_player.grid(row=0, column=0)
