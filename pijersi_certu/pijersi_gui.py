@@ -2548,7 +2548,6 @@ class GameGui(ttk.Frame):
                 self.__pijersi_state = self.__game.get_state()
                 self.__game_terminated = not self.__game.has_next_turn()
 
-
                 if self.__game.get_turn() > 0:
                     self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action()
 
@@ -2597,6 +2596,12 @@ class GameGui(ttk.Frame):
             self.__variable_summary.set(self.__game.get_summary())
             self.__variable_log.set(self.__game.get_log())
 
+            if self.__game.get_turn() > 0:
+                self.__legend = str(self.__game.get_turn()) + " " + self.__game.get_last_action() + " "
+
+            self.__legend += self.__make_legend_score(self.__pijersi_state)
+
+
             self.__cmc_reset()
             self.__cmc_hightlight_moved_and_played_hexagons()
             self.__draw_state()
@@ -2627,14 +2632,16 @@ class GameGui(ttk.Frame):
     def __update_clocks(self):
 
         def format_clock(clock_float):
-            clock_int = round(clock_float)
+            clock_int = round(math.fabs(clock_float))
             clock_sec = clock_int % 60
             clock_min = clock_int // 60
 
+            clock_sign = '' if clock_float >= 0 else '-'
+
             if clock_min < 100:
-                return f"{clock_min:02d}:{clock_sec:02d}"
+                return f"{clock_sign}{clock_min:02d}:{clock_sec:02d}"
             else:
-                return f"{clock_min}:{clock_sec:02d}"
+                return f"{clock_sign}{clock_min}:{clock_sec:02d}"
 
         if self.__game is not None:
             (white_clock, black_clock) = self.__game.get_clocks()

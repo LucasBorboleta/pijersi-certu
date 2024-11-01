@@ -3554,15 +3554,24 @@ class Game:
         black_clock = sum(self.__turn_durations[Player.T.BLACK])
 
         if self.__turn_start is not None and self.__turn_end is None:
-            actual_turn_duration = time.time() - self.__turn_start
+            turn_end = time.time()
+            turn_duration = turn_end - self.__turn_start
 
             player = self.__pijersi_state.get_current_player()
 
             if player == Player.T.WHITE:
-                white_clock += actual_turn_duration
+                white_clock += turn_duration
+
+                if self.__time_control is not None and round(white_clock) > self.__time_control:
+                    self.__turn_end = turn_end
+                    self.__turn_durations[Player.T.WHITE].append(turn_duration)
 
             elif player == Player.T.BLACK:
-                black_clock += actual_turn_duration
+                black_clock += turn_duration
+
+                if self.__time_control is not None and round(black_clock) > self.__time_control:
+                    self.__turn_end = turn_end
+                    self.__turn_durations[Player.T.BLACK].append(turn_duration)
 
         if self.__time_control is None:
             return (white_clock, black_clock)
@@ -3575,24 +3584,17 @@ class Game:
 
         if self.__time_control is not None:
             (white_clock, black_clock) = self.get_clocks()
-            
+
             white_clock = round(white_clock)
             black_clock = round(black_clock)
-            log(f"DEBUG: white_clock = {white_clock} ; black_clock = {black_clock}")
 
             if white_clock < 0 or black_clock < 0:
-
-                if self.__turn_end is None:
-                    self.__turn_end = time.time()
-
                 self.__time_ended = True
                 self.__time_ended_for_white = (white_clock < 0)
                 self.__time_ended_for_black = (black_clock < 0)
-                
-                log("DEBUG: has_next_turn: return False")
+
                 return False
 
-        log(f"DEBUG: has_next_turn: return not self.__pijersi_state.is_terminal() = {not self.__pijersi_state.is_terminal()}")
         return not self.__pijersi_state.is_terminal()
 
 
