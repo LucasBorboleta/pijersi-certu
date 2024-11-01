@@ -2590,7 +2590,11 @@ class GameGui(ttk.Frame):
             self.__game_played = False
             self.__game_terminated = True
 
-            self.__game.next_turn() # >> to finalize the game
+            # >> finalize the game when time control is used
+            self.__pijersi_state = self.__game.get_state()
+            if not self.__pijersi_state.is_terminal() and self.__game_time_control is not None:
+                self.__game.next_turn()
+
             self.__update_clocks()
 
             self.__variable_summary.set(self.__game.get_summary())
