@@ -2411,7 +2411,13 @@ class GameGui(ttk.Frame):
                                                                                        backend_searcher,
                                                                                        self.__pijersi_state)
 
-                    self.__searcher_max_time = backend_searcher.get_time_limit()
+                    if self.__game_time_control is None:
+                        backend_searcher.unset_dynamic_time_limit()
+                        self.__searcher_max_time = backend_searcher.get_time_limit()
+
+                    else:
+                        player_clocks = self.__game.get_clocks()
+                        self.__searcher_max_time = backend_searcher.compute_dynamic_time_limit(player_clocks[player])
 
                     if self.__searcher_max_time is None:
                         self.__progressbar['value'] = 10.
@@ -3768,7 +3774,7 @@ def make_searcher_catalog(ugi_clients):
 
     if True:
         searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-5s", max_depth=2, time_limit=5) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=3, time_limit=20) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=3, time_limit=20, clock_fraction=0.10) )
 
     if True:
         depth_list = []
@@ -3778,12 +3784,12 @@ def make_searcher_catalog(ugi_clients):
 
             for depth in depth_list:
                 depth_searcher_name = f"{ugi_client_name}-depth-{depth}"
-                depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth)
+                depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth, clock_fraction=0.10)
                 searcher_catalog.add(depth_searcher)
 
             for (time_limit, time_label) in time_list:
                 time_searcher_name = f"{ugi_client_name}-time-{time_label}"
-                time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit)
+                time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit, clock_fraction=0.10)
                 searcher_catalog.add(time_searcher)
 
     if False:

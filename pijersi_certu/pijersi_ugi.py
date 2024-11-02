@@ -787,8 +787,8 @@ class UgiSearcher(rules.Searcher):
     __slots__ = ('__ugi_client', '__ugi_permanent', '__max_depth')
 
 
-    def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[int]=None):
-        super().__init__(name, time_limit)
+    def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
+        super().__init__(name, time_limit, clock_fraction)
 
         self.__ugi_client = ugi_client
         self.__ugi_permanent = self.__ugi_client.is_permanent()
@@ -822,13 +822,13 @@ class UgiSearcher(rules.Searcher):
             print("debug: fen position sent to UGI agent:")
             print(fen)
 
-        time_limit =self.get_time_limit()
+        time_limit = self.get_time_limit()
 
-        if self.__max_depth is not None:
+        if time_limit is not None:
+            ugi_action = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+
+        elif self.__max_depth is not None:
             ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
-
-        elif time_limit is not None:
-            ugi_action = self.__ugi_client.go_movetime_and_wait(time_limit*1_000)
 
         if False:
             print("debug: answer of UGI agent:")

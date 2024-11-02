@@ -2261,26 +2261,57 @@ class PijersiState:
 
 class Searcher():
 
-    __slots__ = ('__name', '__time_limit')
+    __slots__ = ('__name', '__time_limit', '__dynamic_time_limit', '__clock_fraction')
 
 
-    def __init__(self, name: str, time_limit: Optional[int]=None):
+    def __init__(self, name: str, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
+
+        if time_limit is not None:
+            assert time_limit > 0
+
+        if clock_fraction is not None:
+            assert 0 < clock_fraction <= 1
+
         self.__name = name
         self.__time_limit = time_limit
+        self.__clock_fraction = clock_fraction
+        self.__dynamic_time_limit = None
 
 
     def get_name(self) -> str:
         return self.__name
 
 
-    def set_time_limit(self, time_limit: Optional[int]):
+    def set_time_limit(self, time_limit: Optional[float]):
         if time_limit is not None:
             assert time_limit > 0
         self.__time_limit = time_limit
 
 
-    def get_time_limit(self) -> Optional[int]:
-        return self.__time_limit
+    def unset_dynamic_time_limit(self):
+        self.__dynamic_time_limit = None
+
+
+    def compute_dynamic_time_limit(self, player_clock: float)-> Optional[float]:
+        assert player_clock >= 0
+
+        if self.__clock_fraction is None:
+            self.__dynamic_time_limit =  self.__time_limit
+
+        else:
+            self.__dynamic_time_limit = self.__clock_fraction*player_clock
+
+            if self.__time_limit is not None:
+                self.__dynamic_time_limit = min(self.__time_limit, self.__dynamic_time_limit)
+
+        return self.__dynamic_time_limit
+
+
+    def get_time_limit(self) -> Optional[float]:
+        if self.__dynamic_time_limit is not None:
+            return self.__dynamic_time_limit
+        else:
+            return self.__time_limit
 
 
     def is_interactive(self) -> bool:
@@ -2628,19 +2659,14 @@ class MinimaxSearcher(Searcher):
     __NULL_ALPHA_BETA_WINDOW = 0.001
 
 
-    def __init__(self, name: str, max_depth: int=1, time_limit: Optional[int]=None,
+    def __init__(self, name: str, max_depth: int=1, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None,
                  state_evaluator: Optional[StateEvaluator]=None,
                  searcher_parent: Optional[MinimaxSearcher]=None):
 
-        super().__init__(name)
+        super().__init__(name, time_limit, clock_fraction)
 
         assert max_depth >= 1
         self.__max_depth = max_depth
-
-        if time_limit is not None:
-            assert time_limit > 0
-            assert max_depth > 1
-            self.set_time_limit(time_limit)
 
         if state_evaluator is not None:
             self.__state_evaluator = state_evaluator
