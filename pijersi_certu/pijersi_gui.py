@@ -218,7 +218,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT_INITIAL = 640
+        self.HEIGHT_INITIAL = 680
         self.HEIGHT = self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
@@ -632,8 +632,7 @@ class GameGui(ttk.Frame):
         self.__game_time_control = None
         self.__game_time_control_catalog = {}
         self.__game_time_control_catalog["Free time"] = None
-        self.__game_time_control_catalog["Max 10 seconds"] = 10
-        self.__game_time_control_catalog["Max 30 seconds"] = 30
+        self.__game_time_control_catalog["Max 1 minute"] = 1*60
         self.__game_time_control_catalog["Max 05 minutes"] = 5*60
         self.__game_time_control_catalog["Max 10 minutes"] = 10*60
         self.__game_time_control_catalog["Max 15 minutes"] = 15*60
@@ -747,10 +746,10 @@ class GameGui(ttk.Frame):
         # Frames
 
         self.__frame_left = ttk.Frame(self.__root)
-        self.__frame_left.grid(row=0, column=0, sticky='nw')
+        self.__frame_left.grid(row=0, column=0)
 
         self.__frame_right = ttk.Frame(self.__root, padding=15)
-        self.__frame_right.grid(row=0, column=1, sticky='nw')
+        self.__frame_right.grid(row=0, column=1, sticky='nswe')
 
         self.__frame_commands_and_players = ttk.Frame(self.__frame_right)
         self.__frame_commands_and_players.grid(row=0, column=0, sticky='nw')
@@ -768,7 +767,6 @@ class GameGui(ttk.Frame):
         self.__frame_players.grid(row=0, column=1)
 
         self.__frame_commands_and_players.columnconfigure(1, pad=60)
-        self.__frame_commands_and_players.columnconfigure(0, pad=20)
 
         self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=10)
         self.__frame_text_actions = ttk.Frame(self.__frame_actions, padding=10)
@@ -793,16 +791,17 @@ class GameGui(ttk.Frame):
 
 
         self.__button_new_stop.grid(row=0, column=0)
-        self.__button_quit.grid(row=0, column=1)
-
-        self.__button_resume.grid(row=1, column=1)
-        if False: # >> postpone the release of the "review" feature
-            self.__button_review.grid(row=1, column=0)
+        self.__button_quit.grid(row=1, column=0)
+        self.__button_resume.grid(row=2, column=0)
 
         self.__frame_commands.rowconfigure(0, pad=5)
         self.__frame_commands.rowconfigure(1, pad=5)
-        self.__frame_commands.columnconfigure(0, pad=5)
-        self.__frame_commands.columnconfigure(1, pad=5)
+        self.__frame_commands.rowconfigure(2, pad=5)
+
+        if False: # >> postpone the release of the "review" feature
+            self.__button_review.grid(row=3, column=0)
+            self.__frame_commands.rowconfigure(3, pad=5)
+
 
         # In __frame_players
 
@@ -826,7 +825,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
-        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
+        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-time-5s")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -990,7 +989,7 @@ class GameGui(ttk.Frame):
         self.__frame_human_actions.columnconfigure(6, pad=10)
 
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
-        self.__text_actions.pack(side=tk.LEFT)
+        self.__text_actions.pack(side=tk.LEFT, fill=tk.Y)
 
         self.__text_actions.config(state="disabled")
         self.__button_resume.config(state="disabled")
@@ -3768,16 +3767,12 @@ def make_searcher_catalog(ugi_clients):
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=2, time_limit=20) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-2mn", max_depth=3, time_limit=2*60) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-3", max_depth=3) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-10mn", max_depth=4, time_limit=10*60) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-4", max_depth=4) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-5s", max_depth=2, time_limit=5) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=3, time_limit=20) )
 
     if True:
-        depth_list = [2, 3, 4, 5, 6]
-        time_list = [(20, '20s'), (60, '1mn'), (2*60, '2mn'), (10*60, '10mn')]
+        depth_list = []
+        time_list = [(5, '5s'), (20, '20s')]
 
         for (ugi_client_name, ugi_client) in ugi_clients.items():
 
