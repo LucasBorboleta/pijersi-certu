@@ -825,7 +825,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
-        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-time-5s")])
+        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -3773,12 +3773,12 @@ def make_searcher_catalog(ugi_clients):
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-5s", max_depth=2, time_limit=5) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-time-20s", max_depth=3, time_limit=20, clock_fraction=0.10) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-3", max_depth=3, clock_fraction=0.10) )
 
     if True:
-        depth_list = []
-        time_list = [(5, '5s'), (20, '20s')]
+        depth_list = [5]
+        time_list = [(20, '20s')]
 
         for (ugi_client_name, ugi_client) in ugi_clients.items():
 

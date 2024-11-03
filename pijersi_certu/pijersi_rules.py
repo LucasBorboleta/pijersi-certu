@@ -3669,20 +3669,26 @@ class Game:
                 log()
                 log("-"*40)
 
-                white_time = round(sum(self.__turn_durations[Player.T.WHITE]))
-                black_time = round(sum(self.__turn_durations[Player.T.BLACK]))
+                white_sum_time = round(sum(self.__turn_durations[Player.T.WHITE]))
+                black_sum_time = round(sum(self.__turn_durations[Player.T.BLACK]))
+
+                white_max_time = round(max(self.__turn_durations[Player.T.WHITE]))
+                black_max_time = round(max(self.__turn_durations[Player.T.BLACK]))
 
                 white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
 
                 if rewards[Player.T.WHITE] == rewards[Player.T.BLACK]:
-                    self.__log = f"Nobody wins ; the game is a draw between {white_player} and {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+                    self.__log = (f"Nobody wins ; the game is a draw between {white_player} and {black_player}" +
+                                  f" ; {white_sum_time:.0f} (max {white_max_time:.0f}) versus {black_sum_time:.0f} (max {black_max_time:.0f}) seconds")
 
                 elif rewards[Player.T.WHITE] > rewards[Player.T.BLACK]:
-                    self.__log = f"Player {white_player} wins against {black_player} ; {white_time:.0f} versus {black_time:.0f} seconds"
+                    self.__log = (f"Player {white_player} wins against {black_player}" +
+                                  f" ; {white_sum_time:.0f} (max {white_max_time:.0f}) versus {black_sum_time:.0f} (max {black_max_time:.0f}) seconds")
 
                 else:
-                    self.__log = f"Player {black_player} wins against {white_player} ; {black_time:.0f} versus {white_time:.0f} seconds"
+                    self.__log = (f"Player {black_player} wins against {white_player}" +
+                                  f" ; {black_sum_time:.0f} (max {black_max_time:.0f}) versus {white_sum_time:.0f} (max {white_max_time:.0f}) seconds")
 
                 log(self.__log)
 
@@ -3690,17 +3696,22 @@ class Game:
             log()
             log("-"*40)
 
-            white_time = round(sum(self.__turn_durations[Player.T.WHITE]))
-            black_time = round(sum(self.__turn_durations[Player.T.BLACK]))
+            white_sum_time = round(sum(self.__turn_durations[Player.T.WHITE]))
+            black_sum_time = round(sum(self.__turn_durations[Player.T.BLACK]))
+
+            white_max_time = round(max(self.__turn_durations[Player.T.WHITE]))
+            black_max_time = round(max(self.__turn_durations[Player.T.BLACK]))
 
             white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
             black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
 
             if self.__time_ended_for_black:
-                    self.__log = f"Player {white_player} flags {black_player} at time control ; {white_time:.0f} versus {black_time:.0f} seconds"
+                    self.__log = (f"Player {white_player} flags {black_player} at time control" +
+                                  f" ; {white_sum_time:.0f} (max {white_max_time:.0f}) versus {black_sum_time:.0f} (max {black_max_time:.0f}) seconds")
 
             if self.__time_ended_for_white:
-                    self.__log = f"Player {black_player} flags {white_player} at time control ; {black_time:.0f} versus {white_time:.0f} seconds"
+                    self.__log = (f"Player {black_player} flags {white_player} at time control" +
+                                  f" ; {black_sum_time:.0f} (max {black_max_time:.0f}) versus {white_sum_time:.0f} (max {white_max_time:.0f}) seconds")
 
             log(self.__log)
 
