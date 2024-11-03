@@ -2116,6 +2116,9 @@ class GameGui(ttk.Frame):
            self.__progressbar['value'] = 0.
 
 
+        if self.__game_time_control is not None:
+            self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == None][0])
+            self.__variable_log.set(self.__variable_log.get() + f" ; time control forced to '{self.__variable_time_control.get()}'")
 
         self.__button_new_stop.configure(text="Stop")
 
