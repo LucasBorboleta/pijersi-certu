@@ -632,7 +632,7 @@ class GameGui(ttk.Frame):
         self.__game_time_control = None
         self.__game_time_control_catalog = {}
         self.__game_time_control_catalog["Free time"] = None
-        self.__game_time_control_catalog["Max 1 minute"] = 1*60
+        self.__game_time_control_catalog["Max 01 minute"] = 1*60
         self.__game_time_control_catalog["Max 05 minutes"] = 5*60
         self.__game_time_control_catalog["Max 10 minutes"] = 10*60
         self.__game_time_control_catalog["Max 15 minutes"] = 15*60
@@ -825,7 +825,7 @@ class GameGui(ttk.Frame):
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
         self.__combobox_black_player.config(state="readonly")
-        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-depth-2")])
+        self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-2")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
                                              orient=tk.HORIZONTAL,
@@ -3776,8 +3776,8 @@ def make_searcher_catalog(ugi_clients):
     searcher_catalog.add( rules.HumanSearcher("human") )
 
     if True:
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-2", max_depth=2) )
-        searcher_catalog.add( rules.MinimaxSearcher("cmalo-depth-3", max_depth=3, clock_fraction=0.10) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-2", max_depth=2) )
+        searcher_catalog.add( rules.MinimaxSearcher("cmalo-3", max_depth=3, clock_fraction=0.10) )
 
     if True:
         depth_list = [5]
@@ -3786,18 +3786,18 @@ def make_searcher_catalog(ugi_clients):
         for (ugi_client_name, ugi_client) in ugi_clients.items():
 
             for depth in depth_list:
-                depth_searcher_name = f"{ugi_client_name}-depth-{depth}"
+                depth_searcher_name = f"{ugi_client_name}-{depth}"
                 depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth, clock_fraction=0.10)
                 searcher_catalog.add(depth_searcher)
 
             for (time_limit, time_label) in time_list:
-                time_searcher_name = f"{ugi_client_name}-time-{time_label}"
+                time_searcher_name = f"{ugi_client_name}-{time_label}"
                 time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit, clock_fraction=0.10)
                 searcher_catalog.add(time_searcher)
 
     if False:
         searcher_catalog.add( rules.RandomSearcher("random") )
-        searcher_catalog.add( rules.MinimaxSearcher("minimax1", max_depth=1) )
+        searcher_catalog.add( rules.MinimaxSearcher("minimax-1", max_depth=1) )
 
     return searcher_catalog
 
