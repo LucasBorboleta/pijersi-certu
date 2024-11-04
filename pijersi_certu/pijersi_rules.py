@@ -3672,8 +3672,8 @@ class Game:
                 white_sum_time = round(sum(self.__turn_durations[Player.T.WHITE]))
                 black_sum_time = round(sum(self.__turn_durations[Player.T.BLACK]))
 
-                white_max_time = round(max(self.__turn_durations[Player.T.WHITE]))
-                black_max_time = round(max(self.__turn_durations[Player.T.BLACK]))
+                white_max_time = round(max(self.__turn_durations[Player.T.WHITE] + [0]))
+                black_max_time = round(max(self.__turn_durations[Player.T.BLACK] + [0]))
 
                 white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
                 black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
@@ -3699,8 +3699,8 @@ class Game:
             white_sum_time = round(sum(self.__turn_durations[Player.T.WHITE]))
             black_sum_time = round(sum(self.__turn_durations[Player.T.BLACK]))
 
-            white_max_time = round(max(self.__turn_durations[Player.T.WHITE]))
-            black_max_time = round(max(self.__turn_durations[Player.T.BLACK]))
+            white_max_time = round(max(self.__turn_durations[Player.T.WHITE] + [0]))
+            black_max_time = round(max(self.__turn_durations[Player.T.BLACK] + [0]))
 
             white_player = f"{Player.to_name(Player.T.WHITE)}-{self.__searcher[Player.T.WHITE].get_name()}"
             black_player = f"{Player.to_name(Player.T.BLACK)}-{self.__searcher[Player.T.BLACK].get_name()}"
