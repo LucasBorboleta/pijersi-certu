@@ -798,9 +798,8 @@ class GameGui(ttk.Frame):
         self.__frame_commands.rowconfigure(1, pad=5)
         self.__frame_commands.rowconfigure(2, pad=5)
 
-        if False: # >> postpone the release of the "review" feature
-            self.__button_review.grid(row=3, column=0)
-            self.__frame_commands.rowconfigure(3, pad=5)
+        self.__button_review.grid(row=3, column=0)
+        self.__frame_commands.rowconfigure(3, pad=5)
 
 
         # In __frame_players
@@ -866,7 +865,8 @@ class GameGui(ttk.Frame):
 
 
         self.__frame_players.rowconfigure(0, pad=5)
-        self.__frame_players.rowconfigure(1, pad=5)
+        self.__frame_players.rowconfigure(1, pad=40)
+        self.__frame_players.rowconfigure(2, pad=5)
         self.__frame_players.columnconfigure(0, pad=5)
         self.__frame_players.columnconfigure(1, pad=5)
         self.__frame_players.columnconfigure(2, pad=2)
