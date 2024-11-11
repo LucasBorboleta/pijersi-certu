@@ -65,7 +65,7 @@ sys.path.append(_package_home)
 import pijersi_rules as rules
 
 from pijersi_ugi import UgiClient
-from pijersi_ugi import UgiSearcher
+from pijersi_ugi import NatselSearcher
 
 
 # AI searchers for performing the action review
@@ -764,7 +764,7 @@ class GameGui(ttk.Frame):
         self.__frame_commands.grid(row=0, column=0)
 
         self.__frame_players = ttk.Frame(self.__frame_commands_and_players)
-        self.__frame_players.grid(row=0, column=1)
+        self.__frame_players.grid(row=0, column=1, sticky='e')
 
         self.__frame_commands_and_players.columnconfigure(1, pad=60)
 
@@ -3787,12 +3787,12 @@ def make_searcher_catalog(ugi_clients):
 
             for depth in depth_list:
                 depth_searcher_name = f"{ugi_client_name}-{depth}"
-                depth_searcher = UgiSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth, clock_fraction=0.10)
+                depth_searcher = NatselSearcher(name=depth_searcher_name, ugi_client=ugi_client, max_depth=depth, clock_fraction=0.10)
                 searcher_catalog.add(depth_searcher)
 
             for (time_limit, time_label) in time_list:
                 time_searcher_name = f"{ugi_client_name}-{time_label}"
-                time_searcher = UgiSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit, clock_fraction=0.10)
+                time_searcher = NatselSearcher(name=time_searcher_name, ugi_client=ugi_client, time_limit=time_limit, clock_fraction=0.10)
                 searcher_catalog.add(time_searcher)
 
     if False:

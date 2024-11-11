@@ -94,7 +94,7 @@ class UgiClient:
         # >>
         # >> - The multiprocessing/asynchronous context of the Graphical User Interface
         # >>   force (at least for keep it simple) the UGI session to be *not permanent*.
-        # >>   Otherwise, process object like *lock* can be *pickled*.
+        # >>   Otherwise, process object like *lock* cannot be *pickled*.
         # >>
         # >> - However, outside the above mentionned context,
         # >>   it is optimal to keep *permanent* the UGI session.
@@ -788,7 +788,7 @@ class UgiSearcher(rules.Searcher):
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
-        super().__init__(name, time_limit, clock_fraction)
+        super().__init__(name=name, time_limit=time_limit, clock_fraction=clock_fraction)
 
         self.__ugi_client = ugi_client
         self.__ugi_permanent = self.__ugi_client.is_permanent()
@@ -840,6 +840,13 @@ class UgiSearcher(rules.Searcher):
             self.__ugi_client.quit()
 
         return action
+
+
+class NatselSearcher(UgiSearcher):
+
+    def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
+        super().__init__(name=name, ugi_client=ugi_client, max_depth=max_depth, time_limit=time_limit, clock_fraction=clock_fraction)
+
 
 
 def make_ugi_server_process(server_executable_path: str) -> Tuple[Popen, UgiChannel]:
