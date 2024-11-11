@@ -28,14 +28,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 """
 
-_NATSEL_COPYRIGHT = "(c) 2024 Eclypse-Prime"
-_NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
-_NATSEL_NAME = "Natural Selection"
-_NATSEL_KEY = "natsel"
-_NATSEL_VERSION = "1.2.1"
-
-
-
 import copy
 import enum
 import sys
@@ -68,16 +60,18 @@ from pijersi_ugi import UgiClient
 from pijersi_ugi import NatselSearcher
 
 
-# AI searchers for performing the action review
-REVIEW_SUP_SEARCHER = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
-REVIEW_INF_SEARCHER = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+_NATSEL_COPYRIGHT = "(c) 2024 Eclypse-Prime"
+_NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
+_NATSEL_NAME = "Natural Selection"
+_NATSEL_KEY = "natsel"
+_NATSEL_VERSION = "1.2.1"
+
 
 # constant for scoring the action review
 REVIEW_MAX_SCORE = 10
 REVIEW_MIN_SCORE = 1
 REVIEW_OUT_SCORE = 0
 REVIEW_UNKNOWN_SCORE = -1
-
 
 
 def rgb_color_as_hexadecimal(rgb_triplet):
@@ -578,9 +572,8 @@ class GameGui(ttk.Frame):
         self.__background_tk_resized_photo = None
 
         # For handling the game review
+        (self.__review_sup_searcher, self.__review_inf_searcher) = make_review_searchers()
         self.__review_enabled = True
-        self.__review_sup_searcher = REVIEW_SUP_SEARCHER
-        self.__review_inf_searcher = REVIEW_INF_SEARCHER
         self.__review_running = False
         self.__review_action_index = None
         self.__review_timer_id = None
@@ -3758,13 +3751,8 @@ def make_ugi_clients():
             ugi_client = UgiClient(name="ugi-cmalo", server_executable_path=cmalo_server_executable_path)
             ugi_clients[ugi_client.get_name()] = ugi_client
 
-
-    natsel_server_executable_path = os.path.join(_package_home, "ugi-servers",
-                                                 _NATSEL_KEY,
-                                                 f"{_NATSEL_UGI_SERVER_NAME}_v{_NATSEL_VERSION}" + "_" + make_artefact_platform_id())
-
-    if os.path.isfile(natsel_server_executable_path):
-        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=natsel_server_executable_path)
+    if os.path.isfile(_NATSEL_EXECUTABLE_PATH):
+        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH)
         ugi_clients[ugi_client.get_name()] = ugi_client
 
     return ugi_clients
@@ -3815,8 +3803,29 @@ def make_artefact_platform_id():
     return artefact_platform_id
 
 
+def make_review_searchers():
+    """Make the AI searchers for performing the action review"""
+
+    if os.path.isfile(_NATSEL_EXECUTABLE_PATH):
+        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH)
+        review_sup_searcher = NatselSearcher(name="natsel-depth-4-sup", ugi_client=ugi_client, max_depth=4)
+
+    else:
+        review_sup_searcher = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
+
+    review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+
+    return (review_sup_searcher, review_inf_searcher)
+
+
 CANVAS_CONFIG = CanvasConfig()
 GraphicalHexagon.init()
+
+
+_NATSEL_EXECUTABLE_PATH = os.path.join(_package_home,
+                                             "ugi-servers",
+                                             _NATSEL_KEY,
+                                             f"{_NATSEL_UGI_SERVER_NAME}_v{_NATSEL_VERSION}" + "_" + make_artefact_platform_id())
 
 
 def main():

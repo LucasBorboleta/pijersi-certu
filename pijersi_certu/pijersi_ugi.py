@@ -22,6 +22,7 @@ from subprocess import Popen
 import sys
 
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Self
 from typing import TextIO
@@ -198,7 +199,9 @@ class UgiClient:
         self.__log_debug(f"__send: {data}")
 
 
-    def __handle_bestmove_reply(self) -> str:
+    def __handle_bestmove_reply(self) -> Tuple[str, List[List[str]]]:
+
+        infos = []
 
         while True:
             reply = self.__recv()
@@ -218,32 +221,33 @@ class UgiClient:
 
             elif reply_head == 'info':
                 self.__log_debug(f"__handle_bestmove_reply: '{reply}'")
+                infos.append(reply)
 
             else:
                 self.__log_info(f"__handle_bestmove_reply: unexpected head '{reply_head}' ; ignoring reply '{reply}'")
                 continue
 
-        return bestmove
+        return (bestmove, infos)
 
 
-    def go_depth_and_wait(self, depth: int) -> str:
+    def go_depth_and_wait(self, depth: int) -> Tuple[str, List[List[str]]]:
         assert depth >= 1
         self.__send(['go', 'depth', str(depth)])
 
-        bestmove = self.__handle_bestmove_reply()
-        return bestmove
+        bestmove_and_infos = self.__handle_bestmove_reply()
+        return bestmove_and_infos
 
 
     def go_manual(self, move: str) -> None:
         self.__send(['go', 'manual', move])
 
 
-    def go_movetime_and_wait(self, time_ms: float) -> str:
+    def go_movetime_and_wait(self, time_ms: float) -> Tuple[str, List[List[str]]]:
         assert time_ms > 0
         self.__send(['go', 'movetime', str(time_ms)])
 
-        bestmove = self.__handle_bestmove_reply()
-        return bestmove
+        bestmove_and_infos = self.__handle_bestmove_reply()
+        return bestmove_and_infos
 
 
     def isready(self) -> bool:
@@ -787,7 +791,7 @@ class UgiSearcher(rules.Searcher):
     __slots__ = ('__ugi_client', '__ugi_permanent', '__max_depth')
 
 
-    def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
+    def __init__(self, name: str, ugi_client: UgiClient, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
         super().__init__(name=name, time_limit=time_limit, clock_fraction=clock_fraction)
 
         self.__ugi_client = ugi_client
@@ -796,6 +800,14 @@ class UgiSearcher(rules.Searcher):
         assert max_depth is None or time_limit is None
         assert not (max_depth is None and time_limit is None)
         self.__max_depth = max_depth
+
+
+    def get_max_depth(self) -> Optional[int]:
+        return self.__max_depth
+
+
+    def get_ugi_client(self) -> UgiClient:
+        return self.__ugi_client
 
 
     def search(self, state: rules.PijersiState) -> rules.PijersiAction:
@@ -825,10 +837,10 @@ class UgiSearcher(rules.Searcher):
         time_limit = self.get_time_limit()
 
         if time_limit is not None:
-            ugi_action = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+            (ugi_action, _) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
 
         elif self.__max_depth is not None:
-            ugi_action = self.__ugi_client.go_depth_and_wait(self.__max_depth)
+            (ugi_action, _) = self.__ugi_client.go_depth_and_wait(self.__max_depth)
 
         if False:
             print("debug: answer of UGI agent:")
@@ -844,9 +856,76 @@ class UgiSearcher(rules.Searcher):
 
 class NatselSearcher(UgiSearcher):
 
+    __slots__ = ('__ugi_client', '__ugi_permanent')
+
+
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
         super().__init__(name=name, ugi_client=ugi_client, max_depth=max_depth, time_limit=time_limit, clock_fraction=clock_fraction)
 
+        self.__ugi_client = self.get_ugi_client()
+        self.__ugi_permanent = self.__ugi_client.is_permanent()
+
+
+    def evaluate_actions(self, state: rules.PijersiState) -> Mapping[rules.PijersiAction, float]:
+        evaluated_actions = {}
+
+        if not self.__ugi_permanent or not self.__ugi_client.is_running():
+            self.__ugi_client.run()
+
+        if not self.__ugi_client.is_prepared():
+            self.__ugi_client.prepare()
+
+        time_limit = self.get_time_limit()
+        max_depth = self.get_max_depth()
+
+        fen = state.get_ugi_fen()
+
+        for action in state.get_actions():
+
+            self.__ugi_client.position_fen(fen=fen)
+            ugi_action = state.to_ugi_name(action)
+            self.__ugi_client.go_manual(ugi_action)
+
+            if time_limit is not None:
+                (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+
+            elif max_depth is not None:
+                (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+
+            # extract "score" from "infos"
+            # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
+            last_depth = None
+
+            depth_is_next = False
+            score_is_next = False
+            for info in infos:
+                for token in info:
+
+                    if depth_is_next:
+                        depth = float(token)
+                        depth_is_next = False
+                        if last_depth is None:
+                            last_depth = depth
+                        else:
+                            assert depth > last_depth
+
+
+                    elif score_is_next:
+                        score = float(token)
+                        score_is_next = False
+
+                    if token == 'depth':
+                        depth_is_next = True
+
+                    elif token == 'score':
+                        score_is_next = True
+
+            evaluated_actions[str(action)] = -score
+
+        if not self.__ugi_permanent:
+            self.__ugi_client.quit()
+
+        return evaluated_actions
 
 
 def make_ugi_server_process(server_executable_path: str) -> Tuple[Popen, UgiChannel]:

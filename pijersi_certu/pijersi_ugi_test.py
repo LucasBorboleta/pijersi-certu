@@ -123,10 +123,10 @@ def test_ugi_protocol():
         result = client.query_result()
         assert result == ['none']
 
-        bestmove = client.go_depth_and_wait(2)
+        (bestmove, _) = client.go_depth_and_wait(2)
         # assert bestmove == 'a5b6d5'
 
-        bestmove = client.go_movetime_and_wait(2_000)
+        (bestmove, _) = client.go_movetime_and_wait(2_000)
         # assert bestmove == 'a5b6c6' # >> best opening move from minimax-4
 
         if True:
@@ -143,7 +143,7 @@ def test_ugi_protocol():
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_movetime_and_wait(10_000)
+                (bestmove, _) = client.go_movetime_and_wait(10_000)
                 log(f"bestmove = {bestmove} after client.go_movetime_and_wait")
 
                 client.go_manual(bestmove)
@@ -164,7 +164,7 @@ def test_ugi_protocol():
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_depth_and_wait(2)
+                (bestmove, _) = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove} after client.go_depth_and_wait")
                 client.go_manual(bestmove)
 
@@ -186,7 +186,7 @@ def test_ugi_protocol():
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_depth_and_wait(2)
+                (bestmove, _) = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove} after client.go_depth_and_wait")
 
                 moves.append(bestmove)
@@ -213,7 +213,7 @@ def test_ugi_protocol():
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_depth_and_wait(2)
+                (bestmove, _) = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove} after client.go_depth_and_wait")
 
                 moves = [bestmove]
@@ -241,7 +241,7 @@ def test_ugi_protocol():
                 if gameover == ['true']:
                     break
 
-                bestmove = client.go_depth_and_wait(2)
+                (bestmove, _) = client.go_depth_and_wait(2)
                 log(f"bestmove = {bestmove} after client.go_depth_and_wait")
 
                 moves.append(bestmove)
