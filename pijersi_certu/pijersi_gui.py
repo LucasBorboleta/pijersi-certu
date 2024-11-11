@@ -67,13 +67,6 @@ _NATSEL_KEY = "natsel"
 _NATSEL_VERSION = "1.2.1"
 
 
-# constant for scoring the action review
-REVIEW_MAX_SCORE = 10
-REVIEW_MIN_SCORE = 1
-REVIEW_OUT_SCORE = 0
-REVIEW_UNKNOWN_SCORE = -1
-
-
 def rgb_color_as_hexadecimal(rgb_triplet):
     (red, green, blue) = rgb_triplet
     assert 0 <= red <= 255
@@ -572,7 +565,7 @@ class GameGui(ttk.Frame):
         self.__background_tk_resized_photo = None
 
         # For handling the game review
-        (self.__review_sup_searcher, self.__review_inf_searcher) = make_review_searchers()
+        self.__review_searcher = make_review_searcher()
         self.__review_enabled = True
         self.__review_running = False
         self.__review_action_index = None
@@ -1430,20 +1423,15 @@ class GameGui(ttk.Frame):
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
-                        if action_item == f"?/{REVIEW_MAX_SCORE:02d}":
-                            action_score = REVIEW_UNKNOWN_SCORE
+                        if action_item == "??.?":
+                            action_score = None
                             actions_item_index += 1
 
-                        elif re.match(f"[0-9][0-9]/{REVIEW_MAX_SCORE:02d}", action_item):
-                            action_score = int(action_item[:2])
+                        elif re.match("[+-][0-9]*\.[0-9]+", action_item):
+                            action_score = float(action_item[:2])
                             actions_item_index += 1
 
-                            if not (REVIEW_OUT_SCORE <= action_score <= REVIEW_MAX_SCORE):
-                                validated_edited_actions = False
-                                self.__variable_log.set(f"Error: invalid score value '{action_item}' at turn '{action_index + 1}'")
-                                break
-
-                        elif re.match(r".*/.*", action_item):
+                        elif re.match("[+-]\S*", action_item):
                             validated_edited_actions = False
                             self.__variable_log.set(f"Error: invalid score syntax '{action_item}' at turn '{action_index + 1}'")
                             break
@@ -1523,11 +1511,8 @@ class GameGui(ttk.Frame):
                     if action_score is None:
                         action_score_text = ""
 
-                    elif action_score == REVIEW_UNKNOWN_SCORE:
-                        action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
-
                     else:
-                        action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
+                        action_score_text = f"{action_score:+.1f}"
 
                     notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                     if turn % 2 == 0:
@@ -2033,11 +2018,8 @@ class GameGui(ttk.Frame):
             if action_score is None:
                 action_score_text = ""
 
-            elif action_score == REVIEW_UNKNOWN_SCORE:
-                action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
-
             else:
-                action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
+                action_score_text = f"{action_score:+.1f}"
 
             notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
             if turn % 2 == 0:
@@ -2166,8 +2148,7 @@ class GameGui(ttk.Frame):
 
             # log the names of the reviewer engines
             print()
-            print(f"Reviewing the game using 'sup' {self.__review_sup_searcher.get_name()} and 'inf' {self.__review_inf_searcher.get_name()} searchers")
-
+            print(f"Reviewing the game using {self.__review_searcher.get_name()} searcher")
 
             # review the first not yet review action
             self.__review_running = True
@@ -2229,11 +2210,8 @@ class GameGui(ttk.Frame):
                 if action_score is None:
                     action_score_text = ""
 
-                elif action_score == REVIEW_UNKNOWN_SCORE:
-                    action_score_text = f" ?/{REVIEW_MAX_SCORE:02d}"
-
                 else:
-                    action_score_text = f"{action_score:02d}/{REVIEW_MAX_SCORE:02d}"
+                    action_score_text = f"{action_score:+.1f}"
 
                 notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                 if turn % 2 == 0:
@@ -2256,16 +2234,25 @@ class GameGui(ttk.Frame):
             white_reviews = self.__turn_reviews[1::2]
             black_reviews = self.__turn_reviews[2::2]
 
-            white_scores = [score for score in white_reviews if score is not None and score != -1]
-            white_score_ave = int(sum(white_scores)/len(white_scores)) if len(white_scores) != 0 else '*'
+            white_scores = [score for score in white_reviews if score is not None]
+            black_scores = [score for score in black_reviews if score is not None]
 
-            black_scores = [score for score in black_reviews if score is not None and score != -1]
-            black_score_ave = int(sum(black_scores)/len(black_scores)) if len(black_scores) != 0 else '*'
+            if len(white_scores) != 0:
+                white_score_ave = sum(white_scores)/len(white_scores)
+                white_score_ave_txt = f"{white_score_ave:+.1f}"
+            else:
+                white_score_ave_txt = "??.?"
+
+            if len(black_scores) != 0:
+                black_score_ave = sum(black_scores)/len(black_scores)
+                black_score_ave_txt = f"{black_score_ave:+.1f}"
+            else:
+                black_score_ave_txt = "??.?"
 
             if self.__review_running:
-                self.__variable_log.set(f"review completed ; white  average={white_score_ave}  /  black  average={black_score_ave}")
+                self.__variable_log.set(f"review completed ; white  average={white_score_ave_txt}  /  black  average={black_score_ave_txt}")
             else:
-                self.__variable_log.set(f"review stopped ; white  average={white_score_ave}  /  black  average={black_score_ave}")
+                self.__variable_log.set(f"review stopped ; white  average={white_score_ave_txt}  /  black  average={black_score_ave_txt}")
 
             self.__review_running = False
 
@@ -2298,66 +2285,19 @@ class GameGui(ttk.Frame):
 
     def __review_evaluate_action_score(self, action_name, pijersi_state):
 
-        # >> The score of the reviewed action is based on its rank from a reference AI "review_sup_searcher".
-        # >> The second AI "review_inf_searcher" is used to ignore very poor actions.
-        # >> Since this review algorithm relies on ranks, it should work with any chosen pair of "review_sup_searcher" and "review_inf_searcher".
+        evaluated_actions = self.__review_searcher.evaluate_actions(pijersi_state)
 
-        # retrieve the evaluations by the two "sup" and "inf" AI
-        sup_evaluated_actions = self.__review_sup_searcher.evaluate_actions(pijersi_state)
-        inf_evaluated_actions = self.__review_inf_searcher.evaluate_actions(pijersi_state)
+        # for (action, score) in sorted(evaluated_actions.items(), key=lambda kv :kv[1]):
+        #     print(f"action {str(action)}: score {score} ; asinh(score) = {math.asinh(score)}")
 
-        # make a mapping "action -> rank" that ensures that equal values have equal ranks
-        sup_ranks_by_actions = {}
-        sup_unique_values = list(set(sup_evaluated_actions.values()))
-        sup_unique_values.sort()
-        for (sup_action_name, sup_action_value) in sup_evaluated_actions.items():
-            sup_action_simple_name = sup_action_name.replace('!', '')
-            sup_ranks_by_actions[sup_action_simple_name] = sup_unique_values.index(sup_action_value) + 1
-
-        # evalute the "sup_rank"
-        sup_rank = len(sup_unique_values)
-
-        # evalute the "inf_rank": the average of all "inf" actions with max "inf" values
-        inf_unique_values = list(set(inf_evaluated_actions.values()))
-        inf_max_value = max(inf_unique_values)
-
-        inf_ranks = []
-        for (inf_action_name, inf_action_value) in inf_evaluated_actions.items():
-            if inf_action_value == inf_max_value:
-                inf_action_simple_name = inf_action_name.replace('!', '')
-                if inf_action_simple_name in sup_ranks_by_actions:
-                    inf_ranks.append(sup_ranks_by_actions[inf_action_simple_name])
-
-        if len(inf_ranks) != 0:
-            inf_rank = max(1, int(sum(inf_ranks)/len(inf_ranks)))
-        else:
-            inf_rank = 1
-
-        # evalute the "action_rank" and deduces the "action_score"
+        re_evaluated_actions = {eval_action_name.replace('!', ''): math.asinh(eval_action_value)
+                                   for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
         action_simple_name = action_name.replace('!', '')
-
-        if action_simple_name not in sup_ranks_by_actions:
-            action_score = REVIEW_UNKNOWN_SCORE
-
-        else:
-            action_rank = sup_ranks_by_actions[action_simple_name]
-
-            if action_rank < inf_rank :
-                action_score = REVIEW_MAX_SCORE
-
-            elif inf_rank == sup_rank:
-
-                if action_rank == inf_rank:
-                    action_score = REVIEW_MAX_SCORE
-                else:
-                    action_score = REVIEW_OUT_SCORE
-            else:
-                # linearly maps [inf_rank, sup_rank] into [REVIEW_MIN_SCORE, REVIEW_MAX_SCORE]
-                action_score = int( (action_rank - inf_rank)/(sup_rank - inf_rank)*REVIEW_MAX_SCORE +
-                                    (sup_rank - action_rank)/(sup_rank - inf_rank)*REVIEW_MIN_SCORE )
+        action_score = re_evaluated_actions[action_simple_name]
 
         return action_score
+
 
     def __command_next_turn(self):
 
@@ -3808,19 +3748,17 @@ def make_artefact_platform_id():
     return artefact_platform_id
 
 
-def make_review_searchers():
+def make_review_searcher():
     """Make the AI searchers for performing the action review"""
 
     if os.path.isfile(_NATSEL_EXECUTABLE_PATH):
         ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH)
-        review_sup_searcher = NatselSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
-        review_inf_searcher = rules.MinimaxSearcher("cmalo-2", max_depth=2)
+        review_searcher = NatselSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
 
     else:
-        review_sup_searcher = rules.MinimaxSearcher("cmalo-3-sup", max_depth=3)
-        review_inf_searcher = rules.MinimaxSearcher("cmalo-1-inf", max_depth=1)
+        review_searcher = rules.MinimaxSearcher("cmalo-3-sup", max_depth=3)
 
-    return (review_sup_searcher, review_inf_searcher)
+    return review_searcher
 
 
 CANVAS_CONFIG = CanvasConfig()
