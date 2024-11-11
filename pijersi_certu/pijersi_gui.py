@@ -3809,11 +3809,11 @@ def make_review_searchers():
     if os.path.isfile(_NATSEL_EXECUTABLE_PATH):
         ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH)
         review_sup_searcher = NatselSearcher(name="natsel-depth-4-sup", ugi_client=ugi_client, max_depth=4)
+        review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-2-inf", max_depth=2)
 
     else:
         review_sup_searcher = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
-
-    review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+        review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
 
     return (review_sup_searcher, review_inf_searcher)
 

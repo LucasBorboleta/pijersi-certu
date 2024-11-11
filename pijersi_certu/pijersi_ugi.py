@@ -879,48 +879,72 @@ class NatselSearcher(UgiSearcher):
         max_depth = self.get_max_depth()
 
         fen = state.get_ugi_fen()
+        player = state.get_current_player()
+        other_player = state.get_other_player()
+
+        WIN_SCORE = 1.e8
+        LOSS_SCORE = -WIN_SCORE
+        DRAW_SCORE = WIN_SCORE/10
 
         for action in state.get_actions():
 
-            self.__ugi_client.position_fen(fen=fen)
-            ugi_action = state.to_ugi_name(action)
-            self.__ugi_client.go_manual(ugi_action)
+            new_state = state.take_action(action)
 
-            if time_limit is not None:
-                (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+            if new_state.is_terminal():
 
-            elif max_depth is not None:
-                (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+                rewards = new_state.get_rewards()
 
-            # extract "score" from "infos"
-            # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
-            last_depth = None
+                if rewards[rules.Player.T.WHITE] == rewards[rules.Player.T.BLACK]:
+                    score = DRAW_SCORE
 
-            depth_is_next = False
-            score_is_next = False
-            for info in infos:
-                for token in info:
+                elif rewards[player] > rewards[other_player]:
+                    score = WIN_SCORE
 
-                    if depth_is_next:
-                        depth = float(token)
-                        depth_is_next = False
-                        if last_depth is None:
-                            last_depth = depth
-                        else:
-                            assert depth > last_depth
+                else:
+                    score = LOSS_SCORE
+
+                evaluated_actions[str(action)] = score
+
+            else:
+                self.__ugi_client.position_fen(fen=fen)
+                ugi_action = state.to_ugi_name(action)
+                self.__ugi_client.go_manual(ugi_action)
+
+                if time_limit is not None:
+                    (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+
+                elif max_depth is not None:
+                    (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+
+                # extract "score" from "infos"
+                # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
+                last_depth = None
+
+                depth_is_next = False
+                score_is_next = False
+                for info in infos:
+                    for token in info:
+
+                        if depth_is_next:
+                            depth = float(token)
+                            depth_is_next = False
+                            if last_depth is None:
+                                last_depth = depth
+                            else:
+                                assert depth > last_depth
 
 
-                    elif score_is_next:
-                        score = float(token)
-                        score_is_next = False
+                        elif score_is_next:
+                            score = float(token)
+                            score_is_next = False
 
-                    if token == 'depth':
-                        depth_is_next = True
+                        if token == 'depth':
+                            depth_is_next = True
 
-                    elif token == 'score':
-                        score_is_next = True
+                        elif token == 'score':
+                            score_is_next = True
 
-            evaluated_actions[str(action)] = -score
+                evaluated_actions[str(action)] = -score
 
         if not self.__ugi_permanent:
             self.__ugi_client.quit()
