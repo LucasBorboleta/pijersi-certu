@@ -2164,6 +2164,11 @@ class GameGui(ttk.Frame):
 
             self.__button_review.configure(text="Stop")
 
+            # log the names of the reviewer engines
+            print()
+            print(f"Reviewing the game using 'sup' {self.__review_sup_searcher.get_name()} and 'inf' {self.__review_inf_searcher.get_name()} searchers")
+
+
             # review the first not yet review action
             self.__review_running = True
             self.__command_review_update()
@@ -3808,12 +3813,12 @@ def make_review_searchers():
 
     if os.path.isfile(_NATSEL_EXECUTABLE_PATH):
         ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH)
-        review_sup_searcher = NatselSearcher(name="natsel-depth-4-sup", ugi_client=ugi_client, max_depth=4)
-        review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-2-inf", max_depth=2)
+        review_sup_searcher = NatselSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
+        review_inf_searcher = rules.MinimaxSearcher("cmalo-2", max_depth=2)
 
     else:
-        review_sup_searcher = rules.MinimaxSearcher("cmalo-depth-3-sup", max_depth=3)
-        review_inf_searcher = rules.MinimaxSearcher("cmalo-depth-1-inf", max_depth=1)
+        review_sup_searcher = rules.MinimaxSearcher("cmalo-3-sup", max_depth=3)
+        review_inf_searcher = rules.MinimaxSearcher("cmalo-1-inf", max_depth=1)
 
     return (review_sup_searcher, review_inf_searcher)
 

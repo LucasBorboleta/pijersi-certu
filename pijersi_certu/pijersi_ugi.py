@@ -886,7 +886,9 @@ class NatselSearcher(UgiSearcher):
         LOSS_SCORE = -WIN_SCORE
         DRAW_SCORE = WIN_SCORE/10
 
-        for action in state.get_actions():
+        actions = state.get_actions()
+
+        for action in actions:
 
             new_state = state.take_action(action)
 
@@ -911,15 +913,17 @@ class NatselSearcher(UgiSearcher):
                 self.__ugi_client.go_manual(ugi_action)
 
                 if time_limit is not None:
-                    (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000))
+                    # >> (.../len(actions) because one iterates on actions
+                    (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(round(time_limit*1_000/len(actions)))
 
                 elif max_depth is not None:
-                    (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+                    # >> (max_depth - 1) because one iterates on actions
+                    (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth - 1)
 
                 # extract "score" from "infos"
                 # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
+                score = None
                 last_depth = None
-
                 depth_is_next = False
                 score_is_next = False
                 for info in infos:
@@ -944,6 +948,7 @@ class NatselSearcher(UgiSearcher):
                         elif token == 'score':
                             score_is_next = True
 
+                assert score is not None
                 evaluated_actions[str(action)] = -score
 
         if not self.__ugi_permanent:
