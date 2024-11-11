@@ -1,7 +1,6 @@
 # TODO
 The foreseen tasks on pijersi-certu are as follows:
 
-- [x] Add a clock to play using the clock rules like in chess.
 - [ ] Provide user of the GUI with "**game review**" based on an evaluation of a position after each action: 
   - Such review is performed by a reference AI.
   - The analysis is returned for the pijersi-state corresponding to the best-action found by the AI.
