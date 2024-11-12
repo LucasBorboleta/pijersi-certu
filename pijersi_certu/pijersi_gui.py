@@ -2287,14 +2287,21 @@ class GameGui(ttk.Frame):
 
         evaluated_actions = self.__review_searcher.evaluate_actions(pijersi_state)
 
+        evaluated_actions = {eval_action_name.replace('!', ''): eval_action_value
+                                   for (eval_action_name, eval_action_value) in evaluated_actions.items()}
+
         # for (action, score) in sorted(evaluated_actions.items(), key=lambda kv :kv[1]):
         #     print(f"action {str(action)}: score {score} ; asinh(score) = {math.asinh(score)}")
 
-        re_evaluated_actions = {eval_action_name.replace('!', ''): math.asinh(eval_action_value)
+        re_evaluated_actions = {eval_action_name: math.asinh(eval_action_value)
                                    for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
         action_simple_name = action_name.replace('!', '')
-        action_score = re_evaluated_actions[action_simple_name]
+
+        if False:
+            action_score = evaluated_actions[action_simple_name]
+        else:
+            action_score = re_evaluated_actions[action_simple_name]
 
         return action_score
 
