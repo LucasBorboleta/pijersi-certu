@@ -1,0 +1,18 @@
+   g6:w f1:R
+   c6:r b7:S
+   a1:W
+
+   1 a1-a2                2 g6-f7           
+   3 a2-a1                4 f7-g6           
+   5 a1-a2                6 g6-f7           
+   7 a2-a1                8 f7-g6           
+   9 a1-a2               10 g6-f7           
+  11 a2-a1               12 f7-g6           
+  13 a1-a2               14 g6-f7           
+  15 a2-a1               16 f7-g6           
+  17 a1-a2               18 g6-f7           
+  19 a2-a1
+
+# black turn : 
+# - If black plays c6-b7! then white plays f1-g1 and wins.
+# - If black does not capture in b7 then the credit does reach zero and the game is a draw.

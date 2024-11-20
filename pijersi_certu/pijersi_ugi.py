@@ -830,7 +830,7 @@ class UgiSearcher(rules.Searcher):
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
 
-        if False:
+        if True:
             print("debug: fen position sent to UGI agent:")
             print(fen)
 
@@ -843,8 +843,7 @@ class UgiSearcher(rules.Searcher):
             (ugi_action, _) = self.__ugi_client.go_depth_and_wait(self.__max_depth)
 
         if False:
-            print("debug: answer of UGI agent:")
-            print(ugi_action)
+            log(f"debug: answer of UGI agent ; action: {ugi_action}")
 
         action = state.get_action_by_ugi_name(ugi_action)
 
@@ -934,16 +933,22 @@ class NatselSearcher(UgiSearcher):
     def __evaluate_draw_score(self) -> float:
         if self.__draw_score is None:
             board_codes = rules.PijersiState.empty_board_codes()
-            rules.PijersiState.set_cube_from_names(board_codes, hex_name='a1', cube_name='R')
-            rules.PijersiState.set_cube_from_names(board_codes, hex_name='g6', cube_name='r')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='f1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='c6', cube_name='r')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='b7', cube_name='S')
 
             state = rules.PijersiState(board_codes=board_codes,
                                        setup=rules.Setup.T.GIVEN,
-                                       player=rules.Player.T.WHITE,
+                                       player=rules.Player.T.BLACK,
                                        credit=1,
                                        turn=10)
 
             self.__draw_score = self.__evaluate_state_score(state)
+
+            #TODO: reove this patch when Natural-Seection will be fixed
+            if self.__draw_score == self.__evaluate_win_score():
+                self.__draw_score = self.__evaluate_win_score()/10
+
         return self.__draw_score
 
 
@@ -956,13 +961,18 @@ class NatselSearcher(UgiSearcher):
         self.__ugi_client.position_fen(fen=fen)
 
         if time_limit is not None:
-            (_, infos) = self.__ugi_client.go_movetime_and_wait(time_limit*1_000)
+            (best_ugi_action, infos) = self.__ugi_client.go_movetime_and_wait(time_limit*1_000)
 
         elif max_depth is not None:
-            (_, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+            (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
 
         score = self.__extract_score(infos)
         assert score is not None
+
+        if False:
+            best_action = state.get_action_by_ugi_name(best_ugi_action)
+            log(f"DEBUG: fen={fen}")
+            log(f"DEBUG: best_ugi_action={best_ugi_action} ; best_action={best_action} ; score = {score} ")
 
         return score
 
