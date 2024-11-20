@@ -856,7 +856,7 @@ class UgiSearcher(rules.Searcher):
 
 class NatselSearcher(UgiSearcher):
 
-    __slots__ = ('__ugi_client', '__ugi_permanent')
+    __slots__ = ('__ugi_client', '__ugi_permanent', '__win_score', '__loss_score', '__draw_score')
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
@@ -864,6 +864,107 @@ class NatselSearcher(UgiSearcher):
 
         self.__ugi_client = self.get_ugi_client()
         self.__ugi_permanent = self.__ugi_client.is_permanent()
+
+        self.__win_score = None
+        self.__loss_score = None
+        self.__draw_score = None
+
+
+    def __extract_score(self, infos: List[List[str]]) -> Optional[float]:
+        """extract "score" from "infos" """
+        score = None
+        last_depth = None
+        depth_is_next = False
+        score_is_next = False
+        for info in infos:
+            # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
+            for token in info:
+
+                if depth_is_next:
+                    depth = float(token)
+                    depth_is_next = False
+                    if last_depth is None:
+                        last_depth = depth
+                    else:
+                        assert depth > last_depth
+
+                elif score_is_next:
+                    score = float(token)
+                    score_is_next = False
+
+                if token == 'depth':
+                    depth_is_next = True
+
+                elif token == 'score':
+                    score_is_next = True
+        return score
+
+
+    def __evaluate_win_score(self) -> float:
+        if self.__win_score is None:
+            board_codes = rules.PijersiState.empty_board_codes()
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='f1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='g6', cube_name='s')
+
+            state = rules.PijersiState(board_codes=board_codes,
+                                       setup=rules.Setup.T.GIVEN,
+                                       player=rules.Player.T.WHITE,
+                                       turn=10)
+
+            self.__win_score = self.__evaluate_state_score(state)
+
+        return self.__win_score
+
+
+    def __evaluate_loss_score(self) -> float:
+        if self.__loss_score is None:
+            board_codes = rules.PijersiState.empty_board_codes()
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='f1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='g6', cube_name='s')
+
+            state = rules.PijersiState(board_codes=board_codes,
+                                       setup=rules.Setup.T.GIVEN,
+                                       player=rules.Player.T.BLACK,
+                                       turn=10)
+
+            self.__loss_score = self.__evaluate_state_score(state)
+        return self.__loss_score
+
+
+    def __evaluate_draw_score(self) -> float:
+        if self.__draw_score is None:
+            board_codes = rules.PijersiState.empty_board_codes()
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='a1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='g6', cube_name='r')
+
+            state = rules.PijersiState(board_codes=board_codes,
+                                       setup=rules.Setup.T.GIVEN,
+                                       player=rules.Player.T.WHITE,
+                                       credit=1,
+                                       turn=10)
+
+            self.__draw_score = self.__evaluate_state_score(state)
+        return self.__draw_score
+
+
+    def __evaluate_state_score(self, state: rules.PijersiState()) -> float:
+
+        time_limit = self.get_time_limit()
+        max_depth = self.get_max_depth()
+
+        fen = state.get_ugi_fen()
+        self.__ugi_client.position_fen(fen=fen)
+
+        if time_limit is not None:
+            (_, infos) = self.__ugi_client.go_movetime_and_wait(time_limit*1_000)
+
+        elif max_depth is not None:
+            (_, infos) = self.__ugi_client.go_depth_and_wait(max_depth)
+
+        score = self.__extract_score(infos)
+        assert score is not None
+
+        return score
 
 
     def evaluate_actions(self, state: rules.PijersiState) -> Mapping[rules.PijersiAction, float]:
@@ -875,16 +976,16 @@ class NatselSearcher(UgiSearcher):
         if not self.__ugi_client.is_prepared():
             self.__ugi_client.prepare()
 
+        win_score = self.__evaluate_win_score()
+        loss_score = self.__evaluate_loss_score()
+        draw_score = self.__evaluate_draw_score()
+
         time_limit = self.get_time_limit()
         max_depth = self.get_max_depth()
 
         fen = state.get_ugi_fen()
         player = state.get_current_player()
         other_player = state.get_other_player()
-
-        WIN_SCORE = 1.e8
-        LOSS_SCORE = -WIN_SCORE
-        DRAW_SCORE = WIN_SCORE/10
 
         actions = state.get_actions()
 
@@ -897,13 +998,13 @@ class NatselSearcher(UgiSearcher):
                 rewards = new_state.get_rewards()
 
                 if rewards[rules.Player.T.WHITE] == rewards[rules.Player.T.BLACK]:
-                    score = DRAW_SCORE
+                    score = draw_score
 
                 elif rewards[player] > rewards[other_player]:
-                    score = WIN_SCORE
+                    score = win_score
 
                 else:
-                    score = LOSS_SCORE
+                    score = loss_score
 
                 evaluated_actions[str(action)] = score
 
@@ -920,34 +1021,7 @@ class NatselSearcher(UgiSearcher):
                     # >> (max_depth - 1) because one iterates on actions
                     (best_ugi_action, infos) = self.__ugi_client.go_depth_and_wait(max_depth - 1)
 
-                # extract "score" from "infos"
-                # example: ['info', 'book', 'depth', '2', 'time', '0', 'score', '-524288', 'pv', 'g6g5']
-                score = None
-                last_depth = None
-                depth_is_next = False
-                score_is_next = False
-                for info in infos:
-                    for token in info:
-
-                        if depth_is_next:
-                            depth = float(token)
-                            depth_is_next = False
-                            if last_depth is None:
-                                last_depth = depth
-                            else:
-                                assert depth > last_depth
-
-
-                        elif score_is_next:
-                            score = float(token)
-                            score_is_next = False
-
-                        if token == 'depth':
-                            depth_is_next = True
-
-                        elif token == 'score':
-                            score_is_next = True
-
+                score = self.__extract_score(infos)
                 assert score is not None
                 evaluated_actions[str(action)] = -score
 
