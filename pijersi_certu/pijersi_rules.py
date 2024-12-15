@@ -2293,7 +2293,8 @@ class Searcher():
 
 
     def compute_dynamic_time_limit(self, player_clock: float)-> Optional[float]:
-        assert player_clock >= 0
+        if player_clock < 0:
+            player_clock = 0
 
         if self.__clock_fraction is None:
             self.__dynamic_time_limit =  self.__time_limit

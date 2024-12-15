@@ -830,7 +830,7 @@ class UgiSearcher(rules.Searcher):
         fen = state.get_ugi_fen()
         self.__ugi_client.position_fen(fen=fen)
 
-        if True:
+        if False:
             print("debug: fen position sent to UGI agent:")
             print(fen)
 
