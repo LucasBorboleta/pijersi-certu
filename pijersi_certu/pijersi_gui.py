@@ -2290,18 +2290,23 @@ class GameGui(ttk.Frame):
         evaluated_actions = {eval_action_name.replace('!', ''): eval_action_value
                                    for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
-        # for (action, score) in sorted(evaluated_actions.items(), key=lambda kv :kv[1]):
-        #     print(f"action {str(action)}: score {score} ; asinh(score) = {math.asinh(score)}")
+        if False:
+            for (action, score) in sorted(evaluated_actions.items(), key=lambda kv :kv[1]):
+                print(f"action {str(action)}: score {score} ; asinh(score) = {math.asinh(score)}")
 
-        re_evaluated_actions = {eval_action_name: math.asinh(eval_action_value)
+        if True:
+            evaluated_actions = {eval_action_name: math.asinh(eval_action_value)
                                    for (eval_action_name, eval_action_value) in evaluated_actions.items()}
+            
+        best_score = max(evaluated_actions.values())
+        best_actions = [eval_action_name for (eval_action_name, eval_action_value) in evaluated_actions.items() if eval_action_value == best_score]
+        best_actions_count_max = 5
+        best_actions_sample = ",".join(best_actions[:min(best_actions_count_max, len(best_actions))])
+        print(f"best_score: {best_score: .1f} ; best_actions ({len(best_actions)}): {best_actions_sample}" + 
+              ("..." if len(best_actions) > best_actions_count_max else ""))
 
         action_simple_name = action_name.replace('!', '')
-
-        if False:
-            action_score = evaluated_actions[action_simple_name]
-        else:
-            action_score = re_evaluated_actions[action_simple_name]
+        action_score = evaluated_actions[action_simple_name]
 
         return action_score
 
