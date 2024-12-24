@@ -2148,7 +2148,7 @@ class GameGui(ttk.Frame):
 
             # log the names of the reviewer engines
             print()
-            print(f"Reviewing the game using {self.__review_searcher.get_name()} searcher")
+            print(f"Reviewing the game using {self.__review_searcher.get_name()} searcher ...")
 
             # review the first not yet review action
             self.__review_running = True
@@ -2186,8 +2186,19 @@ class GameGui(ttk.Frame):
             self.__variable_log.set(f"action {self.__review_action_index} review ...")
             self.__label_log.update()
 
-            action_score = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+            (action_score, best_score, best_actions) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+
+            best_action_sample_count = 3
+
+            advice = ( "best score " + str(f"{best_score:.1f}").ljust(5) + " for " +
+                        ",".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
+                        (" ..." if best_action_sample_count < len(best_actions) else ""))
+
+            print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
+                  " review: score " + str(f"{action_score:.1f}").ljust(5) + " / " + advice)
+
             self.__turn_reviews[self.__review_action_index] = action_score
+
 
             # Show the score of each reviewed action
 
@@ -2228,7 +2239,7 @@ class GameGui(ttk.Frame):
             if self.__review_running:
                 self.__review_timer_id = self.__root.after(self.__review_timer_delay, self.__command_review_update)
 
-        elif self.__review_action_index is  None:
+        elif self.__review_action_index is None:
 
             # compute and show simple statistics
             white_reviews = self.__turn_reviews[1::2]
@@ -2257,6 +2268,7 @@ class GameGui(ttk.Frame):
             self.__review_running = False
 
         if not self.__review_running:
+            print(f"Reviewing the game using {self.__review_searcher.get_name()} searcher done")
 
             # Enable widgets
 
@@ -2297,18 +2309,14 @@ class GameGui(ttk.Frame):
         if True:
             evaluated_actions = {eval_action_name: math.asinh(eval_action_value)
                                    for (eval_action_name, eval_action_value) in evaluated_actions.items()}
-            
+
         best_score = max(evaluated_actions.values())
         best_actions = [eval_action_name for (eval_action_name, eval_action_value) in evaluated_actions.items() if eval_action_value == best_score]
-        best_actions_count_max = 5
-        best_actions_sample = ",".join(best_actions[:min(best_actions_count_max, len(best_actions))])
-        print(f"best_score: {best_score: .1f} ; best_actions ({len(best_actions)}): {best_actions_sample}" + 
-              ("..." if len(best_actions) > best_actions_count_max else ""))
 
         action_simple_name = action_name.replace('!', '')
         action_score = evaluated_actions[action_simple_name]
 
-        return action_score
+        return (action_score, best_score, best_actions)
 
 
     def __command_next_turn(self):
