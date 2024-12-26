@@ -1423,12 +1423,8 @@ class GameGui(ttk.Frame):
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
-                        if action_item == "??.?":
-                            action_score = None
-                            actions_item_index += 1
-
-                        elif re.match("[+-][0-9]*\.[0-9]+", action_item):
-                            action_score = float(action_item[:2])
+                        if re.match("[+-][0-9]+", action_item):
+                            action_score = int(action_item[:2])
                             actions_item_index += 1
 
                         elif re.match("[+-]\S*", action_item):
@@ -1512,7 +1508,7 @@ class GameGui(ttk.Frame):
                         action_score_text = ""
 
                     else:
-                        action_score_text = f"{action_score:+.1f}"
+                        action_score_text = f"{action_score:+}"
 
                     notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                     if turn % 2 == 0:
@@ -2019,7 +2015,7 @@ class GameGui(ttk.Frame):
                 action_score_text = ""
 
             else:
-                action_score_text = f"{action_score:+.1f}"
+                action_score_text = f"{action_score}"
 
             notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
             if turn % 2 == 0:
@@ -2188,17 +2184,16 @@ class GameGui(ttk.Frame):
 
             (action_score, best_score, best_actions) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
 
-            best_action_sample_count = 3
-
-            advice = ( "best score " + str(f"{best_score:.1f}").ljust(5) + " for " +
-                        ",".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
-                        (" ..." if best_action_sample_count < len(best_actions) else ""))
-
-            print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
-                  " review: score " + str(f"{action_score:.1f}").ljust(5) + " / " + advice)
-
             self.__turn_reviews[self.__review_action_index] = action_score
 
+            best_action_sample_count = 3
+
+            print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
+                  " score " + str(f"{action_score:+}").ljust(5) +
+                  ("*" if action_score == best_score else " ") +
+                  " / best score " + str(f"{best_score:+}").ljust(5) +
+                  " for " + ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
+                  (" ..." if best_action_sample_count < len(best_actions) else ""))
 
             # Show the score of each reviewed action
 
@@ -2222,7 +2217,7 @@ class GameGui(ttk.Frame):
                     action_score_text = ""
 
                 else:
-                    action_score_text = f"{action_score:+.1f}"
+                    action_score_text = f"{action_score:+}"
 
                 notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
                 if turn % 2 == 0:
@@ -2241,29 +2236,10 @@ class GameGui(ttk.Frame):
 
         elif self.__review_action_index is None:
 
-            # compute and show simple statistics
-            white_reviews = self.__turn_reviews[1::2]
-            black_reviews = self.__turn_reviews[2::2]
-
-            white_scores = [score for score in white_reviews if score is not None]
-            black_scores = [score for score in black_reviews if score is not None]
-
-            if len(white_scores) != 0:
-                white_score_ave = sum(white_scores)/len(white_scores)
-                white_score_ave_txt = f"{white_score_ave:+.1f}"
-            else:
-                white_score_ave_txt = "??.?"
-
-            if len(black_scores) != 0:
-                black_score_ave = sum(black_scores)/len(black_scores)
-                black_score_ave_txt = f"{black_score_ave:+.1f}"
-            else:
-                black_score_ave_txt = "??.?"
-
             if self.__review_running:
-                self.__variable_log.set(f"review completed ; white  average={white_score_ave_txt}  /  black  average={black_score_ave_txt}")
+                self.__variable_log.set("review completed")
             else:
-                self.__variable_log.set(f"review stopped ; white  average={white_score_ave_txt}  /  black  average={black_score_ave_txt}")
+                self.__variable_log.set("review stopped")
 
             self.__review_running = False
 
@@ -2300,15 +2276,7 @@ class GameGui(ttk.Frame):
         evaluated_actions = self.__review_searcher.evaluate_actions(pijersi_state)
 
         evaluated_actions = {eval_action_name.replace('!', ''): eval_action_value
-                                   for (eval_action_name, eval_action_value) in evaluated_actions.items()}
-
-        if False:
-            for (action, score) in sorted(evaluated_actions.items(), key=lambda kv :kv[1]):
-                print(f"action {str(action)}: score {score} ; asinh(score) = {math.asinh(score)}")
-
-        if True:
-            evaluated_actions = {eval_action_name: math.asinh(eval_action_value)
-                                   for (eval_action_name, eval_action_value) in evaluated_actions.items()}
+                             for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
         best_score = max(evaluated_actions.values())
         best_actions = [eval_action_name for (eval_action_name, eval_action_value) in evaluated_actions.items() if eval_action_value == best_score]

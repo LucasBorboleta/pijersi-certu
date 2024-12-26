@@ -16,6 +16,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
 """
 
+import math
 import os
 from subprocess import PIPE
 from subprocess import Popen
@@ -1037,6 +1038,9 @@ class NatselSearcher(UgiSearcher):
 
         if not self.__ugi_permanent:
             self.__ugi_client.quit()
+
+        evaluated_actions = {eval_action_name: round(math.asinh(eval_action_value))
+                             for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
         return evaluated_actions
 
