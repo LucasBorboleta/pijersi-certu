@@ -1420,21 +1420,32 @@ class GameGui(ttk.Frame):
 
                     actions_item_index += 1
                     action_score = None
+                    is_best_score = False
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
-                        if re.match("[+-][0-9]+", action_item):
-                            action_score = int(action_item[:2])
+                        if re.match("^[+-][0-9]+\*$", action_item):
+                            action_score = int(action_item[:-1])
+                            is_best_score = True
                             actions_item_index += 1
 
-                        elif re.match("[+-]\S*", action_item):
+                        elif re.match("^[+-][0-9]+$", action_item):
+                            action_score = int(action_item)
+                            is_best_score = False
+                            actions_item_index += 1
+
+                        elif re.match("^[+-]\S*$", action_item):
                             validated_edited_actions = False
                             self.__variable_log.set(f"Error: invalid score syntax '{action_item}' at turn '{action_index + 1}'")
                             break
 
                     action_index += 1
 
-                    edited_actions.append((action, action_score))
+                    if action_score is not None:
+                        edited_actions.append((action, (action_score, is_best_score)))
+                    else:
+                        edited_actions.append((action, None))
+
 
             # interpret actions
             if validated_edited_actions:
@@ -1502,15 +1513,15 @@ class GameGui(ttk.Frame):
 
                     action_name = str(self.__game.get_last_action())
 
-                    action_score = self.__turn_reviews[turn]
 
-                    if action_score is None:
+                    if self.__turn_reviews[turn] is None:
                         action_score_text = ""
 
                     else:
-                        action_score_text = f"{action_score:+}"
+                        (action_score, is_best_score) = self.__turn_reviews[turn]
+                        action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
 
-                    notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
+                    notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
                     if turn % 2 == 0:
                         notation = ' '*2 + notation + "\n"
 
@@ -2184,17 +2195,16 @@ class GameGui(ttk.Frame):
 
             (action_score, best_score, best_actions) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
 
-            self.__turn_reviews[self.__review_action_index] = action_score
+            self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score)
 
-            best_action_sample_count = 3
+            best_action_sample_count = 6
 
             if self.__review_action_index % 2 != 0:
                 print()
 
             print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
-                  " score " + str(f"{action_score:+}").ljust(5) +
-                  ("*" if action_score == best_score else " ") +
-                  " / best score " + str(f"{best_score:+}").ljust(5) +
+                  " score " + (str(f"{action_score:+}") + ("*" if action_score == best_score else " ")).ljust(4) +
+                  " / best score " + str(f"{best_score:+}").ljust(3) +
                   " for " + ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
                   (" ..." if best_action_sample_count < len(best_actions) else ""))
 
@@ -2214,15 +2224,15 @@ class GameGui(ttk.Frame):
 
                 action_name = str(action)
 
-                action_score = self.__turn_reviews[turn]
 
-                if action_score is None:
+                if self.__turn_reviews[turn] is None:
                     action_score_text = ""
 
                 else:
-                    action_score_text = f"{action_score:+}"
+                    (action_score, is_best_score) = self.__turn_reviews[turn]
+                    action_score_text = f"{action_score:+}" + ("*" if is_best_score else " ")
 
-                notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
+                notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
 
@@ -2240,7 +2250,7 @@ class GameGui(ttk.Frame):
         elif self.__review_action_index is None:
 
             print()
-            
+
             if self.__review_running:
                 self.__variable_log.set("review completed ; see hints in the terminal window")
             else:
