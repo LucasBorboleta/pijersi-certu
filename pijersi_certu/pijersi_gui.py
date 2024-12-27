@@ -2188,6 +2188,9 @@ class GameGui(ttk.Frame):
 
             best_action_sample_count = 3
 
+            if self.__review_action_index % 2 != 0:
+                print()
+
             print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
                   " score " + str(f"{action_score:+}").ljust(5) +
                   ("*" if action_score == best_score else " ") +
@@ -2236,10 +2239,12 @@ class GameGui(ttk.Frame):
 
         elif self.__review_action_index is None:
 
+            print()
+            
             if self.__review_running:
-                self.__variable_log.set("review completed")
+                self.__variable_log.set("review completed ; see hints in the terminal window")
             else:
-                self.__variable_log.set("review stopped")
+                self.__variable_log.set("review stopped ; see hints in the terminal window")
 
             self.__review_running = False
 
