@@ -1513,7 +1513,6 @@ class GameGui(ttk.Frame):
 
                     action_name = str(self.__game.get_last_action())
 
-
                     if self.__turn_reviews[turn] is None:
                         action_score_text = ""
 
@@ -2020,15 +2019,14 @@ class GameGui(ttk.Frame):
 
             action_name = str(self.__game.get_last_action())
 
-            action_score = self.__turn_reviews[turn]
-
-            if action_score is None:
+            if self.__turn_reviews[turn] is None:
                 action_score_text = ""
 
             else:
-                action_score_text = f"{action_score}"
+                (action_score, is_best_score) = self.__turn_reviews[turn]
+                action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
 
-            notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(5)
+            notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
             if turn % 2 == 0:
                 notation = ' '*2 + notation + "\n"
 
