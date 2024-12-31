@@ -1245,6 +1245,34 @@ class GameGui(ttk.Frame):
 
         self.__variable_turn.set(turn_index)
 
+
+        if turn_index == 0:
+            self.__variable_log.set("")
+            self.__label_log.update()
+
+        elif self.__turn_reviews[turn_index] is None:
+            self.__variable_log.set(f"action {turn_index} {self.__turn_actions[turn_index]}")
+            self.__label_log.update()
+
+        else:
+            (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[turn_index]
+            (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[turn_index]
+
+            if best_score is None or best_actions is None:
+                review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else ""))
+
+            else:
+                best_action_sample_count = 5
+
+                review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else "") +
+                               f" / best score {best_score:+} for " +
+                               ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
+                               (" ..." if best_action_sample_count < len(best_actions) else ""))
+
+            self.__variable_log.set(review_text)
+            self.__label_log.update()
+
+
         if turn_index != len(self.__turn_states) - 1 or not self.__game_terminated:
             self.__button_resume.config(state="enabled")
         else:
@@ -1442,7 +1470,7 @@ class GameGui(ttk.Frame):
                     action_index += 1
 
                     if action_score is not None:
-                        edited_actions.append((action, (action_score, is_best_score)))
+                        edited_actions.append((action, (action_score, is_best_score, None, None)))
                     else:
                         edited_actions.append((action, None))
 
@@ -1475,7 +1503,7 @@ class GameGui(ttk.Frame):
                 self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
-                for (action_index, (action, action_score)) in enumerate(edited_actions):
+                for (action_index, (action, action_review)) in enumerate(edited_actions):
 
                     if not self.__game.has_next_turn():
                         validated_edited_actions = False
@@ -1502,7 +1530,7 @@ class GameGui(ttk.Frame):
 
                     self.__turn_states.append(self.__game.get_state())
                     self.__turn_actions.append(self.__game.get_last_action())
-                    self.__turn_reviews.append(action_score)
+                    self.__turn_reviews.append(action_review)
 
                     self.__variable_summary.set(self.__game.get_summary())
                     self.__variable_log.set(self.__game.get_log())
@@ -1517,7 +1545,7 @@ class GameGui(ttk.Frame):
                         action_score_text = ""
 
                     else:
-                        (action_score, is_best_score) = self.__turn_reviews[turn]
+                        (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
                         action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
 
                     notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
@@ -2023,7 +2051,7 @@ class GameGui(ttk.Frame):
                 action_score_text = ""
 
             else:
-                (action_score, is_best_score) = self.__turn_reviews[turn]
+                (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
                 action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
 
             notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
@@ -2181,11 +2209,16 @@ class GameGui(ttk.Frame):
                 if action_index == 0:
                     continue
 
-                if self.__turn_reviews[action_index] is not None:
-                    continue
+                if self.__turn_reviews[action_index] is None:
+                    self.__review_action_index = action_index
+                    break
 
-                self.__review_action_index = action_index
-                break
+                else:
+                    (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[action_index]
+                    if action_score is None or is_best_score is None or best_score is None or best_actions is None:
+                        self.__review_action_index = action_index
+                        break
+
 
         if self.__review_action_index is not None:
 
@@ -2194,7 +2227,7 @@ class GameGui(ttk.Frame):
 
             (action_score, best_score, best_actions) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
 
-            self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score)
+            self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score, best_score, best_actions)
 
             best_action_sample_count = 10
 
@@ -2228,7 +2261,7 @@ class GameGui(ttk.Frame):
                     action_score_text = ""
 
                 else:
-                    (action_score, is_best_score) = self.__turn_reviews[turn]
+                    (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
                     action_score_text = f"{action_score:+}" + ("*" if is_best_score else " ")
 
                 notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
@@ -2251,9 +2284,9 @@ class GameGui(ttk.Frame):
             print()
 
             if self.__review_running:
-                self.__variable_log.set("review completed ; see hints in the terminal window")
+                self.__variable_log.set("review completed ; explore each turn or see hints in the terminal window")
             else:
-                self.__variable_log.set("review stopped ; see hints in the terminal window")
+                self.__variable_log.set("review stopped ; explore each turn or see hints in the terminal window")
 
             self.__review_running = False
 
