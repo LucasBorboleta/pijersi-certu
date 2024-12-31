@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 import math
 import os
+import random
 from subprocess import PIPE
 from subprocess import Popen
 import sys
@@ -856,7 +857,7 @@ class UgiSearcher(rules.Searcher):
 
 class NatselSearcher(UgiSearcher):
 
-    __slots__ = ('__ugi_client', '__ugi_permanent', '__win_score', '__loss_score', '__draw_score', '__small_score', '__a', '__b')
+    __slots__ = ('__ugi_client', '__ugi_permanent', '__win_score', '__loss_score', '__draw_score', '__small_score', '__a1', '__a2', '__b1', '__b2')
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
@@ -870,89 +871,50 @@ class NatselSearcher(UgiSearcher):
         self.__draw_score = None
         self.__small_score = None
 
-        self.__a = None
-        self.__b = None
+        self.__a1 = None
+        self.__a2 = None
+        self.__b1 = None
+        self.__b2 = None
+
 
 
     def __init_transform_score(self):
-        if self.__a is None or self.__b is None:
+        if self.__a1 is None or self.__a2 is None or self.__b1 is None or self.__b2 is None:
             win_score = self.__evaluate_win_score()
             small_score = self.__evaluate_small_score()
 
             win_score_target = 10
             small_score_target = 1
 
-            print(f"DEBUG: win_score = {win_score} ; small_score = {small_score}")
-            print(f"DEBUG: win_score_target = {win_score_target} ; small_score_target = {small_score_target}")
+            self.__b1 = 1
+            self.__b2 = 0.10
+            assert  self.__b1 > 0
+            assert  self.__b2 > 0
 
+            # equation system to be solved in self.__a1 and self.__a2
+            #   win_score_target = self.__a1*math.asinh(self.__b1*win_score) + self.__a2*math.asinh(self.__b2*win_score)
+            #   small_score_target = self.__a1*math.asinh(self.__b1*small_score) + self.__a2*math.asinh(self.__b2*small_score)
 
-            def f(b):
-                return math.asinh(b*win_score)/math.asinh(b*small_score)
+            w1 = math.asinh(self.__b1*win_score)
+            w2 = math.asinh(self.__b2*win_score)
 
-            r_target = win_score_target/small_score_target
+            s1 = math.asinh(self.__b1*small_score)
+            s2 = math.asinh(self.__b2*small_score)
 
-            iter_max = 100
+            self.__a1 = (s2*win_score_target - w2*small_score_target)/(w1*s2 - w2*s1)
+            self.__a2 = (w1*small_score_target - s1*win_score_target)/(w1*s2 - w2*s1)
 
-            b_guess = 1
-
-            b_inf = b_guess
-            r_inf = f(b_inf)
-
-            iter_index = 0
-            while r_inf > r_target and iter_index < iter_max:
-                iter_index += 1
-                b_inf *= 1.10
-                r_inf = f(b_inf)
-
-            b_sup = b_guess
-            r_sup = f(b_sup)
-            iter_index = 0
-            while r_sup < r_target and iter_index < iter_max:
-                iter_index += 1
-                b_sup *= 0.90
-                r_sup = f(b_sup)
-
-
-            assert r_inf < r_target
-            assert r_sup > r_target
-
-            r = (r_inf + r_sup)/2
-            b = f(r)
-
-            iter_index = 0
-            while math.fabs(r - r_target) > 1.e-6 and iter_index < iter_max:
-                iter_index += 1
-                if r < r_target:
-                    r_inf = r
-                else:
-                    r_sup = r
-
-                r = (r_inf + r_sup)/2
-                b = f(r)
-
-                print(f"DEBUG: b = {b} ; r = {r} ; r_target = {r_target}")
-
-            self.__b = b
-            self.__a = win_score_target/math.asinh(b*win_score)
-
-            print(f"DEBUG: self.__b = {self.__b}")
-            print(f"DEBUG: self.__a = {self.__a}")
-
-
-            print(f"DEBUG: self.__transform_score_as_float(small_score) = {self.__transform_score_as_float(small_score)}")
-            print(f"DEBUG: self.__transform_score_as_float(win_score) = {self.__transform_score_as_float(win_score)}")
-
-            print(f"DEBUG: self.__transform_score_as_int(small_score) = {self.__transform_score_as_int(small_score)}")
-            print(f"DEBUG: self.__transform_score_as_int(win_score) = {self.__transform_score_as_int(win_score)}")
-
+            # check that the transformation is increasing
+            assert self.__a1 > 0
+            assert self.__a2 >= 0
 
 
     def __transform_score_as_float(self, score):
-        return self.__a*math.asinh(self.__b*score)
+        return self.__a1*math.asinh(self.__b1*score) + self.__a2*math.asinh(self.__b2*score)
 
 
     def __transform_score_as_int(self, score):
-        return int(self.__transform_score_as_float(score))
+        return int(round(self.__transform_score_as_float(score), ndigits=0))
 
 
     def __extract_score(self, infos: List[List[str]]) -> Optional[float]:
