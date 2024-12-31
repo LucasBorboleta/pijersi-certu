@@ -856,7 +856,7 @@ class UgiSearcher(rules.Searcher):
 
 class NatselSearcher(UgiSearcher):
 
-    __slots__ = ('__ugi_client', '__ugi_permanent', '__win_score', '__loss_score', '__draw_score')
+    __slots__ = ('__ugi_client', '__ugi_permanent', '__win_score', '__loss_score', '__draw_score', '__small_score', '__a', '__b')
 
 
     def __init__(self, name: str, ugi_client: str, max_depth: int=None, time_limit: Optional[float]=None, clock_fraction: Optional[float]=None):
@@ -868,6 +868,91 @@ class NatselSearcher(UgiSearcher):
         self.__win_score = None
         self.__loss_score = None
         self.__draw_score = None
+        self.__small_score = None
+
+        self.__a = None
+        self.__b = None
+
+
+    def __init_transform_score(self):
+        if self.__a is None or self.__b is None:
+            win_score = self.__evaluate_win_score()
+            small_score = self.__evaluate_small_score()
+
+            win_score_target = 10
+            small_score_target = 1
+
+            print(f"DEBUG: win_score = {win_score} ; small_score = {small_score}")
+            print(f"DEBUG: win_score_target = {win_score_target} ; small_score_target = {small_score_target}")
+
+
+            def f(b):
+                return math.asinh(b*win_score)/math.asinh(b*small_score)
+
+            r_target = win_score_target/small_score_target
+
+            iter_max = 100
+
+            b_guess = 1
+
+            b_inf = b_guess
+            r_inf = f(b_inf)
+
+            iter_index = 0
+            while r_inf > r_target and iter_index < iter_max:
+                iter_index += 1
+                b_inf *= 1.10
+                r_inf = f(b_inf)
+
+            b_sup = b_guess
+            r_sup = f(b_sup)
+            iter_index = 0
+            while r_sup < r_target and iter_index < iter_max:
+                iter_index += 1
+                b_sup *= 0.90
+                r_sup = f(b_sup)
+
+
+            assert r_inf < r_target
+            assert r_sup > r_target
+
+            r = (r_inf + r_sup)/2
+            b = f(r)
+
+            iter_index = 0
+            while math.fabs(r - r_target) > 1.e-6 and iter_index < iter_max:
+                iter_index += 1
+                if r < r_target:
+                    r_inf = r
+                else:
+                    r_sup = r
+
+                r = (r_inf + r_sup)/2
+                b = f(r)
+
+                print(f"DEBUG: b = {b} ; r = {r} ; r_target = {r_target}")
+
+            self.__b = b
+            self.__a = win_score_target/math.asinh(b*win_score)
+
+            print(f"DEBUG: self.__b = {self.__b}")
+            print(f"DEBUG: self.__a = {self.__a}")
+
+
+            print(f"DEBUG: self.__transform_score_as_float(small_score) = {self.__transform_score_as_float(small_score)}")
+            print(f"DEBUG: self.__transform_score_as_float(win_score) = {self.__transform_score_as_float(win_score)}")
+
+            print(f"DEBUG: self.__transform_score_as_int(small_score) = {self.__transform_score_as_int(small_score)}")
+            print(f"DEBUG: self.__transform_score_as_int(win_score) = {self.__transform_score_as_int(win_score)}")
+
+
+
+    def __transform_score_as_float(self, score):
+        return self.__a*math.asinh(self.__b*score)
+
+
+    def __transform_score_as_int(self, score):
+        return int(self.__transform_score_as_float(score))
 
 
     def __extract_score(self, infos: List[List[str]]) -> Optional[float]:
@@ -953,6 +1038,22 @@ class NatselSearcher(UgiSearcher):
         return self.__draw_score
 
 
+    def __evaluate_small_score(self) -> float:
+        if self.__small_score is None:
+            board_codes = rules.PijersiState.empty_board_codes()
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='a1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='g1', cube_name='r')
+
+            state = rules.PijersiState(board_codes=board_codes,
+                                       setup=rules.Setup.T.GIVEN,
+                                       player=rules.Player.T.WHITE,
+                                       turn=10)
+
+            self.__small_score = self.__evaluate_state_score(state)
+
+        return self.__small_score
+
+
     def __evaluate_state_score(self, state: rules.PijersiState()) -> float:
 
         time_limit = self.get_time_limit()
@@ -972,8 +1073,8 @@ class NatselSearcher(UgiSearcher):
 
         if False:
             best_action = state.get_action_by_ugi_name(best_ugi_action)
-            log(f"DEBUG: fen={fen}")
-            log(f"DEBUG: best_ugi_action={best_ugi_action} ; best_action={best_action} ; score = {score} ")
+            log(f"DEBUG: __evaluate_state_score: fen={fen}")
+            log(f"DEBUG: __evaluate_state_score: best_ugi_action={best_ugi_action} ; best_action={best_action} ; score = {score} ")
 
         return score
 
@@ -990,6 +1091,8 @@ class NatselSearcher(UgiSearcher):
         win_score = self.__evaluate_win_score()
         loss_score = self.__evaluate_loss_score()
         draw_score = self.__evaluate_draw_score()
+
+        self.__init_transform_score()
 
         time_limit = self.get_time_limit()
         max_depth = self.get_max_depth()
@@ -1039,7 +1142,7 @@ class NatselSearcher(UgiSearcher):
         if not self.__ugi_permanent:
             self.__ugi_client.quit()
 
-        evaluated_actions = {eval_action_name: round(math.asinh(eval_action_value))
+        evaluated_actions = {eval_action_name: self.__transform_score_as_int(eval_action_value)
                              for (eval_action_name, eval_action_value) in evaluated_actions.items()}
 
         return evaluated_actions

@@ -2195,7 +2195,7 @@ class GameGui(ttk.Frame):
 
             self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score)
 
-            best_action_sample_count = 6
+            best_action_sample_count = 10
 
             if self.__review_action_index % 2 != 0:
                 print()
@@ -2512,7 +2512,7 @@ class GameGui(ttk.Frame):
                 self.__text_actions.config(state="normal")
 
                 turn = self.__game.get_turn()
-                notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(16)
+                notation = str(turn).rjust(4) + " " + self.__game.get_last_action().ljust(15)
                 if turn % 2 == 0:
                     notation = ' '*2 + notation + "\n"
 
