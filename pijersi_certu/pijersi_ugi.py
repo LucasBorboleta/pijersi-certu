@@ -877,8 +877,8 @@ class NatselSearcher(UgiSearcher):
         self.__b2 = None
 
 
-
     def __init_transform_score(self):
+
         if self.__a1 is None or self.__a2 is None or self.__b1 is None or self.__b2 is None:
             win_score = self.__evaluate_win_score()
             small_score = self.__evaluate_small_score()
@@ -891,7 +891,7 @@ class NatselSearcher(UgiSearcher):
             assert  self.__b1 > 0
             assert  self.__b2 > 0
 
-            # equation system to be solved in self.__a1 and self.__a2
+            # equation system to be solved in self.__a1 and self.__a2 :
             #   win_score_target = self.__a1*math.asinh(self.__b1*win_score) + self.__a2*math.asinh(self.__b2*win_score)
             #   small_score_target = self.__a1*math.asinh(self.__b1*small_score) + self.__a2*math.asinh(self.__b2*small_score)
 
@@ -904,7 +904,7 @@ class NatselSearcher(UgiSearcher):
             self.__a1 = (s2*win_score_target - w2*small_score_target)/(w1*s2 - w2*s1)
             self.__a2 = (w1*small_score_target - s1*win_score_target)/(w1*s2 - w2*s1)
 
-            # check that the transformation is increasing
+            # check that the transformation is monotonic
             assert self.__a1 > 0
             assert self.__a2 >= 0
 

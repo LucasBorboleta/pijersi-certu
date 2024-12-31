@@ -2154,6 +2154,7 @@ class GameGui(ttk.Frame):
             # log the names of the reviewer engines
             print()
             print(f"Reviewing the game using {self.__review_searcher.get_name()} searcher ...")
+            print(f"(N.B. {self.__review_searcher.get_name()} scores are rescaled monotonically and non-linearly)")
 
             # review the first not yet review action
             self.__review_running = True
