@@ -1219,11 +1219,6 @@ class GameGui(ttk.Frame):
         self.__searcher[rules.Player.T.BLACK] = self.__searcher_catalog.get(new_black_player)
 
 
-    def __command_protect_action(self, *_):
-        self.__variable_turn.set(len(self.__turn_states) - 1)
-        self.__command_update_turn()
-
-
     def __command_update_turn(self, *_):
 
         try:
@@ -1233,6 +1228,8 @@ class GameGui(ttk.Frame):
 
         turn_index = max(0, min( len(self.__turn_states) - 1, turn_index))
 
+        self.__variable_turn.set(turn_index)
+
         self.__pijersi_state = self.__turn_states[turn_index]
 
         if turn_index > 0:
@@ -1241,10 +1238,12 @@ class GameGui(ttk.Frame):
             if self.__game_terminated and turn_index == (len(self.__turn_states) - 1):
                 self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
 
+            if self.__turn_reviews[turn_index] is not None:
+                (action_score, is_best_score, _, _) = self.__turn_reviews[turn_index]
+                self.__legend += f" {action_score:+}" + ("*" if is_best_score else "")
+
         else:
             self.__legend = ""
-
-        self.__variable_turn.set(turn_index)
 
 
         if turn_index == 0:
@@ -1279,25 +1278,6 @@ class GameGui(ttk.Frame):
         self.__cmc_reset()
         self.__cmc_hightlight_moved_and_played_hexagons()
         self.__draw_state()
-
-    def __command_confirm_action(self):
-
-        self.__variable_turn.set(len(self.__turn_states) - 1)
-        self.__command_update_turn()
-
-        self.__action_input = self.__variable_action.get()
-        self.__action_input = self.__action_input.replace("!", "")
-
-        (self.__action_validated, message) = rules.Notation.validate_simple_notation(self.__action_input,
-                                                                                     self.__pijersi_state.get_action_simple_names())
-
-        if self.__action_validated:
-            self.__variable_log.set(message)
-            self.__variable_action.set("")
-        else:
-            self.__variable_log.set(message)
-
-        self.__cmc_reset()
 
 
     def __command_setup(self, event):
@@ -1670,6 +1650,10 @@ class GameGui(ttk.Frame):
 
                 if self.__game_terminated and turn_index == (len(self.__turn_states) - 1):
                     self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
+
+                if self.__turn_reviews[turn_index] is not None:
+                    (action_score, is_best_score, _, _) = self.__turn_reviews[turn_index]
+                    self.__legend += f" {action_score:+}" + ("*" if is_best_score else "")
 
             else:
                 self.__legend = ""
@@ -2300,6 +2284,9 @@ class GameGui(ttk.Frame):
             if self.__review_timer_id is not None:
                 self.__root.after_cancel(self.__review_timer_id)
                 self.__review_timer_id = None
+
+            # Update the state curently displayed
+            self.__command_update_turn()
 
 
     def __review_evaluate_action_score(self, action_name, pijersi_state):
