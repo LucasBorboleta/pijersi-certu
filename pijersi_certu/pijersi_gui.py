@@ -205,7 +205,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT_INITIAL = 680
+        self.HEIGHT_INITIAL = 720
         self.HEIGHT = self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
