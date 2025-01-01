@@ -1447,19 +1447,13 @@ class GameGui(ttk.Frame):
                         break
 
                     actions_item_index += 1
-                    action_score = None
-                    is_best_score = False
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
                         if re.match("^[+-][0-9]+\*$", action_item):
-                            action_score = int(action_item[:-1])
-                            is_best_score = True
                             actions_item_index += 1
 
                         elif re.match("^[+-][0-9]+$", action_item):
-                            action_score = int(action_item)
-                            is_best_score = False
                             actions_item_index += 1
 
                         elif re.match("^[+-]\S*$", action_item):
@@ -1469,10 +1463,8 @@ class GameGui(ttk.Frame):
 
                     action_index += 1
 
-                    if action_score is not None:
-                        edited_actions.append((action, (action_score, is_best_score, None, None)))
-                    else:
-                        edited_actions.append((action, None))
+                    # >> forget any review score, because it may not be valid
+                    edited_actions.append((action, None))
 
 
             # interpret actions
@@ -1541,12 +1533,8 @@ class GameGui(ttk.Frame):
 
                     action_name = str(self.__game.get_last_action())
 
-                    if self.__turn_reviews[turn] is None:
-                        action_score_text = ""
-
-                    else:
-                        (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
-                        action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
+                    assert self.__turn_reviews[turn] is None
+                    action_score_text = ""
 
                     notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
                     if turn % 2 == 0:
