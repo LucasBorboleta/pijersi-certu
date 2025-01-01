@@ -1223,6 +1223,7 @@ class GameGui(ttk.Frame):
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__command_update_turn()
 
+
     def __command_update_turn(self, *_):
 
         try:
@@ -1256,18 +1257,13 @@ class GameGui(ttk.Frame):
 
         else:
             (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[turn_index]
-            (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[turn_index]
 
-            if best_score is None or best_actions is None:
-                review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else ""))
+            best_action_sample_count = 5
 
-            else:
-                best_action_sample_count = 5
-
-                review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else "") +
-                               f" / best score {best_score:+} for " +
-                               ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
-                               (" ..." if best_action_sample_count < len(best_actions) else ""))
+            review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else "") +
+                           f" / best score {best_score:+} for " +
+                           ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
+                           (" ..." if best_action_sample_count < len(best_actions) else ""))
 
             self.__variable_log.set(review_text)
             self.__label_log.update()
