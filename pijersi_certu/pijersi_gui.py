@@ -926,11 +926,12 @@ class GameGui(ttk.Frame):
         self.__variable_turn = tk.StringVar()
         self.__variable_turn.set(len(self.__turn_states) - 1)
         self.__spinbox_turn = ttk.Spinbox(self.__frame_human_actions,
-                                          values=list(range(len(self.__turn_states))),
                                           wrap=True,
                                           command=self.__command_update_turn,
                                           textvariable=self.__variable_turn,
                                           width=5)
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
+
         self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
 
         self.__button_make_pictures = ttk.Button(self.__frame_human_actions,
@@ -1301,7 +1302,7 @@ class GameGui(ttk.Frame):
         self.__turn_reviews = list()
         self.__turn_reviews.append(None)
 
-        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
         self.__variable_log.set(f"Ready with '{self.__variable_setup.get()}' setup for a 'New' game")
@@ -1468,7 +1469,7 @@ class GameGui(ttk.Frame):
                 self.__turn_reviews = list()
                 self.__turn_reviews.append(None)
 
-                self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+                self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
                 for (action_index, (action, action_review)) in enumerate(edited_actions):
@@ -1541,7 +1542,7 @@ class GameGui(ttk.Frame):
                 if validated_edited_actions:
                     self.__variable_log.set("Ready to 'Resume' or to start a 'New' game")
 
-                self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+                self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
                 self.__cmc_reset()
@@ -1855,7 +1856,7 @@ class GameGui(ttk.Frame):
             self.__turn_reviews = list()
             self.__turn_reviews.append(None)
 
-            self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+            self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
             self.__variable_turn.set(len(self.__turn_states) - 1)
 
             self.__button_new_stop.configure(text="Stop")
@@ -1985,7 +1986,7 @@ class GameGui(ttk.Frame):
 
         self.__turn_reviews = self.__turn_reviews[0: resume_turn_index + 1]
 
-        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
         for action in resume_actions:
@@ -2048,7 +2049,7 @@ class GameGui(ttk.Frame):
         else:
             self.__legend = ""
 
-        self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+        self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
         self.__variable_turn.set(len(self.__turn_states) - 1)
 
         self.__variable_log.set(f"Game resumed at turn {resume_turn_index}")
@@ -2528,7 +2529,7 @@ class GameGui(ttk.Frame):
                 self.__turn_states.append(self.__game.get_state())
                 self.__turn_actions.append(self.__game.get_last_action())
                 self.__turn_reviews.append(None)
-                self.__spinbox_turn.config(values=list(range(len(self.__turn_states))))
+                self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
                 self.__variable_turn.set(len(self.__turn_states) - 1)
 
                 self.__cmc_reset()
