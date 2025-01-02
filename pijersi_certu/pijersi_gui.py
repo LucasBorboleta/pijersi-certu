@@ -934,6 +934,9 @@ class GameGui(ttk.Frame):
 
         self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
 
+        self.__root.bind('<Up>', self.__command_update_arrow_up)
+        self.__root.bind('<Down>', self.__command_update_arrow_down)
+
         self.__button_make_pictures = ttk.Button(self.__frame_human_actions,
                                                  text='Make pictures',
                                                  command=self.__command_make_pictures)
@@ -1279,6 +1282,22 @@ class GameGui(ttk.Frame):
         self.__cmc_reset()
         self.__cmc_hightlight_moved_and_played_hexagons()
         self.__draw_state()
+
+
+    def __command_update_arrow_up(self, *_):
+        if self.__spinbox_turn['state'] == "enabled":
+            turn_index = int(self.__variable_turn.get())
+            turn_index = (turn_index - 1) % len(self.__turn_states)
+            self.__variable_turn.set(turn_index)
+            self.__command_update_turn()
+
+
+    def __command_update_arrow_down(self, *_):
+        if self.__spinbox_turn['state'] == "enabled":
+            turn_index = int(self.__variable_turn.get())
+            turn_index = (turn_index + 1) % len(self.__turn_states)
+            self.__variable_turn.set(turn_index)
+            self.__command_update_turn()
 
 
     def __command_setup(self, event):
