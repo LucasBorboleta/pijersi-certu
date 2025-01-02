@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License along with thi
 
 import math
 import os
-import random
 from subprocess import PIPE
 from subprocess import Popen
 import sys
@@ -1105,7 +1104,7 @@ class NatselSearcher(UgiSearcher):
             self.__ugi_client.quit()
 
         evaluated_actions = {eval_action_name: self.__transform_score_as_int(eval_action_value)
-                             for (eval_action_name, eval_action_value) in evaluated_actions.items()}
+                             for (eval_action_name, eval_action_value) in sorted(evaluated_actions.items())}
 
         return evaluated_actions
 
