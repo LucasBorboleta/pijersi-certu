@@ -205,7 +205,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT_INITIAL = 720
+        self.HEIGHT_INITIAL = 750
         self.HEIGHT = self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
@@ -742,6 +742,9 @@ class GameGui(ttk.Frame):
 
         self.__frame_actions = ttk.Frame(self.__frame_right)
         self.__frame_actions.grid(row=1, column=0, sticky='nw')
+        
+        self.__frame_pictures = ttk.Frame(self.__frame_right)
+        self.__frame_pictures.grid(row=2, column=0, sticky='nw')
 
         self.__frame_board = ttk.Frame(self.__frame_left)
         self.__frame_board.pack(fill=tk.BOTH)
@@ -933,14 +936,24 @@ class GameGui(ttk.Frame):
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
 
         self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
-
         self.__root.bind('<Up>', self.__command_update_arrow_up)
         self.__root.bind('<Down>', self.__command_update_arrow_down)
 
-        self.__button_make_pictures = ttk.Button(self.__frame_human_actions,
-                                                 text='Make pictures',
-                                                 command=self.__command_make_pictures)
-        self.__button_make_pictures.config(state="enabled")
+
+        self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint :')
+
+        self.__variable_hint = tk.StringVar()
+        self.__variable_hint.set(0)
+        self.__spinbox_hint = ttk.Spinbox(self.__frame_human_actions,
+                                          wrap=True,
+                                          command=self.__command_update_hint,
+                                          textvariable=self.__variable_hint,
+                                          width=5)
+        self.__spinbox_hint.config(values=[0])
+
+        self.__spinbox_hint.bind('<Return>', self.__command_update_hint)
+        self.__root.bind('<Left>', self.__command_update_arrow_left)
+        self.__root.bind('<Right>', self.__command_update_arrow_right)
 
        # In __frame_text_actions
 
@@ -967,7 +980,8 @@ class GameGui(ttk.Frame):
         self.__button_reset_actions.grid(row=0, column=3)
         self.__label_turn.grid(row=0, column=4)
         self.__spinbox_turn.grid(row=0, column=5)
-        self.__button_make_pictures.grid(row=0, column=6)
+        self.__label_hint.grid(row=0, column=6)
+        self.__spinbox_hint.grid(row=0, column=7)
 
         self.__frame_human_actions.rowconfigure(0, pad=5)
         self.__frame_human_actions.columnconfigure(0, pad=5)
@@ -976,15 +990,29 @@ class GameGui(ttk.Frame):
         self.__frame_human_actions.columnconfigure(3, pad=5)
         self.__frame_human_actions.columnconfigure(4, pad=5)
         self.__frame_human_actions.columnconfigure(5, pad=5)
-        self.__frame_human_actions.columnconfigure(6, pad=10)
+        self.__frame_human_actions.columnconfigure(6, pad=5)
+        self.__frame_human_actions.columnconfigure(7, pad=10)
 
         self.__scrollbar_actions.pack(side=tk.LEFT, fill=tk.Y)
         self.__text_actions.pack(side=tk.LEFT, fill=tk.Y)
+
+        # In __frame_pictures
+
+        self.__button_make_pictures = ttk.Button(self.__frame_pictures,
+                                                 text='Make pictures',
+                                                 command=self.__command_make_pictures)
+
+        self.__button_make_pictures.config(state="enabled")
+        self.__button_make_pictures.grid(row=0, column=0)
+        
+        
+        # More disabled widgets
 
         self.__text_actions.config(state="disabled")
         self.__button_resume.config(state="disabled")
         self.__button_review.config(state="disabled")
         self.__button_reset_actions.config(state="disabled")
+        self.__spinbox_hint.config(state="disabled")
 
     def __create_cube_photos(self):
 
@@ -1297,6 +1325,22 @@ class GameGui(ttk.Frame):
             turn_index = int(self.__variable_turn.get())
             turn_index = (turn_index + 1) % len(self.__turn_states)
             self.__variable_turn.set(turn_index)
+            self.__command_update_turn()
+
+
+    def __command_update_hint(self, *_):
+        print("DEBUG: __command_update_hint")
+
+
+    def __command_update_arrow_left(self, *_):
+        if self.__spinbox_hint['state'] == "enabled":
+            print("DEBUG: __command_update_arrow_left")
+            self.__command_update_turn()
+
+
+    def __command_update_arrow_right(self, *_):
+        if self.__spinbox_hint['state'] == "enabled":
+            print("DEBUG: __command_update_arrow_down")
             self.__command_update_turn()
 
 
