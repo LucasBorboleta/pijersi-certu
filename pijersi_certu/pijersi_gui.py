@@ -742,7 +742,7 @@ class GameGui(ttk.Frame):
 
         self.__frame_actions = ttk.Frame(self.__frame_right)
         self.__frame_actions.grid(row=1, column=0, sticky='nw')
-        
+
         self.__frame_pictures = ttk.Frame(self.__frame_right)
         self.__frame_pictures.grid(row=2, column=0, sticky='nw')
 
@@ -1004,8 +1004,8 @@ class GameGui(ttk.Frame):
 
         self.__button_make_pictures.config(state="enabled")
         self.__button_make_pictures.grid(row=0, column=0)
-        
-        
+
+
         # More disabled widgets
 
         self.__text_actions.config(state="disabled")
@@ -1271,7 +1271,7 @@ class GameGui(ttk.Frame):
                 self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
 
             if self.__turn_reviews[turn_index] is not None:
-                (action_score, is_best_score, _, _) = self.__turn_reviews[turn_index]
+                (action_score, is_best_score, _, _, _) = self.__turn_reviews[turn_index]
                 self.__legend += f" {action_score:+}" + ("*" if is_best_score else "")
 
         else:
@@ -1287,7 +1287,7 @@ class GameGui(ttk.Frame):
             self.__label_log.update()
 
         else:
-            (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[turn_index]
+            (action_score, is_best_score, best_score, best_actions, _) = self.__turn_reviews[turn_index]
 
             best_action_sample_count = 5
 
@@ -1306,6 +1306,8 @@ class GameGui(ttk.Frame):
             self.__button_resume.config(state="disabled")
 
         self.__button_review.config(state="enabled")
+
+        self.__spinbox_hint_update()
 
         self.__cmc_reset()
         self.__cmc_hightlight_moved_and_played_hexagons()
@@ -1329,19 +1331,63 @@ class GameGui(ttk.Frame):
 
 
     def __command_update_hint(self, *_):
-        print("DEBUG: __command_update_hint")
+        hint_index = int(self.__variable_hint.get())
+        if hint_index == 0:
+            self.__command_update_turn()
+
+        else:
+            turn_index = int(self.__variable_turn.get())
+            (_, is_best_score, best_score, best_actions, best_states) = self.__turn_reviews[turn_index]
+
+            best_action = best_actions[hint_index - 1]
+            self.__pijersi_state = best_states[best_action]
+
+            self.__legend = f"hint {hint_index} : {turn_index} {best_action} {best_score:+}"
+
+            self.__cmc_reset()
+            self.__cmc_hightlight_moved_and_played_hexagons()
+            self.__draw_state()
 
 
     def __command_update_arrow_left(self, *_):
         if self.__spinbox_hint['state'] == "enabled":
-            print("DEBUG: __command_update_arrow_left")
-            self.__command_update_turn()
+            turn_index = int(self.__variable_turn.get())
+            (_, _, _, _, best_states) = self.__turn_reviews[turn_index]
+
+            hint_index = int(self.__variable_hint.get())
+            hint_index = (hint_index - 1) % (len(best_states) + 1)
+            self.__variable_hint.set(hint_index)
+            self.__command_update_hint()
 
 
     def __command_update_arrow_right(self, *_):
         if self.__spinbox_hint['state'] == "enabled":
-            print("DEBUG: __command_update_arrow_down")
-            self.__command_update_turn()
+            turn_index = int(self.__variable_turn.get())
+            (_, _, _, _, best_states) = self.__turn_reviews[turn_index]
+
+            hint_index = int(self.__variable_hint.get())
+            hint_index = (hint_index + 1) % (len(best_states) + 1)
+            self.__variable_hint.set(hint_index)
+            self.__command_update_hint()
+
+
+    def __spinbox_hint_update(self):
+        if self.__spinbox_turn['state'] == "enabled":
+            turn_index = int(self.__variable_turn.get())
+
+            if self.__turn_reviews[turn_index] is None:
+                self.__spinbox_hint.config(state="disabled")
+
+            else:
+                (_, _, _, _, best_states) = self.__turn_reviews[turn_index]
+                self.__spinbox_hint.config(values=list(range(len(best_states) + 1)))
+                self.__variable_hint.set(0)
+                self.__spinbox_hint.config(state="enabled")
+
+        else:
+            self.__spinbox_hint.config(values=[0])
+            self.__variable_hint.set(0)
+            self.__spinbox_hint.config(state="disabled")
 
 
     def __command_setup(self, event):
@@ -1407,6 +1453,8 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
+            self.__spinbox_hint_update()
+
             self.__button_make_pictures.config(state="disabled")
 
             self.__button_resume.config(state="disabled")
@@ -1644,6 +1692,8 @@ class GameGui(ttk.Frame):
                 self.__combobox_time_control.config(state="readonly")
 
                 self.__spinbox_turn.config(state="enabled")
+                self.__spinbox_hint_update()
+
                 self.__button_make_pictures.config(state="enabled")
 
                 if not self.__game_terminated:
@@ -1682,7 +1732,10 @@ class GameGui(ttk.Frame):
         self.__button_review.config(state="disabled")
 
         self.__button_edit_actions.config(state="disabled")
+
         self.__spinbox_turn.config(state="disabled")
+        self.__spinbox_hint_update()
+
         self.__button_make_pictures.config(state="disabled")
 
         self.__text_actions.config(state="disabled")
@@ -1716,7 +1769,7 @@ class GameGui(ttk.Frame):
                     self.__legend += " " + self.__make_legend_score(self.__pijersi_state)
 
                 if self.__turn_reviews[turn_index] is not None:
-                    (action_score, is_best_score, _, _) = self.__turn_reviews[turn_index]
+                    (action_score, is_best_score, _, _, _) = self.__turn_reviews[turn_index]
                     self.__legend += f" {action_score:+}" + ("*" if is_best_score else "")
 
             else:
@@ -1859,7 +1912,10 @@ class GameGui(ttk.Frame):
         self.__button_review.config(state="enabled")
 
         self.__button_edit_actions.config(state="enabled")
+
         self.__spinbox_turn.config(state="enabled")
+        self.__spinbox_hint_update()
+
         self.__button_make_pictures.config(state="enabled")
 
         self.__text_actions.config(state="disabled")
@@ -1938,6 +1994,7 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
+            self.__spinbox_hint_update()
 
             self.__text_actions.config(state="normal")
             self.__text_actions.delete('1.0', tk.END)
@@ -1983,6 +2040,7 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
+            self.__spinbox_hint_update()
 
             self.__variable_action.set("")
 
@@ -2083,7 +2141,7 @@ class GameGui(ttk.Frame):
                 action_score_text = ""
 
             else:
-                (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
+                (action_score, is_best_score, _, _, _) = self.__turn_reviews[turn]
                 action_score_text = f"{action_score:+}" + ("*" if is_best_score else "")
 
             notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
@@ -2170,6 +2228,7 @@ class GameGui(ttk.Frame):
         self.__combobox_time_control.config(state="disabled")
 
         self.__spinbox_turn.config(state="disabled")
+        self.__spinbox_hint_update()
 
         self.__text_actions.config(state="disabled")
 
@@ -2205,6 +2264,8 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="disabled")
 
             self.__spinbox_turn.config(state="disabled")
+            self.__spinbox_hint_update()
+
             self.__button_make_pictures.config(state="disabled")
 
             self.__button_resume.config(state="disabled")
@@ -2246,7 +2307,7 @@ class GameGui(ttk.Frame):
                     break
 
                 else:
-                    (action_score, is_best_score, best_score, best_actions) = self.__turn_reviews[action_index]
+                    (action_score, is_best_score, best_score, best_actions, _) = self.__turn_reviews[action_index]
                     if action_score is None or is_best_score is None or best_score is None or best_actions is None:
                         self.__review_action_index = action_index
                         break
@@ -2257,9 +2318,9 @@ class GameGui(ttk.Frame):
             self.__variable_log.set(f"action {self.__review_action_index} review ...")
             self.__label_log.update()
 
-            (action_score, best_score, best_actions) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+            (action_score, best_score, best_actions, best_states) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
 
-            self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score, best_score, best_actions)
+            self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score, best_score, best_actions, best_states)
 
             best_action_sample_count = 10
 
@@ -2293,7 +2354,7 @@ class GameGui(ttk.Frame):
                     action_score_text = ""
 
                 else:
-                    (action_score, is_best_score, _, _) = self.__turn_reviews[turn]
+                    (action_score, is_best_score, _, _, _) = self.__turn_reviews[turn]
                     action_score_text = f"{action_score:+}" + ("*" if is_best_score else " ")
 
                 notation = str(turn).rjust(4) + " " + action_name.ljust(10) + " " + action_score_text.ljust(4)
@@ -2336,6 +2397,8 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
+            self.__spinbox_hint_update()
+
             self.__button_make_pictures.config(state="enabled")
 
             if not self.__game_terminated:
@@ -2356,17 +2419,18 @@ class GameGui(ttk.Frame):
     def __review_evaluate_action_score(self, action_name, pijersi_state):
 
         evaluated_actions = self.__review_searcher.evaluate_actions(pijersi_state)
-
-        evaluated_actions = {eval_action_name.replace('!', ''): eval_action_value
-                             for (eval_action_name, eval_action_value) in evaluated_actions.items()}
+        action_score = evaluated_actions[action_name]
 
         best_score = max(evaluated_actions.values())
-        best_actions = [eval_action_name for (eval_action_name, eval_action_value) in evaluated_actions.items() if eval_action_value == best_score]
+        best_actions = [eval_action_name for (eval_action_name, eval_action_value) in sorted(evaluated_actions.items())
+                        if eval_action_value == best_score and eval_action_name != action_name]
 
-        action_simple_name = action_name.replace('!', '')
-        action_score = evaluated_actions[action_simple_name]
+        best_states = {}
+        for best_action in best_actions:
+            if best_action != action_name:
+                best_states[best_action] = pijersi_state.take_action_by_name(best_action)
 
-        return (action_score, best_score, best_actions)
+        return (action_score, best_score, best_actions, best_states)
 
 
     def __command_next_turn(self):
@@ -2641,6 +2705,7 @@ class GameGui(ttk.Frame):
             self.__combobox_time_control.config(state="readonly")
 
             self.__spinbox_turn.config(state="enabled")
+            self.__spinbox_hint_update()
 
             self.__progressbar['value'] = 0.
 

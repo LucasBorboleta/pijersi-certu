@@ -1523,12 +1523,13 @@ class PijersiState:
 
 
     def take_action_by_name(self, action_name: str) -> Self:
-        action = self.get_action_names()[action_name.replace('!', '')]
+        action = self.get_action_by_name(action_name)
         return self.take_action(action)
 
 
     def take_action_by_simple_name(self, action_name: str) -> Self:
-        return self.take_action_by_name(action_name)
+        action = self.get_action_by_simple_name(action_name)
+        return self.take_action(action)
 
 
     def take_action_by_ugi_name(self, action_name: str) -> Self:
