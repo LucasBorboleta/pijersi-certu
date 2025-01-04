@@ -571,6 +571,7 @@ class GameGui(ttk.Frame):
         self.__review_action_index = None
         self.__review_timer_id = None
         self.__review_timer_delay = 500
+        self.__review_hint_action = None
 
 
         # For handling the GUI resize
@@ -1291,6 +1292,9 @@ class GameGui(ttk.Frame):
 
             best_action_sample_count = 5
 
+            if is_best_score:
+                best_actions = [str(self.__turn_actions[turn_index])] + best_actions
+
             review_text = (f"action {turn_index} {self.__turn_actions[turn_index]} score {action_score:+}" + ("*" if is_best_score else "") +
                            f" / best score {best_score:+} for " +
                            ", ".join(best_actions[:min(best_action_sample_count, len(best_actions))]) +
@@ -1333,16 +1337,17 @@ class GameGui(ttk.Frame):
     def __command_update_hint(self, *_):
         hint_index = int(self.__variable_hint.get())
         if hint_index == 0:
+            self.__review_hint_action = None
             self.__command_update_turn()
 
         else:
             turn_index = int(self.__variable_turn.get())
             (_, is_best_score, best_score, best_actions, best_states) = self.__turn_reviews[turn_index]
 
-            best_action = best_actions[hint_index - 1]
-            self.__pijersi_state = best_states[best_action]
+            self.__review_hint_action = best_actions[hint_index - 1]
+            self.__pijersi_state = best_states[self.__review_hint_action]
 
-            self.__legend = f"hint {hint_index} : {turn_index} {best_action} {best_score:+}"
+            self.__legend = f"hint {hint_index} : {turn_index} {self.__review_hint_action} {best_score:+}"
 
             self.__cmc_reset()
             self.__cmc_hightlight_moved_and_played_hexagons()
@@ -1372,6 +1377,8 @@ class GameGui(ttk.Frame):
 
 
     def __spinbox_hint_update(self):
+        self.__review_hint_action = None
+
         if self.__spinbox_turn['state'] == "enabled":
             turn_index = int(self.__variable_turn.get())
 
@@ -2327,6 +2334,9 @@ class GameGui(ttk.Frame):
             if self.__review_action_index % 2 != 0:
                 print()
 
+            if action_score == best_score:
+                best_actions = [str(action)] + best_actions
+
             print("action " + str(self.__review_action_index).rjust(2) + " " + str(action).ljust(10) +
                   " score " + (str(f"{action_score:+}") + ("*" if action_score == best_score else " ")).ljust(4) +
                   " / best score " + str(f"{best_score:+}").ljust(3) +
@@ -3119,7 +3129,11 @@ class GameGui(ttk.Frame):
 
         turn_index = int(self.__variable_turn.get())
 
-        if int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
+        if self.__review_hint_action is not None:
+            played_action_name = self.__review_hint_action
+            player_index = (turn_index + 1) % 2
+
+        elif int(self.__variable_turn.get()) != len(self.__turn_states) - 1:
             # User is viewing previous turns: take the viewed action
             played_action_name = str(self.__turn_actions[turn_index])
             player_index = (turn_index + 1) % 2
