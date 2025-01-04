@@ -925,7 +925,7 @@ class GameGui(ttk.Frame):
                                                 command=self.__command_reset_actions)
         self.__button_reset_actions.config(state="enabled")
 
-        self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn :')
+        self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn⮁ :')
 
         self.__variable_turn = tk.StringVar()
         self.__variable_turn.set(len(self.__turn_states) - 1)
@@ -941,7 +941,7 @@ class GameGui(ttk.Frame):
         self.__root.bind('<Down>', self.__command_update_arrow_down)
 
 
-        self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint :')
+        self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint⮀ :')
 
         self.__variable_hint = tk.StringVar()
         self.__variable_hint.set(0)
