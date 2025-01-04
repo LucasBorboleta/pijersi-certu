@@ -2073,6 +2073,12 @@ class GameGui(ttk.Frame):
         resume_turn_index = int(self.__variable_turn.get())
         resume_actions = self.__turn_actions[1: resume_turn_index + 1]
 
+        resume_hint_index = int(self.__variable_hint.get())
+        if resume_hint_index != 0:
+            (_, _, _, best_actions, _) = self.__turn_reviews[resume_turn_index]
+            resume_actions[-1] = best_actions[resume_hint_index - 1]
+
+
         self.__text_actions.config(state="normal")
         self.__text_actions.delete('1.0', tk.END)
         self.__text_actions.config(state="disabled")
@@ -2113,6 +2119,8 @@ class GameGui(ttk.Frame):
         self.__turn_actions.append("")
 
         self.__turn_reviews = self.__turn_reviews[0: resume_turn_index + 1]
+        if resume_hint_index != 0:
+            self.__turn_reviews[-1] = None
 
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
         self.__variable_turn.set(len(self.__turn_states) - 1)
