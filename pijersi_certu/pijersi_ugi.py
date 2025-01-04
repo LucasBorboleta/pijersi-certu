@@ -886,7 +886,7 @@ class NatselSearcher(UgiSearcher):
             small_score_target = 1
 
             self.__b1 = 1
-            self.__b2 = 0.10
+            self.__b2 = 0.015
             assert  self.__b1 > 0
             assert  self.__b2 > 0
 
@@ -906,6 +906,13 @@ class NatselSearcher(UgiSearcher):
             # check that the transformation is monotonic
             assert self.__a1 > 0
             assert self.__a2 >= 0
+
+            if False:
+                print()
+                print(f"win_score = {win_score} ; small_score = {small_score}")
+                print(f"win_score_target = {win_score_target} ; small_score_target = {small_score_target}")
+                print(f"__b1 = {self.__b1} ; __b2 = {self.__b2}")
+                print(f"__a1 = {self.__a1} ; __a2 = {self.__a2}")
 
 
     def __transform_score_as_float(self, score):
@@ -1102,6 +1109,11 @@ class NatselSearcher(UgiSearcher):
 
         if not self.__ugi_permanent:
             self.__ugi_client.quit()
+
+        if False:
+            print()
+            for (eval_action_name, eval_action_value) in sorted(evaluated_actions.items()):
+                print(f"{eval_action_value} {self.__transform_score_as_float(eval_action_value)}")
 
         evaluated_actions = {eval_action_name: self.__transform_score_as_int(eval_action_value)
                              for (eval_action_name, eval_action_value) in sorted(evaluated_actions.items())}
