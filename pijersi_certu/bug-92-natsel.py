@@ -239,7 +239,7 @@ ugi_actions.append('e4e3')
 
 class TheSearcher(NatselSearcher):
 
-    
+
     def __init__(self, name, ugi_client, max_depth):
         super().__init__(name=name, ugi_client=ugi_client, max_depth=max_depth)
 
@@ -272,11 +272,11 @@ class TheSearcher(NatselSearcher):
                 elif token == 'score':
                     score_is_next = True
         return score
-        
-        
+
+
     def evaluate_given_actions(self):
         evaluated_actions = {}
-        
+
         ugi_client = self.get_ugi_client()
         ugi_is_permanent = ugi_client.is_permanent()
 
@@ -301,36 +301,92 @@ class TheSearcher(NatselSearcher):
             ugi_client.quit()
 
         return evaluated_actions
-        
 
 
-def main():
+    def evaluate_given_first_action(self):
+        evaluated_actions = {}
+
+        ugi_action = ugi_actions[0]
+
+        ugi_client = self.get_ugi_client()
+        ugi_is_permanent = ugi_client.is_permanent()
+
+        assert not ugi_is_permanent
+        assert not  ugi_client.is_running()
+        assert not ugi_client.is_prepared()
+
+        ugi_client.run()
+        ugi_client.prepare()
+
+        max_depth = self.get_max_depth()
+
+        ugi_client.position_fen(fen=ugi_fen)
+        ugi_client.go_manual(ugi_action)
+        (best_ugi_action, infos) = ugi_client.go_depth_and_wait(max_depth - 1)
+
+        score = self.__extract_score(infos)
+        assert score is not None
+        evaluated_actions[ugi_action] = -score
+
+        ugi_client.quit()
+
+        return evaluated_actions
+
+
+def test_1():
     print()
-    print(f"_NATSEL_VERSION = {_NATSEL_VERSION}")
- 
+    print("-- test_1 ------------------------------------------------------")
+
     ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH, permanent=False)
     review_searcher = TheSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
-        
+
     iter_count = 10
     for iter_index in range(iter_count):
+
         evaluated_actions = review_searcher.evaluate_given_actions()
-        
+
         if iter_index == 0:
             print()
             print(f"ugi_fen = {ugi_fen}")
             print()
             print(f"evaluated_actions = {evaluated_actions}")
             print()
-            
+
         print()
-        
+
         best_score = min(evaluated_actions.values())
         print(f"iter_index = {iter_index} ; best_score = {best_score}")
-        
+
         best_actions = [action for (action, score) in sorted(evaluated_actions.items()) if score == best_score]
         print(f"{len(best_actions)} best_actions = {best_actions}")
-    
-    
+
+
+
+def test_2():
+    print()
+    print("-- test_2 ------------------------------------------------------")
+
+    iter_count = 10
+    for iter_index in range(iter_count):
+
+        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH, permanent=False)
+        review_searcher = TheSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
+        evaluated_actions = review_searcher.evaluate_given_first_action()
+
+        if iter_index == 0:
+            print()
+            print(f"ugi_fen = {ugi_fen}")
+            print()
+            print(f"evaluated_actions = {evaluated_actions}")
+            print()
+
+        print()
+
+        assert len(evaluated_actions) == 1
+        first_action = list(evaluated_actions.keys())[0]
+        first_score = evaluated_actions[first_action]
+        print(f"iter_index = {iter_index} ; first_action = {first_action} ; first_score = {first_score}")
+
 
 if __name__ == "__main__":
 
@@ -339,7 +395,14 @@ if __name__ == "__main__":
     print()
     print(f"Python sys.version = {sys.version}")
 
-    main()
+    print()
+    print(f"_NATSEL_VERSION = {_NATSEL_VERSION}")
+
+    if True:
+        test_1()
+
+    if True:
+        test_2()
 
     print()
     print("Bye")
