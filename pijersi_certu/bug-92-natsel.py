@@ -333,6 +333,34 @@ class TheSearcher(NatselSearcher):
         return evaluated_actions
 
 
+    def evaluate_given_fen(self, ugi_fen):
+        evaluated_actions = {}
+
+        ugi_client = self.get_ugi_client()
+        ugi_is_permanent = ugi_client.is_permanent()
+
+        assert not ugi_is_permanent
+        assert not  ugi_client.is_running()
+        assert not ugi_client.is_prepared()
+
+        ugi_client.run()
+        ugi_client.prepare()
+
+        max_depth = self.get_max_depth()
+
+        ugi_client.position_fen(fen=ugi_fen)
+
+        (best_ugi_action, infos) = ugi_client.go_depth_and_wait(max_depth - 1)
+
+        score = self.__extract_score(infos)
+        assert score is not None
+        evaluated_actions[best_ugi_action] = -score
+
+        ugi_client.quit()
+
+        return evaluated_actions
+
+
 def test_1():
     print()
     print("-- test_1 ------------------------------------------------------")
@@ -353,7 +381,6 @@ def test_1():
             print(f"ugi_fen = {ugi_fen}")
             print()
             print(f"evaluated_actions = {evaluated_actions}")
-            print()
 
         print()
 
@@ -371,7 +398,6 @@ def test_1():
 
     print()
     print(f"best_action_set of {len(best_action_set)} actions = {best_action_set} for {iter_count} iterations")
-
 
 
 def test_2():
@@ -394,14 +420,47 @@ def test_2():
             print(f"evaluated_actions = {evaluated_actions}")
             print()
 
-        print()
-
         assert len(evaluated_actions) == 1
         first_action = list(evaluated_actions.keys())[0]
         first_score = evaluated_actions[first_action]
+        print()
         print(f"iter_index = {iter_index} ; first_action = {first_action} ; first_score = {first_score}")
 
         score_set.add(first_score)
+
+    print()
+    print(f"score_set of {len(score_set)} values = {score_set} for {iter_count} iterations")
+
+
+def test_3():
+    print()
+    print("-- test_3 ------------------------------------------------------")
+
+    ugi_fen_test_3 = ['s-3p-r-/p-r-s-rprss-p-/3W-2/2w-w-W-2/1RS3RP/P-S-2S-1P-/1PR1R-1S-', 'b', '7', '4']
+
+    score_set = set()
+
+    iter_count = 100
+    for iter_index in range(iter_count):
+
+        ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH, permanent=False)
+        review_searcher = TheSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
+
+        evaluated_actions = review_searcher.evaluate_given_fen(ugi_fen_test_3)
+
+        if iter_index == 0:
+            print()
+            print(f"ugi_fen_test_3 = {ugi_fen_test_3}")
+            print()
+            print(f"evaluated_actions = {evaluated_actions}")
+
+        assert len(evaluated_actions) == 1
+        best_action = list(evaluated_actions.keys())[0]
+        best_score = evaluated_actions[best_action]
+        print()
+        print(f"iter_index = {iter_index} ; best_action = {best_action} ; best_score = {best_score}")
+
+        score_set.add(best_score)
 
     print()
     print(f"score_set of {len(score_set)} values = {score_set} for {iter_count} iterations")
@@ -422,6 +481,9 @@ if __name__ == "__main__":
 
     if True:
         test_2()
+
+    if True:
+        test_3()
 
     print()
     print("Bye")
