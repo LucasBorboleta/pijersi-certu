@@ -337,10 +337,13 @@ def test_1():
     print()
     print("-- test_1 ------------------------------------------------------")
 
+    best_score_set = set()
+    best_action_set = set()
+
     ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH, permanent=False)
     review_searcher = TheSearcher(name="natsel-5", ugi_client=ugi_client, max_depth=5)
 
-    iter_count = 10
+    iter_count = 100
     for iter_index in range(iter_count):
 
         evaluated_actions = review_searcher.evaluate_given_actions()
@@ -360,13 +363,24 @@ def test_1():
         best_actions = [action for (action, score) in sorted(evaluated_actions.items()) if score == best_score]
         print(f"{len(best_actions)} best_actions = {best_actions}")
 
+        best_score_set.add(best_score)
+        best_action_set.update(best_actions)
+
+    print()
+    print(f"best_score_set of {len(best_score_set)} values = {best_score_set} for {iter_count} iterations")
+
+    print()
+    print(f"best_action_set of {len(best_action_set)} actions = {best_action_set} for {iter_count} iterations")
+
 
 
 def test_2():
     print()
     print("-- test_2 ------------------------------------------------------")
 
-    iter_count = 10
+    score_set = set()
+
+    iter_count = 100
     for iter_index in range(iter_count):
 
         ugi_client = UgiClient(name=_NATSEL_KEY, server_executable_path=_NATSEL_EXECUTABLE_PATH, permanent=False)
@@ -386,6 +400,11 @@ def test_2():
         first_action = list(evaluated_actions.keys())[0]
         first_score = evaluated_actions[first_action]
         print(f"iter_index = {iter_index} ; first_action = {first_action} ; first_score = {first_score}")
+
+        score_set.add(first_score)
+
+    print()
+    print(f"score_set of {len(score_set)} values = {score_set} for {iter_count} iterations")
 
 
 if __name__ == "__main__":
