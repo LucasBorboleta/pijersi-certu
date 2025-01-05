@@ -438,7 +438,8 @@ def test_3():
 
     ugi_fen_test_3 = ['s-3p-r-/p-r-s-rprss-p-/3W-2/2w-w-W-2/1RS3RP/P-S-2S-1P-/1PR1R-1S-', 'b', '7', '4']
 
-    score_set = set()
+    best_score_set = set()
+    best_action_set = set()
 
     iter_count = 100
     for iter_index in range(iter_count):
@@ -460,10 +461,12 @@ def test_3():
         print()
         print(f"iter_index = {iter_index} ; best_action = {best_action} ; best_score = {best_score}")
 
-        score_set.add(best_score)
+        best_score_set.add(best_score)
+        best_action_set.add(best_action)
 
     print()
-    print(f"score_set of {len(score_set)} values = {score_set} for {iter_count} iterations")
+    print(f"best_score_set of {len(best_score_set)} values = {best_score_set} for {iter_count} iterations")
+    print(f"best_action_set of {len(best_action_set)} actions = {best_action_set} for {iter_count} iterations")
 
 
 if __name__ == "__main__":
