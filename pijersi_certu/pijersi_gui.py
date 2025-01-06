@@ -1321,31 +1321,24 @@ class GameGui(ttk.Frame):
     def __command_update_arrow_up(self, *_):
         if self.__spinbox_turn['state'] == "enabled":
 
-            self.__spinbox_turn.config(state="disabled")
-
             turn_index = int(self.__variable_turn.get())
             turn_index = (turn_index - 1) % len(self.__turn_states)
             self.__variable_turn.set(turn_index)
             self.__command_update_turn()
 
-            self.__spinbox_turn.config(state="enabled")
-
 
     def __command_update_arrow_down(self, *_):
         if self.__spinbox_turn['state'] == "enabled":
-
-            self.__spinbox_turn.config(state="disabled")
 
             turn_index = int(self.__variable_turn.get())
             turn_index = (turn_index + 1) % len(self.__turn_states)
             self.__variable_turn.set(turn_index)
             self.__command_update_turn()
 
-            self.__spinbox_turn.config(state="enabled")
-
 
     def __command_update_hint(self, *_):
         hint_index = int(self.__variable_hint.get())
+        
         if hint_index == 0:
             self.__review_hint_action = None
             self.__command_update_turn()
@@ -1367,8 +1360,6 @@ class GameGui(ttk.Frame):
     def __command_update_arrow_left(self, *_):
         if self.__spinbox_hint['state'] == "enabled":
 
-            self.__spinbox_hint.config(state="disabled")
-
             turn_index = int(self.__variable_turn.get())
             (_, _, _, _, best_states) = self.__turn_reviews[turn_index]
 
@@ -1377,13 +1368,9 @@ class GameGui(ttk.Frame):
             self.__variable_hint.set(hint_index)
             self.__command_update_hint()
 
-            self.__spinbox_hint.config(state="enabled")
-
 
     def __command_update_arrow_right(self, *_):
         if self.__spinbox_hint['state'] == "enabled":
-
-            self.__spinbox_hint.config(state="disabled")
 
             turn_index = int(self.__variable_turn.get())
             (_, _, _, _, best_states) = self.__turn_reviews[turn_index]
@@ -1392,8 +1379,6 @@ class GameGui(ttk.Frame):
             hint_index = (hint_index + 1) % (len(best_states) + 1)
             self.__variable_hint.set(hint_index)
             self.__command_update_hint()
-
-            self.__spinbox_hint.config(state="enabled")
 
 
     def __spinbox_hint_update(self):
