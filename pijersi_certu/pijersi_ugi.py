@@ -1010,6 +1010,7 @@ class NatselSearcher(UgiSearcher):
         if self.__small_score is None:
             board_codes = rules.PijersiState.empty_board_codes()
             rules.PijersiState.set_cube_from_names(board_codes, hex_name='a1', cube_name='R')
+            rules.PijersiState.set_cube_from_names(board_codes, hex_name='b1', cube_name='s')
             rules.PijersiState.set_cube_from_names(board_codes, hex_name='g1', cube_name='r')
 
             state = rules.PijersiState(board_codes=board_codes,
