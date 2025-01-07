@@ -1338,7 +1338,7 @@ class GameGui(ttk.Frame):
 
     def __command_update_hint(self, *_):
         hint_index = int(self.__variable_hint.get())
-        
+
         if hint_index == 0:
             self.__review_hint_action = None
             self.__command_update_turn()
@@ -2339,6 +2339,12 @@ class GameGui(ttk.Frame):
             self.__label_log.update()
 
             (action_score, best_score, best_actions, best_states) = self.__review_evaluate_action_score(action_name=str(action), pijersi_state=self.__turn_states[action_index - 1])
+
+            #-- Use Chess convention of the advantage
+            if self.__review_action_index % 2 == 0:
+                # >> It is a black turn
+                action_score *= -1
+                best_score *= -1
 
             self.__turn_reviews[self.__review_action_index] = (action_score, action_score == best_score, best_score, best_actions, best_states)
 
