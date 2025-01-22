@@ -21,7 +21,7 @@ from pijersi_gui import make_artefact_platform_id
 _NATSEL_UGI_SERVER_NAME = "pijersi_natural_selection_ugi_server"
 _NATSEL_NAME = "Natural Selection"
 _NATSEL_KEY = "natsel"
-_NATSEL_VERSION = "1.2.1"
+_NATSEL_VERSION = "1.2.2"
 
 _NATSEL_EXECUTABLE_PATH = os.path.join(_package_home,
                                              "ugi-servers",
