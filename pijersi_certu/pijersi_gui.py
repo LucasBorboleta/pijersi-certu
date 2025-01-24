@@ -2249,7 +2249,7 @@ class GameGui(ttk.Frame):
 
             self.__progressbar['value'] = 50.
         else:
-           self.__progressbar['value'] = 0.
+            self.__progressbar['value'] = 0.
 
 
         if self.__game_time_control is not None:
@@ -2487,7 +2487,7 @@ class GameGui(ttk.Frame):
             self.__game_timer_id = None
 
         if not self.__game.has_next_turn():
-          self.__game.set_turn_end(time.time())
+            self.__game.set_turn_end(time.time())
 
         self.__update_clocks()
 
