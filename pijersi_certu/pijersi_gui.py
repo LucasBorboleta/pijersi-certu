@@ -550,15 +550,12 @@ class GameGui(ttk.Frame):
 
     def __init__(self):
 
-        if platform.system().lower() == "windows":
-            self.__can_resize_canvas = True
-            self.__can_take_picture = True
-            self.__can_display_unicode = True
+        self.__can_display_unicode = True
+        self.__can_resize_canvas = True
+        self.__can_take_picture = True
 
-        else:
-            self.__can_resize_canvas = False
+        if platform.system().lower() == "linux":
             self.__can_take_picture = False
-            self.__can_display_unicode = True
 
         if self.__can_display_unicode:
             self.__clock_string = '\u23F1'
@@ -1133,7 +1130,7 @@ class GameGui(ttk.Frame):
         scale_factor_height = 1 + (new_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
-        use_fast_preview = True
+        use_fast_preview = self.__can_take_picture
 
         # >> Disable the fast preview for "maximize" and "unmaximze/restore" events:
         # >> - the method "__take_picture" does miss the right coordinates of the canvas, for some misunderstood reasons.
