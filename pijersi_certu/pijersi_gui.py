@@ -37,19 +37,21 @@ import os
 import platform
 import re
 import shutil
+import stat
 import time
-from tkinter import font
-from tkinter import ttk
-import tkinter as tk
-
 
 from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from multiprocessing import freeze_support
 import multiprocessing
 
-from PIL import Image
-from PIL import ImageGrab
+from tkinter import font
+from tkinter import ttk
+import tkinter as tk
+
 from PIL import ImageTk
+from PIL import ImageGrab
+from PIL import Image
+from PIL import _tkinter_finder # >> not used, but it helps PyInstaller to find all dependencies
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
@@ -205,7 +207,7 @@ class CanvasConfig:
 
         # Canvas x-y dimensions in pixels
         self.RATIO = self.NX/self.NY
-        self.HEIGHT_INITIAL = 750
+        self.HEIGHT_INITIAL = 650
         self.HEIGHT = self.HEIGHT_INITIAL
         self.WIDTH = self.HEIGHT*self.RATIO
 
@@ -548,6 +550,25 @@ class GameGui(ttk.Frame):
 
     def __init__(self):
 
+        if platform.system().lower() == "windows":
+            self.__can_resize_canvas = True
+            self.__can_take_picture = True
+            self.__can_display_unicode = True
+
+        else:
+            self.__can_resize_canvas = False
+            self.__can_take_picture = False
+            self.__can_display_unicode = True
+
+        if self.__can_display_unicode:
+            self.__clock_string = '\u23F1'
+            self.__turn_string = ' ⮁'
+            self.__hint_string = ' ⮀'
+        else:
+            self.__clock_string = ''
+            self.__turn_string = ''
+            self.__hint_string = ''
+
         self.__face_drawers = dict()
         self.__face_drawers[rules.Cube.T.PAPER] = self.__draw_paper_face
         self.__face_drawers[rules.Cube.T.ROCK] = self.__draw_rock_face
@@ -687,7 +708,7 @@ class GameGui(ttk.Frame):
             summary += f" ; {_NATSEL_NAME} version {_NATSEL_VERSION} {_NATSEL_COPYRIGHT}"
         self.__variable_summary.set(summary)
 
-        if True:
+        if self.__can_resize_canvas:
             # Prepare the "GUI resize" feature
             self.__root.resizable(width=True, height=True)
 
@@ -756,7 +777,8 @@ class GameGui(ttk.Frame):
         self.__frame_players = ttk.Frame(self.__frame_commands_and_players)
         self.__frame_players.grid(row=0, column=1, sticky='e')
 
-        self.__frame_commands_and_players.columnconfigure(1, pad=60)
+        #self.__frame_commands_and_players.columnconfigure(1, pad=60)
+        self.__frame_commands_and_players.columnconfigure(1, pad=20)
 
         self.__frame_human_actions = ttk.Frame(self.__frame_actions, padding=10)
         self.__frame_text_actions = ttk.Frame(self.__frame_actions, padding=10)
@@ -886,7 +908,7 @@ class GameGui(ttk.Frame):
         self.__variable_log = tk.StringVar()
         self.__label_log = ttk.Label(self.__frame_actions,
                                      textvariable=self.__variable_log,
-                                     width=95,
+                                     width=78,
                                      padding=5,
                                      foreground='brown',
                                      borderwidth=2, relief="groove")
@@ -894,7 +916,7 @@ class GameGui(ttk.Frame):
         self.__variable_summary = tk.StringVar()
         self.__label_summary = ttk.Label(self.__frame_actions,
                                          textvariable=self.__variable_summary,
-                                         width=95,
+                                         width=78,
                                          padding=5,
                                          foreground='black',
                                          borderwidth=2, relief="groove")
@@ -925,7 +947,7 @@ class GameGui(ttk.Frame):
                                                 command=self.__command_reset_actions)
         self.__button_reset_actions.config(state="enabled")
 
-        self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn ⮁ :')
+        self.__label_turn = ttk.Label(self.__frame_human_actions, text='Turn' + self.__turn_string + ' :')
 
         self.__variable_turn = tk.StringVar()
         self.__variable_turn.set(len(self.__turn_states) - 1)
@@ -940,9 +962,7 @@ class GameGui(ttk.Frame):
         self.__root.bind('<Up>', self.__command_update_arrow_up)
         self.__root.bind('<Down>', self.__command_update_arrow_down)
 
-
-        self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint ⮀ :')
-
+        self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint' + self.__hint_string + ' :')
         self.__variable_hint = tk.StringVar()
         self.__variable_hint.set(0)
         self.__spinbox_hint = ttk.Spinbox(self.__frame_human_actions,
@@ -960,6 +980,7 @@ class GameGui(ttk.Frame):
 
         self.__text_actions = tk.Text(self.__frame_text_actions,
                                       width=60,
+                                      height=15,
                                       borderwidth=2, relief="groove",
                                       background='lightgrey')
 
@@ -1290,7 +1311,7 @@ class GameGui(ttk.Frame):
         else:
             (action_score, is_best_score, best_score, best_actions, _) = self.__turn_reviews[turn_index]
 
-            best_action_sample_count = 5
+            best_action_sample_count = 4
 
             if is_best_score:
                 best_actions = [str(self.__turn_actions[turn_index])] + best_actions
@@ -1550,13 +1571,13 @@ class GameGui(ttk.Frame):
                     if actions_item_index < len(actions_items):
                         action_item = actions_items[actions_item_index]
 
-                        if re.match("^[+-][0-9]+\*$", action_item):
+                        if re.match(r"^[+-][0-9]+\*$", action_item):
                             actions_item_index += 1
 
-                        elif re.match("^[+-][0-9]+$", action_item):
+                        elif re.match(r"^[+-][0-9]+$", action_item):
                             actions_item_index += 1
 
-                        elif re.match("^[+-]\S*$", action_item):
+                        elif re.match(r"^[+-]\S*$", action_item):
                             validated_edited_actions = False
                             self.__variable_log.set(f"Error: invalid score syntax '{action_item}' at turn '{action_index + 1}'")
                             break
@@ -1725,7 +1746,7 @@ class GameGui(ttk.Frame):
 
 
     def __command_make_pictures(self):
-        if platform.system() != 'Windows':
+        if not self.__can_take_picture:
             self.__variable_log.set(f"Making pictures not implemented for plaform '{platform.system()}'")
             return
 
@@ -2766,8 +2787,8 @@ class GameGui(ttk.Frame):
             else:
                 (white_clock, black_clock) = (self.__game_time_control, self.__game_time_control)
 
-        self.__variable_white_clock.set('\u23F1' + format_clock(white_clock))
-        self.__variable_black_clock.set('\u23F1' + format_clock(black_clock))
+        self.__variable_white_clock.set(self.__clock_string + format_clock(white_clock))
+        self.__variable_black_clock.set(self.__clock_string + format_clock(black_clock))
 
         if round(white_clock) >= 0:
             self.__label_white_clock.configure(style="PositiveClock.TLabel")
@@ -3937,6 +3958,9 @@ _NATSEL_EXECUTABLE_PATH = os.path.join(_package_home,
                                              "ugi-servers",
                                              _NATSEL_KEY,
                                              f"{_NATSEL_UGI_SERVER_NAME}_v{_NATSEL_VERSION}" + "_" + make_artefact_platform_id())
+if platform.system().lower() == 'linux':
+    if os.path.isfile(_NATSEL_EXECUTABLE_PATH) and not os.access(_NATSEL_EXECUTABLE_PATH, os.X_OK):
+        os.chmod(_NATSEL_EXECUTABLE_PATH, os.stat(_NATSEL_EXECUTABLE_PATH).st_mode | stat.S_IXUSR)
 
 
 def main():

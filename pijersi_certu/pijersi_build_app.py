@@ -109,7 +109,7 @@ subprocess.run(args=[_venv_python_executable,
                      "--onefile",
                      "--noupx",
                      "-n", f"{artefact_name}",
-                     "-i", "pictures\pijersi.ico",
+                     "-i", os.path.join("pictures", "pijersi.ico"),
                      "pijersi_gui.py"],
                shell=False, check=True)
 
