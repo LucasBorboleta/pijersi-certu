@@ -5,7 +5,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 - As a single file executable, but for Windows platform only ; this is the simplest way.
 - As a Python project from source files, for either Windows or Linux platforms ; this is easy thanks to the `pijersi_start.py` script.
 
-## Installing as single executable for Windows platform
+## Installing as single executable for Windows and Linux platforms
 
 - From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_version.exe` on your computer where you want. Also the UGI server `pijersi-cmalo` can be found there.
 - The latest stable version is `v2.2.0`.
@@ -14,8 +14,10 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
   - `Get-FileHash pijersi_certu_version.exe -Algorithm MD5`
   - The returned hash value must comply with the following table, otherwise, remove immediately the downloaded executable from your computer.
 
-  | Version | Hash   | Expected hash value                                          |
-  | ------- | ------ | ------------------------------------------------------------ |
+  | Version     | Hash   | Expected hash value                                          |
+  | ----------- | ------ | ------------------------------------------------------------ |
+  | v2.3.0.rc1  | SHA256 | D1FE668AA52E5FD3CD2774348B497FA33A1C68A2BE51A769A1CA43F53BD9FED8 |
+  | v2.3.0.rc1  | MD5    | D488DE210E511C8052CFE6B31E97EF3A                             |
   | v2.2.0  | SHA256 | A5AE1B59751F11858571EE95A173668B176651340805B99D3D7414C411D886A5 |
   | v2.2.0  | MD5    | FD11005C366326379006951EFA7F8516                             |
   | v2.1.0  | SHA256 | B5EC493FA5C06C9190F8BF01A58759B49736FB7A2345714325912F205945A55E |
@@ -30,6 +32,13 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
   | v1.1.0  | MD5    | 5dbf2450e54a7520d8ed8c72f863c80a                             |
   | v1.0.0  | SHA256 | 57A336F2BC944DF5F230DFC7712C198ED95013C1A2D842DC6F0EDE3FBF985B36 |
   | v1.0.0  | MD5    | 541C8F2A3C70184F04FEA72E8A2222A8                             |
+  
+  - Linux releases :
+  
+  | Version     | Hash   | Expected hash value                                          |
+  | ----------- | ------ | ------------------------------------------------------------ |
+  | v2.3.0.rc1  | SHA256 | BDC4DE68D969629710BFEE964647C89BDF4F23FDE69B564DC42A4F9901079244 |
+  | v2.3.0.rc1  | MD5    | 347F7C82E10D68AF1A213D5582B8E303                             |
 
   - The old release candidates have been removed :
 
