@@ -51,7 +51,10 @@ import tkinter as tk
 from PIL import ImageTk
 from PIL import ImageGrab
 from PIL import Image
+
 from PIL import _tkinter_finder # >> not used, but it helps PyInstaller to find all dependencies
+assert _tkinter_finder is not None # >> fake use, to remove "imported but unused" warning
+
 
 _package_home = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_package_home)
@@ -214,6 +217,9 @@ class CanvasConfig:
         # Canvas background
         self.USE_BACKGROUND_PHOTO = True
         self.BACKGROUND_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-board.png')
+
+        # Canvas preview during resize
+        self.PREVIEW_PHOTO_PATH = os.path.join(_package_home, 'pictures', 'pijersi-preview.png')
 
         # Hexagon geometrical data
         self.HEXA_VERTEX_COUNT = 6
@@ -604,6 +610,8 @@ class GameGui(ttk.Frame):
         self.__resize_initial_canvas_height = None
 
         self.__resize_preview_photo = None
+        self.__resize_preview_photo_workaround = Image.open(CANVAS_CONFIG.PREVIEW_PHOTO_PATH)
+
         self.__resize_scale_factor = None
         self.__resize_time = None
         self.__resize_timer_id = None
@@ -1130,7 +1138,7 @@ class GameGui(ttk.Frame):
         scale_factor_height = 1 + (new_root_height - self.__resize_initial_root_height)/self.__resize_initial_canvas_height
         scale_factor = min(scale_factor_width, scale_factor_height)
 
-        use_fast_preview = self.__can_take_picture
+        use_fast_preview = True
 
         # >> Disable the fast preview for "maximize" and "unmaximze/restore" events:
         # >> - the method "__take_picture" does miss the right coordinates of the canvas, for some misunderstood reasons.
@@ -1149,7 +1157,11 @@ class GameGui(ttk.Frame):
 
         if use_fast_preview:
             if self.__resize_preview_photo is None:
-                self.__resize_preview_photo = self.__take_picture(with_margins=False)
+
+                if self.__can_take_picture:
+                    self.__resize_preview_photo = self.__take_picture(with_margins=False)
+                else:
+                    self.__resize_preview_photo = self.__resize_preview_photo_workaround
 
         # >> it seems to fix unstable behavior when unmaximizing
         self.__root.geometry (f"{new_root_width}x{new_root_height}")
