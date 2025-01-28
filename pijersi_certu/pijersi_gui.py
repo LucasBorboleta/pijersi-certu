@@ -706,12 +706,10 @@ class GameGui(ttk.Frame):
 
         self.__command_update_players()
 
-        self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready !")
+        self.__variable_log.set(f"pijersi-certu version {rules.__version__} is ready ! pijersi-certu (c) 2022 Lucas Borboleta")
 
-        summary = "pijersi-certu (c) 2022 Lucas Borboleta"
         if _NATSEL_KEY in self.__ugi_clients:
-            summary += f" ; {_NATSEL_NAME} version {_NATSEL_VERSION} {_NATSEL_COPYRIGHT}"
-        self.__variable_summary.set(summary)
+            self.__variable_summary.set(f"{_NATSEL_NAME} version {_NATSEL_VERSION} {_NATSEL_COPYRIGHT}")
 
         if self.__can_resize_canvas:
             # Prepare the "GUI resize" feature
