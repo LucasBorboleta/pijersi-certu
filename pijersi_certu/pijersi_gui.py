@@ -961,9 +961,9 @@ class GameGui(ttk.Frame):
                                           width=5)
         self.__spinbox_turn.config(values=list(range(len(self.__turn_states) -1, -1, -1)))
 
-        self.__spinbox_turn.bind('<Return>', self.__command_update_turn)
-        self.__root.bind('<Up>', self.__command_update_arrow_up)
-        self.__root.bind('<Down>', self.__command_update_arrow_down)
+        self.__spinbox_turn.bind('<KeyRelease-Return>', self.__command_update_turn)
+        self.__root.bind('<KeyRelease-Up>', self.__command_update_arrow_up)
+        self.__root.bind('<KeyRelease-Down>', self.__command_update_arrow_down)
 
         self.__label_hint = ttk.Label(self.__frame_human_actions, text='Hint' + self.__hint_string + ' :')
         self.__variable_hint = tk.StringVar()
@@ -975,9 +975,9 @@ class GameGui(ttk.Frame):
                                           width=5)
         self.__spinbox_hint.config(values=[0])
 
-        self.__spinbox_hint.bind('<Return>', self.__command_update_hint)
-        self.__root.bind('<Left>', self.__command_update_arrow_left)
-        self.__root.bind('<Right>', self.__command_update_arrow_right)
+        self.__spinbox_hint.bind('<KeyRelease-Return>', self.__command_update_hint)
+        self.__root.bind('<KeyRelease-Left>', self.__command_update_arrow_left)
+        self.__root.bind('<KeyRelease-Right>', self.__command_update_arrow_right)
 
        # In __frame_text_actions
 
