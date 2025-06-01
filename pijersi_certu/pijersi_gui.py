@@ -552,6 +552,22 @@ def search_task(searcher, pijersi_state):
     return action_simple_name
 
 
+class MyComboBox(ttk.Combobox):
+    """Workaround for ttk.Combobox when 'state=readonly' :
+        - let us use 'state=normal'
+        - but never validate change from keyboard that are authorized when 'state=normal'
+    """
+
+    def __init__(self, frame, width, textvariable, values):
+
+        super().__init__(master=frame, width=width, textvariable=textvariable, values=values,
+                         validate='all', validatecommand=(frame.register(self.__onValidate),))
+
+
+    def __onValidate(self):
+        return False
+
+
 class GameGui(ttk.Frame):
 
     def __init__(self):
@@ -822,11 +838,11 @@ class GameGui(ttk.Frame):
         self.__label_white_player = ttk.Label(self.__frame_players, text='White :')
 
         self.__variable_white_player = tk.StringVar()
-        self.__combobox_white_player = ttk.Combobox(self.__frame_players,
+        self.__combobox_white_player = MyComboBox(frame=self.__frame_players,
                                                     width=searcher_catalog_names_width,
                                                     textvariable=self.__variable_white_player,
                                                     values=searcher_catalog_names)
-        self.__combobox_white_player.config(state="readonly")
+        self.__combobox_white_player.config(state="normal")
         self.__variable_white_player.set(searcher_catalog_names[searcher_catalog_names.index("human")])
 
         self.__button_switch = ttk.Button(self.__frame_players, text='>> Switch <<', width=0, command=self.__command_switch_players)
@@ -834,11 +850,11 @@ class GameGui(ttk.Frame):
         self.__label_black_player = ttk.Label(self.__frame_players, text='Black :')
 
         self.__variable_black_player = tk.StringVar()
-        self.__combobox_black_player = ttk.Combobox(self.__frame_players,
+        self.__combobox_black_player = MyComboBox(frame=self.__frame_players,
                                                     width=searcher_catalog_names_width,
                                                     textvariable=self.__variable_black_player,
                                                     values=searcher_catalog_names)
-        self.__combobox_black_player.config(state="readonly")
+        self.__combobox_black_player.config(state="normal")
         self.__variable_black_player.set(searcher_catalog_names[searcher_catalog_names.index("cmalo-2")])
 
         self.__progressbar = ttk.Progressbar(self.__frame_players,
@@ -857,11 +873,11 @@ class GameGui(ttk.Frame):
 
 
         self.__variable_time_control = tk.StringVar()
-        self.__combobox_time_control = ttk.Combobox(self.__frame_players,
+        self.__combobox_time_control = MyComboBox(frame=self.__frame_players,
                                                     width=time_control_catalog_names_width,
                                                     textvariable=self.__variable_time_control,
                                                     values=time_control_catalog_names)
-        self.__combobox_time_control.config(state="readonly")
+        self.__combobox_time_control.config(state="normal")
 
 
         self.__label_white_player.grid(row=0, column=0)
@@ -892,6 +908,7 @@ class GameGui(ttk.Frame):
         self.__variable_black_player.trace_add('write', self.__command_update_players)
         self.__variable_time_control.trace_add('write', self.__command_update_time_control)
         self.__variable_time_control.set([key for (key, value ) in self.__game_time_control_catalog.items() if value == 5*60][0])
+
 
         self.__update_clocks()
 
@@ -929,12 +946,12 @@ class GameGui(ttk.Frame):
         self.__label_setup = ttk.Label(self.__frame_human_actions, text='Setup :')
 
         self.__variable_setup = tk.StringVar()
-        self.__combobox_setup = ttk.Combobox(self.__frame_human_actions,
+        self.__combobox_setup = MyComboBox(frame=self.__frame_human_actions,
                                                     width=setup_names_width,
                                                     textvariable=self.__variable_setup,
                                                     values=setup_names)
         self.__combobox_setup.bind('<<ComboboxSelected>>', self.__command_setup)
-        self.__combobox_setup.config(state="readonly")
+        self.__combobox_setup.config(state="normal")
         self.__variable_setup.set(rules.Setup.to_name(self.__game_setup))
 
         self.__variable_action = tk.StringVar()
@@ -1724,12 +1741,12 @@ class GameGui(ttk.Frame):
                 self.__text_actions.config(state="disabled", background='lightgrey')
 
                 self.__button_new_stop.config(state="enabled")
-                self.__combobox_white_player.config(state="readonly")
-                self.__combobox_black_player.config(state="readonly")
+                self.__combobox_white_player.config(state="normal")
+                self.__combobox_black_player.config(state="normal")
                 self.__button_switch.config(state="enabled")
-                self.__combobox_setup.config(state="readonly")
+                self.__combobox_setup.config(state="normal")
 
-                self.__combobox_time_control.config(state="readonly")
+                self.__combobox_time_control.config(state="normal")
 
                 self.__spinbox_turn.config(state="enabled")
                 self.__spinbox_hint_update()
@@ -1941,12 +1958,12 @@ class GameGui(ttk.Frame):
 
         self.__button_quit.config(state="enabled")
         self.__button_new_stop.config(state="enabled")
-        self.__combobox_white_player.config(state="readonly")
-        self.__combobox_black_player.config(state="readonly")
+        self.__combobox_white_player.config(state="normal")
+        self.__combobox_black_player.config(state="normal")
         self.__button_switch.config(state="enabled")
-        self.__combobox_setup.config(state="readonly")
+        self.__combobox_setup.config(state="normal")
 
-        self.__combobox_time_control.config(state="readonly")
+        self.__combobox_time_control.config(state="normal")
 
         self.__button_resume.config(state="enabled")
         self.__button_review.config(state="enabled")
@@ -2072,12 +2089,12 @@ class GameGui(ttk.Frame):
 
             self.__update_clocks()
 
-            self.__combobox_white_player.config(state="readonly")
-            self.__combobox_black_player.config(state="readonly")
+            self.__combobox_white_player.config(state="normal")
+            self.__combobox_black_player.config(state="normal")
             self.__button_switch.config(state="enabled")
-            self.__combobox_setup.config(state="readonly")
+            self.__combobox_setup.config(state="normal")
 
-            self.__combobox_time_control.config(state="readonly")
+            self.__combobox_time_control.config(state="normal")
 
             self.__spinbox_turn.config(state="enabled")
             self.__spinbox_hint_update()
@@ -2446,12 +2463,12 @@ class GameGui(ttk.Frame):
             # Enable widgets
 
             self.__button_new_stop.config(state="enabled")
-            self.__combobox_white_player.config(state="readonly")
-            self.__combobox_black_player.config(state="readonly")
+            self.__combobox_white_player.config(state="normal")
+            self.__combobox_black_player.config(state="normal")
             self.__button_switch.config(state="enabled")
-            self.__combobox_setup.config(state="readonly")
+            self.__combobox_setup.config(state="normal")
 
-            self.__combobox_time_control.config(state="readonly")
+            self.__combobox_time_control.config(state="normal")
 
             self.__spinbox_turn.config(state="enabled")
             self.__spinbox_hint_update()
@@ -2754,12 +2771,12 @@ class GameGui(ttk.Frame):
 
             self.__button_new_stop.configure(text="New")
 
-            self.__combobox_white_player.config(state="readonly")
-            self.__combobox_black_player.config(state="readonly")
+            self.__combobox_white_player.config(state="normal")
+            self.__combobox_black_player.config(state="normal")
             self.__button_switch.config(state="enabled")
-            self.__combobox_setup.config(state="readonly")
+            self.__combobox_setup.config(state="normal")
 
-            self.__combobox_time_control.config(state="readonly")
+            self.__combobox_time_control.config(state="normal")
 
             self.__spinbox_turn.config(state="enabled")
             self.__spinbox_hint_update()
