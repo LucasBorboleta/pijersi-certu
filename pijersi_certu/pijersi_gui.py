@@ -2441,6 +2441,10 @@ class GameGui(ttk.Frame):
                 self.__text_actions.config(state="disabled")
 
             self.__variable_log.set(f"action {self.__review_action_index} review done")
+
+            self.__variable_turn.set(str(self.__review_action_index))
+            self.__command_update_turn()
+            
             self.__review_action_index = None
 
             if self.__review_running:
