@@ -135,7 +135,7 @@ cd pijersi-certu-main/
 python3 ./pijersi_start.py # failed becauses missing packages
 sudo apt install python3.13-venv
 sudo apt install python3.12-tk
-m -rf .env/
+rm -rf .env/
 python3 ./pijersi_start.py 
 ```
 
