@@ -2444,7 +2444,7 @@ class GameGui(ttk.Frame):
 
             self.__variable_turn.set(str(self.__review_action_index))
             self.__command_update_turn()
-            
+
             self.__review_action_index = None
 
             if self.__review_running:
