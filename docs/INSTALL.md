@@ -8,7 +8,7 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 ## Installing as single executable for Windows and Linux platforms
 
 - From the  [`releases`](../releases) sub-folder of this repository, download the desired version of the executable file `pijersi_certu_...` on your computer where you want. Also the UGI server `pijersi-cmalo` could be found there.
-- The latest stable version is `v2.3.0`.
+- The latest stable version is `v2.3.1`.
 - Check the integrity of the downloaded executable using either `SHA256` or `MD5`algorithms, for example by executing the `Get-FileHash` command, as follows, in the `PowerShell` terminal:
   - `Get-FileHash pijersi_certu_... -Algorithm SHA256`
   - `Get-FileHash pijersi_certu_... -Algorithm MD5`
@@ -23,6 +23,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version | Hash   | Expected hash value                                              |
   | ------- | ------ | ---------------------------------------------------------------- |
+  | v2.3.1  | SHA256 | 6D3ED5DC7B0CCDD2A274AC07B1FDC6198317D5552A15F7E8CBFC05A4371FC04C |
+  | v2.3.1  | MD5    | 07A2D19E728D553F87101026A9A71D4C                                 |
   | v2.3.0  | SHA256 | D58820AC2B47469FC84A08225CA58B10154C1C7F0799C86E424BE691CE98AC1F |
   | v2.3.0  | MD5    | DDC5D5FB3D6BE819371D1E1337D49D47                                 |
   | v2.2.0  | SHA256 | A5AE1B59751F11858571EE95A173668B176651340805B99D3D7414C411D886A5 |
@@ -44,6 +46,8 @@ Below, two ways are explained for installing *pijersi_certu* on your computer:
 
   | Version | Hash   | Expected hash value                                              |
   | ------- | ------ | ---------------------------------------------------------------- |
+  | v2.3.1  | SHA256 | 5FA46AAC02C3F59850B6FB0F78A4F6E8F6CEEBAAC17F8909F4CF07B3FC11B3AA |
+  | v2.3.1  | MD5    | 6CC6803EE20E1B3C15DC68549A550764                                 |
   | v2.3.0  | SHA256 | 6C4F63FB0F735E48B7A7480C7779B8BCE8DF99395B2B3C44FFBE1D0D0E626806 |
   | v2.3.0  | MD5    | 2DF4105916773788E4B08D8A2AB8107E                                 |
 
